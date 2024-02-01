@@ -1,11 +1,17 @@
-from statsmodels.tsa.ar_model import AutoReg, ar_select_order
+from statsmodels.tsa.ar_model import AutoReg
 import numpy as np
+
+import time_series
+import utils
 
 def simulate_signs(training_signs, nb_signs_to_simulate, nb_lags=None, verbose=False):
     # start_select_order = time.time()
-    nb_lags = nb_lags if (nb_lags is not None) else select_appropriate_nb_lags(training_signs)
+    nb_lags = nb_lags if (nb_lags is not None) else time_series.select_appropriate_nb_lags(training_signs)
     # end_select_order = time.time()
     # time_select_order = np.round(end_select_order - start_select_order, settings.PRECISION)
+
+    is_stationary = time_series.is_time_series_stationary(training_signs, max_lag=nb_lags)
+    utils.check_condition(is_stationary, Exception("The time series must be stationary in order to simulate signs"))
 
     # start_model_fit = time.time()
     ar_model = AutoReg(training_signs, lags=nb_lags, trend="c").fit()
@@ -22,10 +28,6 @@ def simulate_signs(training_signs, nb_signs_to_simulate, nb_lags=None, verbose=F
     #     print(f"Number of lags to use => {nb_lags}")
 
     return simulated_signs, nb_lags
-
-def select_appropriate_nb_lags(signs):
-    mod = ar_select_order(signs, maxlag=100, ic="aic", trend="c")
-    return len(mod.ar_lags)
 
 def simulate_n_signs_from_fitted_params(n, fitted_params, training_signs):
     all_signs = training_signs.copy()

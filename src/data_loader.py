@@ -1,9 +1,14 @@
 import pyspark.sql.functions as F
 import glob
 
-import utils
-import utils_dates
+from utils import pyspark_utils
+from utils import dates_utils
+from utils.dates_utils import DateType
 import settings
+from typing import Literal
+
+from utils import dates_utils
+from utils import general_utils
 
 # class DataAgregator():
 #     def __init__(self, project_folder, symbol, extension):
@@ -11,29 +16,29 @@ import settings
 #         self.symbol = symbol
 #         self.extension = extension
 
-def load_data(symbol, date_type, start_date, end_date, sort_column=["time", "id"]):
-    data_folder = settings.symbol_data_folder(date_type, symbol)
+def load_data(symbol, date_type_name: Literal["daily", "monthly"], start_date, end_date, sort_column=["time", "id"]):
+    date_type = dates_utils.retrieve_date_type_from_name(date_type_name)
+
+    data_folder = settings.symbol_data_folder(date_type.name, symbol)
     data = aggregate_data_several_dates(data_folder, symbol, date_type, start_date, end_date)
     data = rename_columns(data)
     data = add_date_and_time(data)
     data = add_trade_sign(data)
     return data.sort(sort_column)
 
-def aggregate_data_several_dates(data_folder, symbol, date_type, start_date, end_date):
-    spark = utils.get_spark_session()
+def aggregate_data_several_dates(data_folder, symbol, date_type: DateType, start_date, end_date):
+    spark = pyspark_utils.get_spark_session()
     
-    date_type_format = utils_dates.DateType.date_type_to_format[date_type]
-    start_date = utils_dates.string_to_datetime(start_date, date_type_format)
-    end_date = utils_dates.string_to_datetime(end_date, date_type_format)
+    start_date = date_type.string_to_datetime(start_date)
+    end_date = date_type.string_to_datetime(end_date)
 
     data = None
     file_paths = glob.glob(f"{data_folder}/*.csv")
     for file_path in file_paths:
-        len_date_as_string = utils_dates.DateType.date_type_to_len_date_as_string[date_type]
-        current_file_date_as_string = file_path.split(".")[0][-len_date_as_string:]
-        current_date = utils_dates.string_to_datetime(current_file_date_as_string, date_type_format)
+        current_file_date_as_string = date_type.retrieve_date_as_string_from_file_path(file_path)
+        current_date = date_type.string_to_datetime(current_file_date_as_string)
 
-        if (utils_dates.is_datetime_within_interval(current_date, start_date, end_date) and utils.is_symbol_in_file_path(symbol, file_path)):
+        if (dates_utils.is_datetime_within_interval(current_date, start_date, end_date) and general_utils.is_symbol_in_file_path(symbol, file_path)):
             data_current_date = spark.read.csv(file_path, sep=',', inferSchema=True, header=False)
             data = data_current_date if data is None else data.union(data_current_date)
     return data
