@@ -2,14 +2,14 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 class DateType(ABC):
-    def __init__(self, name: str, format: str, len_date: int):
-        self._name = name
+    def __init__(self, periodicity: str, format: str, len_date: int):
+        self._periodicity = periodicity
         self._format = format
         self._len_date = len_date
 
     @property
-    def name(self):
-        return self._name
+    def periodicity(self):
+        return self._periodicity
     
     @property
     def format(self):
@@ -33,3 +33,4 @@ class DateType(ABC):
     @abstractmethod
     def increment_datetime_by_n_units(datetime_object: datetime, n_units: int):
         pass
+    

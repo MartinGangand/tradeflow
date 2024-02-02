@@ -1,7 +1,7 @@
 from statsmodels.tsa.ar_model import AutoReg
 import numpy as np
 
-import time_series
+from trade_flow_modelling.src.modelling import time_series
 import utils
 
 def simulate_signs(training_signs, nb_signs_to_simulate, nb_lags=None, verbose=False):
