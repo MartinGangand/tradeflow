@@ -1,28 +1,41 @@
 import numpy as np
+from numpy.fft import fft, ifft
+from scipy import signal
+from typing import List, Literal
+from numbers import Number
+from statsmodels.tools.validation import string_like
 
-print("AUTOCORRELATION")
+from ..utils import general_utils
 
-def autocorrelation_np(x, nb_lags=None):
-    result = np.correlate(x, x, mode="full")
-    if (nb_lags is not None):
-        return result[result.size // 2:][:nb_lags + 1] / float(result.max())
-    else:
-        return result[result.size // 2:] / float(result.max())
+print("AUTOCORRELATION_CALCULATOR")
 
-def autocorrelation_convolution_perso(x, nb_lags=None):
-    assert(nb_lags is None or nb_lags < len(x))
-    autocorrelation_coeffs = []
-    range_upper_bound = (nb_lags + 1) if nb_lags is not None else len(x)
-    for k in range(range_upper_bound):
-        current_autocorrelation_coeff = autocorrelation_lag_k_convolution(x, k)
-        autocorrelation_coeffs.append(current_autocorrelation_coeff)
+class AutocorrelationCalculator:
+    def __init__(self, time_series: List[Number], nb_lags: int | None = None, method: Literal["fft", "direct"] = "fft") -> None:
+        self._time_series = time_series
+        self._init_nb_lags(nb_lags)
+        self._method = string_like(method, "method", optional=False, options=("fft", "direct"))
+
+    def _init_nb_lags(self, nb_lags) -> int:
+        if (nb_lags is not None):
+            self._nb_lags = nb_lags
+        else:
+            self._nb_lags = len(self._time_series) - 1
+        self._check_nb_lags_validity()
+
+    def _check_nb_lags_validity(self) -> None:
+        general_utils.check_condition(
+            self._is_nb_lags_valid(),
+            Exception(f"The number of lags {self._nb_lags} is invalid, it must be < {len(self._time_series)}"))
+        
+    def _is_nb_lags_valid(self) -> bool:
+        return self._nb_lags < len(self._time_series)
     
-    autocorrelation_coeffs = np.array(autocorrelation_coeffs)
-    return np.array(autocorrelation_coeffs) / float(autocorrelation_coeffs.max())
-
-def autocorrelation_lag_k_convolution(x, k):
-    assert(k < len(x))
-    autocorrelation_lag_k_coeff = 0
-    for i in range(len(x) - k):
-        autocorrelation_lag_k_coeff += (x[i] * x[i + k])
-    return autocorrelation_lag_k_coeff
+    def calculate(self) -> List[Number]:
+        acf = signal.correlate(self._time_series, self._time_series, mode="full", method=self._method)
+        acf_normalized =  acf[len(acf) // 2:][:self._nb_lags + 1] / float(acf.max())
+        assert(len(acf_normalized) == self._nb_lags + 1)
+        return acf_normalized
+    
+def calculate_autocorrelation(time_series: List[Number], nb_lags: int | None = None, method: Literal["fft", "direct"] = "fft") -> List[Number]:
+    autocorrelation_calculator = AutocorrelationCalculator(time_series, nb_lags, method)
+    return autocorrelation_calculator.calculate()    

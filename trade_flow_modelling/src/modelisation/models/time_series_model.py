@@ -22,7 +22,7 @@ class TimeSeriesModel(ABC):
         regression: Literal["c", "ct", "ctt", "n"] = "c",
         autolag: Literal["AIC", "BIC", "t-stat"] | None = None,
         verbose: bool = False
-    ):
+    ) -> bool:
         df_test = stattools.adfuller(self._time_series, maxlag=max_lag, regression=regression, autolag=autolag)
         p_value = df_test[1]
 

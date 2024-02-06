@@ -156,6 +156,8 @@ cython_debug/
 .vscode
 trade_flow_modelling/metric_results
 trade_flow_modelling/src/data
+trade_flow_modelling/TODO.txt
+draft
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
