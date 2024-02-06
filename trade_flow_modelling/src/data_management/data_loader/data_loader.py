@@ -1,22 +1,21 @@
 import pyspark.sql.functions as F
 import glob
-
-from utils import pyspark_utils
-from utils import dates_utils
-from utils.dates_utils import DateType
-import settings
 from typing import Literal
+from pyspark.sql import DataFrame
 
-from trade_flow_modelling.src.date_type import date_types
-from trade_flow_modelling.src.utils import dates_utils, general_utils
+from ... import settings
+from ..date_type import date_types
+from ..date_type.date_type import DateType
+from ...modelisation.utils import dates_utils, general_utils, pyspark_utils
 
+print("DATA_LOADER")
 # class DataAgregator():
 #     def __init__(self, project_folder, symbol, extension):
 #         self.project_folder = project_folder
 #         self.symbol = symbol
 #         self.extension = extension
 
-def load_data(symbol, date_type_periodicity: Literal["daily", "monthly"], start_date, end_date, sort_column=["time", "id"]):
+def load_data(symbol, date_type_periodicity: Literal["daily", "monthly"], start_date, end_date, sort_column=["time", "id"]) -> DataFrame:
     date_type = date_types.retrieve_date_type_from_periodicity(date_type_periodicity)
 
     data_folder = settings.symbol_data_folder(date_type.periodicity, symbol)

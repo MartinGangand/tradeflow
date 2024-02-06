@@ -154,7 +154,8 @@ cython_debug/
 
 .DS_Store
 .vscode
-trade_flow_modelling/metric_results/
+trade_flow_modelling/metric_results
+trade_flow_modelling/src/data
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

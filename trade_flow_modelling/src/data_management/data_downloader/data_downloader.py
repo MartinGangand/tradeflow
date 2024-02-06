@@ -3,8 +3,10 @@ import requests
 import zipfile
 from typing import Literal
 
-from trade_flow_modelling.src.date_type import date_types
-from trade_flow_modelling.src import settings
+from ..date_type import date_types
+from  ... import settings
+
+print("DATA_DOWNLOADER")
 
 zip_file_url = lambda periodicity, symbol, date: f"https://data.binance.vision/data/spot/{periodicity}/trades/{symbol}/{symbol}-trades-{date}.zip"
 

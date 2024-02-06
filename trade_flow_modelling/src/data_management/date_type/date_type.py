@@ -31,6 +31,6 @@ class DateType(ABC):
 
     
     @abstractmethod
-    def increment_datetime_by_n_units(datetime_object: datetime, n_units: int):
+    def increment_datetime_by_n_units(self, datetime_object: datetime, n_units: int):
         pass
     

@@ -1,5 +1,9 @@
-from trade_flow_modelling.src.date_type import DateType, DailyDateType, MonthlyDateType
-from trade_flow_modelling.src.utils import general_utils
+from .date_type import DateType
+from .daily_date_type import DailyDateType
+from .monthly_date_type import MonthlyDateType
+from ...modelisation.utils import general_utils
+
+print("DATES TYPES")
 
 date_types = {
     "daily": DailyDateType("daily", "%Y-%m-%d", 10), # YYYY-mm-dd
