@@ -3,6 +3,7 @@ from binance.client import Client
 print("SYMBOLS")
 
 def is_symbol_valid(symbol: str) -> bool:
+    return True
     return symbol in all_symbols
 
 def retrieve_all_symbols() -> set[str]:
@@ -10,4 +11,4 @@ def retrieve_all_symbols() -> set[str]:
     print(f"RETRIEVE ALL SYMBOLS ({len(symbols)})")
     return symbols
 
-all_symbols = retrieve_all_symbols()
+# all_symbols = retrieve_all_symbols()

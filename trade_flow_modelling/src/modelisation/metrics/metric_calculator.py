@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error
 
-from ..time_series_modelling import autocorrelation_calculator
+from ..autocorrelation import autocorrelation_calculator
 from trade_flow_modelling.src import settings
 
 # Metric 1: absolute percentage difference of buy percentage
