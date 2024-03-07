@@ -1,4 +1,4 @@
-print("GENERAL UTILS")
+# print("GENERAL UTILS")
 
 def is_symbol_in_file_path(symbol: str, file_path: str) -> bool:
     return symbol in file_path

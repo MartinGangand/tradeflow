@@ -7,13 +7,14 @@ import statsmodels.api as sm
 import time
 from trade_flow_modelling.src import bis
 import pandas as pd
-from IPython.display import display
+from joblib import Parallel, delayed
+from scipy.optimize import minimize_scalar, minimize
 
 from .time_series_model import TimeSeriesModel
 from ..regression import linear_models
 
 class AutoregressiveModel(TimeSeriesModel):
-    def __init__(self, time_series: List[Number], nb_lags: int | None) -> None:
+    def __init__(self, time_series: List[Number], nb_lags: int | None = None) -> None:
         super().__init__(time_series)
         self._nb_lags = nb_lags
 
@@ -25,23 +26,29 @@ class AutoregressiveModel(TimeSeriesModel):
 
         return simulated_signs, self._nb_lags
 
-    def select_model_nb_lags(self, version: Literal["statsmodels", "opti"]):
+    def select_model_nb_lags(self, version: Literal["statsmodels", "opti", "multi_processes", "scipy_opti_minimize_scalar", "scipy_opti_minimize"], ic: Literal["aic", "bic", "hqic"]= "aic", nb_processes = 8):
         if (self._nb_lags is None):
             match version:
                 case "statsmodels":
                     maxlag = int(np.ceil(12.0 * np.power(len(self._time_series) / 100.0, 1 / 4.0)))
-                    print(f"Max lag has been set to {maxlag} (statsmodels)")
-                    mod = ar_select_order(self._time_series, maxlag=maxlag, ic="aic", trend="c")
-                    return len(mod.ar_lags), []
+                    mod = ar_select_order(self._time_series, maxlag=maxlag, ic=ic, trend="c")
+                    return len(mod.ar_lags)
                 
-                case "statsmodels_bis":
-                    maxlag = int(np.ceil(12.0 * np.power(len(self._time_series) / 100.0, 1 / 4.0)))
-                    print(f"Max lag has been set to {maxlag} (statsmodels_bis)")
-                    mod, times = bis.ar_select_order(self._time_series, maxlag=maxlag, ic="aic", trend="c")
-                    return len(mod.ar_lags), times
                 case "opti":
-                    selected_lags, times = ar_select_order_opti(self._time_series, max_lag=None, ic="aic")
-                    return len(selected_lags) if selected_lags != 0 else 0, times
+                    selected_lags = ar_select_order_opti(self._time_series, max_lag=None, ic=ic)
+                    return len(selected_lags) if selected_lags != (0,) else 0
+                
+                case "multi_processes":
+                    selected_lags, ics = ar_select_order_multi_processes(self._time_series, max_lag=None, ic=ic, nb_processes=nb_processes)
+                    return len(selected_lags) if selected_lags != (0,) else 0
+                
+                case "scipy_opti_minimize_scalar":
+                    nb_lags = ar_select_order_scipy_opti_minimize_scalar(self._time_series, ic=ic)
+                    return nb_lags
+        
+                case "scipy_opti_minimize":
+                    nb_lags = ar_select_order_scipy_opti_minimize(self._time_series, ic=ic)
+                    return nb_lags
         
     def estimate_model_parameters(self) -> List[Number]:
         ar_model = AutoReg(self._time_series, lags=self._nb_lags, trend="c").fit()
@@ -100,7 +107,6 @@ def ar_select_order_opti(y: List[Number], max_lag: int | None = None, ic: Litera
     if (max_lag is None):
         # Schwert (1989)
         max_lag = int(np.ceil(12.0 * np.power(len(y) / 100.0, 1 / 4.0)))
-        print(f"Max lag has been set to {max_lag} (opti)")
 
     x, y = lagmat(y, max_lag, original="sep")
     x = sm.add_constant(x)
@@ -109,38 +115,133 @@ def ar_select_order_opti(y: List[Number], max_lag: int | None = None, ic: Litera
     x_pd = pd.DataFrame(x)
 
     ics = []
-    times = [[], [], [], [], [], [], [], [], []]
     for i in range(max_lag + 1):
-        s_loop = time.time()
-
-        s_selection = time.time()
         x_selection = x_pd.values[:, slice(i + 1)]
-        e_selection = time.time()
 
-        s_ols = time.time()
         ols_model = linear_models.OLS(y, x_selection)
         ols_model.df_model = x_selection.shape[1] - 1
         ols_model.k_constant = 1
-        e_ols = time.time()
 
-        s_fit = time.time()
         res = ols_model.fit()
-        e_fit = time.time()
         
-        s_llf = time.time()
-        res.llf
-        e_llf = time.time()
         lags = tuple(j for j in range(1, i + 1))
         lags = 0 if not lags else lags
         ics.append((lags, res.info_criteria(ic)))
-        e_loop = time.time()
-        
-        times[0].append(e_loop - s_loop)
-        times[1].append(e_fit - s_fit)
-        times[2].append(e_selection - s_selection)
-        times[3].append(e_ols - s_ols)
-        times[4].append(e_llf - s_llf)
     
     selected_tuple = min(ics, key=lambda x: x[1])
     selected_lags = selected_tuple[0]
-    return selected_lags, times
+    return selected_lags
+
+def ar_select_order_multi_processes(y: List[Number], max_lag: int | None, ic: Literal["aic", "bic", "hqic"], nb_processes: int):
+    if (max_lag is None):
+        # Schwert (1989)
+        max_lag = int(np.ceil(12.0 * np.power(len(y) / 100.0, 1 / 4.0)))
+
+    x, y = lagmat(y, max_lag, original="sep")
+    x = sm.add_constant(x)
+    y = y[max_lag:]
+    x = x[max_lag:]
+    x_pd = pd.DataFrame(x)
+
+    slice_indexes_per_process = dispatch_indexes(max_lag, nb_processes)
+
+    results_all_processes = Parallel(n_jobs=nb_processes)(
+        delayed(compute_ic)(x_pd, y, slice_indexes, ic) for slice_indexes in slice_indexes_per_process
+        )
+
+    ics = [current_ic for results_current_process in results_all_processes for current_ic in results_current_process]
+    assert(len(ics) == max_lag + 1)
+
+    selected_tuple = min(ics, key=lambda x: x[1])
+    selected_lags = selected_tuple[0]
+    return selected_lags, ics
+
+def compute_ic(x_pd, y, slice_indexes, ic):
+    results_current_process = []
+    for slice_indexe in slice_indexes:
+        x_selection = x_pd.values[:, slice(slice_indexe)]
+
+        ols_model = linear_models.OLS(y, x_selection)
+        ols_model.df_model = x_selection.shape[1] - 1
+        ols_model.k_constant = 1
+
+        res = ols_model.fit()
+        
+        lags = tuple(j for j in range(1, slice_indexe))
+        lags = (0,) if not lags else lags
+        results_current_process.append((lags, res.info_criteria(ic)))
+    return results_current_process
+
+def dispatch_indexes(max_lag, nb_processes):
+    slice_indexes_per_process = [[] for _ in range(nb_processes)]
+    direction = True
+    for i in range(max_lag + 1):
+        args_idx = i % nb_processes
+        new_args_idx = args_idx if direction else nb_processes - 1 - args_idx
+        direction = direction if args_idx != nb_processes - 1 else not(direction)
+        slice_indexes_per_process[new_args_idx].append(i + 1)
+
+    assert(sum([len(l) for l in slice_indexes_per_process]) == max_lag + 1)
+    return slice_indexes_per_process
+
+def ar_select_order_scipy_opti_minimize_scalar(signs: List[Number], ic: Literal['aic', 'bic', 'hqic'] = "aic"):
+    x_optim = []
+    info_criterias_optim = []
+
+    max_lag = int(np.ceil(12.0 * np.power(len(signs) / 100.0, 1 / 4.0)))
+
+    x, y = lagmat(signs, max_lag, original="sep")
+    x = sm.add_constant(x)
+    y = y[max_lag:]
+    x = x[max_lag:]
+    x_pd = pd.DataFrame(x)
+
+    def objective_function(nb_lags):
+        nb_lags_rounded = round(nb_lags)
+        x_selection = x_pd.values[:, slice(nb_lags_rounded)]
+
+        ols_model = linear_models.OLS(y, x_selection)
+        ols_model.df_model = x_selection.shape[1] - 1
+        ols_model.k_constant = 1
+
+        res = ols_model.fit()
+        info_criteria = res.info_criteria(ic)
+
+        x_optim.append(nb_lags_rounded - 1)
+        info_criterias_optim.append(info_criteria)
+        return info_criteria
+
+    res = minimize_scalar(objective_function, bounds=(1, max_lag + 1), options={"xatol": 1})
+    nb_lags = round(res.x) - 1
+    return nb_lags
+
+def ar_select_order_scipy_opti_minimize(signs: List[Number], ic: Literal['aic', 'bic', 'hqic']):
+    x_optim = []
+    info_criterias_optim = []
+
+    max_lag = int(np.ceil(12.0 * np.power(len(signs) / 100.0, 1 / 4.0)))
+
+    x, y = lagmat(signs, max_lag, original="sep")
+    x = sm.add_constant(x)
+    y = y[max_lag:]
+    x = x[max_lag:]
+    x_pd = pd.DataFrame(x)
+
+    def objective_function(nb_lags):
+        nb_lags_rounded = round(nb_lags[0])
+        x_selection = x_pd.values[:, slice(nb_lags_rounded)]
+
+        ols_model = linear_models.OLS(y, x_selection)
+        ols_model.df_model = x_selection.shape[1] - 1
+        ols_model.k_constant = 1
+
+        res = ols_model.fit()
+        info_criteria = res.info_criteria(ic)
+
+        x_optim.append(nb_lags_rounded - 1)
+        info_criterias_optim.append(info_criteria)
+        return info_criteria
+
+    bound = ((1, max_lag + 1),)
+    res = minimize(objective_function, 1, method="Powell", bounds=bound)
+    return round(res.x[0]) - 1

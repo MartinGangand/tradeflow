@@ -83,27 +83,21 @@ class OLS(RegressionModel):
             # pseudo_inverse = np.linalg.pinv(self._x)
             # pseudo_inverse, singular_values = pinv_extended(self._x)
             pseudo_inverse, self._rank = linalg.pinv(self._x, atol=0, rtol=0, return_rank=True)
-            beta = np.dot(pseudo_inverse, self._y)
+            beta = pseudo_inverse @ self._y
 
-        return OLSResults(self, beta)
+        return OLSResults(self, beta) 
 
     def predict(self, beta: List[Number], x=None) -> List[Number]:
         if x is None:
             x = self._x
 
-        return np.dot(x, beta)
-    
-    def predict_opti(self, beta: List[Number]) -> List[Number]:
-        if (self._prediction is None):
-            return
+        return x @ beta
     
     def residuals(self, beta: List[Number]) -> List[Number]:
         return self._y - self.predict(beta, self._x)
     
     def log_likelihood(self, beta: List[Number]) -> float:
-        s = time.time()
         residuals = self.residuals(beta)
-        e = time.time()
         sigma2 = (1.0 / self._nobs) * self._sum_of_squares(residuals)
         llf = -self._nobs * (np.log(2 * np.pi * sigma2) + 1) / 2
         return llf
