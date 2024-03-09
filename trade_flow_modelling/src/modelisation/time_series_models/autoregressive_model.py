@@ -9,6 +9,7 @@ from trade_flow_modelling.src import bis
 import pandas as pd
 from joblib import Parallel, delayed
 from scipy.optimize import minimize_scalar, minimize
+import mystic as my
 
 from .time_series_model import TimeSeriesModel
 from ..regression import linear_models
@@ -26,7 +27,7 @@ class AutoregressiveModel(TimeSeriesModel):
 
         return simulated_signs, self._nb_lags
 
-    def select_model_nb_lags(self, version: Literal["statsmodels", "opti", "multi_processes", "scipy_opti_minimize_scalar", "scipy_opti_minimize"], ic: Literal["aic", "bic", "hqic"]= "aic", nb_processes = 8):
+    def select_model_nb_lags(self, version: Literal["statsmodels", "opti", "multi_processes", "scipy_opti_minimize_scalar", "scipy_opti_minimize", "mystic_opti", "perso_opti"], ic: Literal["aic", "bic", "hqic"]= "aic", nb_processes = 4):
         if (self._nb_lags is None):
             match version:
                 case "statsmodels":
@@ -48,6 +49,14 @@ class AutoregressiveModel(TimeSeriesModel):
         
                 case "scipy_opti_minimize":
                     nb_lags = ar_select_order_scipy_opti_minimize(self._time_series, ic=ic)
+                    return nb_lags
+                
+                case "mystic_opti":
+                    nb_lags = ar_select_order_mystic_opti(self._time_series, ic=ic)
+                    return nb_lags
+                
+                case "perso_opti":
+                    nb_lags = ar_select_order_perso_opti(self._time_series, ic=ic)
                     return nb_lags
         
     def estimate_model_parameters(self) -> List[Number]:
@@ -184,10 +193,7 @@ def dispatch_indexes(max_lag, nb_processes):
     assert(sum([len(l) for l in slice_indexes_per_process]) == max_lag + 1)
     return slice_indexes_per_process
 
-def ar_select_order_scipy_opti_minimize_scalar(signs: List[Number], ic: Literal['aic', 'bic', 'hqic'] = "aic"):
-    x_optim = []
-    info_criterias_optim = []
-
+def ar_select_order_scipy_opti_minimize_scalar(signs: List[Number], ic: Literal['aic', 'bic', 'hqic']):
     max_lag = int(np.ceil(12.0 * np.power(len(signs) / 100.0, 1 / 4.0)))
 
     x, y = lagmat(signs, max_lag, original="sep")
@@ -196,9 +202,13 @@ def ar_select_order_scipy_opti_minimize_scalar(signs: List[Number], ic: Literal[
     x = x[max_lag:]
     x_pd = pd.DataFrame(x)
 
+    nb_lags_to_ic = {}
     def objective_function(nb_lags):
-        nb_lags_rounded = round(nb_lags)
-        x_selection = x_pd.values[:, slice(nb_lags_rounded)]
+        nb_lags = round(nb_lags)
+        if (nb_lags in nb_lags_to_ic):
+            return nb_lags_to_ic[nb_lags]
+        
+        x_selection = x_pd.values[:, slice(nb_lags)]
 
         ols_model = linear_models.OLS(y, x_selection)
         ols_model.df_model = x_selection.shape[1] - 1
@@ -207,8 +217,7 @@ def ar_select_order_scipy_opti_minimize_scalar(signs: List[Number], ic: Literal[
         res = ols_model.fit()
         info_criteria = res.info_criteria(ic)
 
-        x_optim.append(nb_lags_rounded - 1)
-        info_criterias_optim.append(info_criteria)
+        nb_lags_to_ic[nb_lags] = info_criteria
         return info_criteria
 
     res = minimize_scalar(objective_function, bounds=(1, max_lag + 1), options={"xatol": 1})
@@ -216,9 +225,6 @@ def ar_select_order_scipy_opti_minimize_scalar(signs: List[Number], ic: Literal[
     return nb_lags
 
 def ar_select_order_scipy_opti_minimize(signs: List[Number], ic: Literal['aic', 'bic', 'hqic']):
-    x_optim = []
-    info_criterias_optim = []
-
     max_lag = int(np.ceil(12.0 * np.power(len(signs) / 100.0, 1 / 4.0)))
 
     x, y = lagmat(signs, max_lag, original="sep")
@@ -227,9 +233,13 @@ def ar_select_order_scipy_opti_minimize(signs: List[Number], ic: Literal['aic', 
     x = x[max_lag:]
     x_pd = pd.DataFrame(x)
 
+    nb_lags_to_ic = {}
     def objective_function(nb_lags):
-        nb_lags_rounded = round(nb_lags[0])
-        x_selection = x_pd.values[:, slice(nb_lags_rounded)]
+        nb_lags = round(nb_lags[0])
+        if (nb_lags in nb_lags_to_ic):
+            return nb_lags_to_ic[nb_lags]
+        
+        x_selection = x_pd.values[:, slice(nb_lags)]
 
         ols_model = linear_models.OLS(y, x_selection)
         ols_model.df_model = x_selection.shape[1] - 1
@@ -238,10 +248,80 @@ def ar_select_order_scipy_opti_minimize(signs: List[Number], ic: Literal['aic', 
         res = ols_model.fit()
         info_criteria = res.info_criteria(ic)
 
-        x_optim.append(nb_lags_rounded - 1)
-        info_criterias_optim.append(info_criteria)
+        nb_lags_to_ic[nb_lags] = info_criteria
         return info_criteria
 
     bound = ((1, max_lag + 1),)
-    res = minimize(objective_function, 1, method="Powell", bounds=bound)
+    res = minimize(objective_function, (max_lag + 1) // 2, method="Powell", bounds=bound, tol=1)
     return round(res.x[0]) - 1
+
+def ar_select_order_mystic_opti(signs: List[Number], ic: Literal['aic', 'bic', 'hqic']):
+    max_lag = int(np.ceil(12.0 * np.power(len(signs) / 100.0, 1 / 4.0)))
+
+    x, y = lagmat(signs, max_lag, original="sep")
+    x = sm.add_constant(x)
+    y = y[max_lag:]
+    x = x[max_lag:]
+    x_pd = pd.DataFrame(x)
+
+    nb_lags_to_ic = {}
+    def objective_function(nb_lags):
+        nb_lags = nb_lags[0]
+        if (nb_lags in nb_lags_to_ic):
+            return nb_lags_to_ic[nb_lags]
+        
+        x_selection = x_pd.values[:, slice(nb_lags)]
+
+        ols_model = linear_models.OLS(y, x_selection)
+        ols_model.df_model = x_selection.shape[1] - 1
+        ols_model.k_constant = 1
+
+        res = ols_model.fit()
+        info_criteria = res.info_criteria(ic)
+
+        nb_lags_to_ic[nb_lags] = info_criteria
+        return info_criteria
+     
+    integer_constraint = my.constraints.integers()(lambda x:x)
+    result = my.solvers.fmin(objective_function, [(max_lag + 1) // 2], bounds=[(1, max_lag + 1)], xtol=1, constraints=integer_constraint, disp=False)
+    return round(result[0]) - 1
+
+def ar_select_order_perso_opti(signs: List[Number], ic: Literal['aic', 'bic', 'hqic']):
+    max_lag = int(np.ceil(12.0 * np.power(len(signs) / 100.0, 1 / 4.0)))
+
+    x, y = lagmat(signs, max_lag, original="sep")
+    x = sm.add_constant(x)
+    y = y[max_lag:]
+    x = x[max_lag:]
+    x_pd = pd.DataFrame(x)
+
+    def objective_function(nb_lags):        
+        x_selection = x_pd.values[:, slice(nb_lags)]
+
+        ols_model = linear_models.OLS(y, x_selection)
+        ols_model.df_model = x_selection.shape[1] - 1
+        ols_model.k_constant = 1
+
+        res = ols_model.fit()
+        info_criteria = res.info_criteria(ic)
+
+        return info_criteria
+    
+    nb_cons_el = 5
+    ics = []
+    nb_lags = 1
+    is_terminal_cond_reached = False
+    while (nb_lags <= max_lag + 1 and not is_terminal_cond_reached):
+        current_ic = objective_function(nb_lags)
+
+        ics.append((nb_lags - 1, current_ic))
+        if (len(ics) >= nb_cons_el):
+            for i in range(1, nb_cons_el + 1):
+                if (ics[-i][1] <= ics[-i-1][1]):
+                    break
+                elif (i == nb_cons_el):
+                    is_terminal_cond_reached = False
+                    break
+        nb_lags += 1
+
+    return min(ics, key=lambda x: x[1])[0]
