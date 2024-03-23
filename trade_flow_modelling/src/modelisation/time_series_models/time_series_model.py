@@ -28,8 +28,8 @@ class TimeSeriesModel(ABC):
 
         if (verbose):
             print(f"Test Statistic: {df_test[0]}")
-            print(f"p-value: {df_test[1]}")
-            print(f"#Lags Used: {df_test[2]}")
+            print(f"p-value: {p_value}")
+            print(f"# Lags Used: {df_test[2]}")
             print(f"Number of Observations Used: {df_test[3]}")
 
             for key, value in df_test[4].items():

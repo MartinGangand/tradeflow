@@ -157,6 +157,7 @@ cython_debug/
 trade_flow_modelling/metric_results
 trade_flow_modelling/src/data
 trade_flow_modelling/TODO.txt
+trade_flow_modelling/src/notebooks/key_to_nb_lags_info
 draft
 
 # PyCharm
