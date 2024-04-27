@@ -8,10 +8,10 @@ import pandas as pd
 from joblib import Parallel, delayed
 import mystic as my
 
-from .time_series_model import TimeSeriesModel
-from ..regression import linear_models
+from .TimeSeriesModel import TimeSeriesModel
+from ...regression.src.linear_models.OLS import OLS
 
-class AutoregressiveModel(TimeSeriesModel):
+class ARModel(TimeSeriesModel):
     def __init__(self, time_series: List[Number], nb_lags: int | None = None) -> None:
         super().__init__(time_series)
         self._nb_lags = nb_lags
@@ -28,8 +28,8 @@ class AutoregressiveModel(TimeSeriesModel):
         if (self._nb_lags is None):
             match version:
                 case "statsmodels":
-                    maxlag = int(np.ceil(12.0 * np.power(len(self._time_series) / 100.0, 1 / 4.0)))
-                    mod = ar_select_order(self._time_series, maxlag=maxlag, ic=ic, trend="c")
+                    max_lag = int(np.ceil(12.0 * np.power(len(self._time_series) / 100.0, 1 / 4.0)))
+                    mod = ar_select_order(self._time_series, maxlag=max_lag, ic=ic, trend="c")
                     return len(mod.ar_lags)
                 
                 case "opti":
@@ -37,14 +37,13 @@ class AutoregressiveModel(TimeSeriesModel):
                     return len(selected_lags) if selected_lags != (0,) else 0
                 
                 case "multi_processes":
-                    selected_lags, ics = ar_select_order_multi_processes(self._time_series, max_lag=None, ic=ic, nb_processes=nb_processes)
+                    selected_lags = ar_select_order_multi_processes(self._time_series, max_lag=None, ic=ic, nb_processes=nb_processes)
                     return len(selected_lags) if selected_lags != (0,) else 0
                 
                 case "mystic_opti":
                     nb_lags = ar_select_order_mystic_opti(self._time_series, ic=ic, init_pct=init_pct)
                     return nb_lags
                 
-       
     def estimate_model_parameters(self) -> List[Number]:
         ar_model = AutoReg(self._time_series, lags=self._nb_lags, trend="c").fit()
         return ar_model.params
@@ -94,7 +93,7 @@ class AutoregressiveModel(TimeSeriesModel):
         return 1 if np.random.uniform() <= proba_to_buy else -1
     
 def simulate_signs(time_series: List[Number], nb_lags: int | None, size: int) -> Tuple[List[Number], int]:
-    autoregressive_model = AutoregressiveModel(time_series, nb_lags)
+    autoregressive_model = ARModel(time_series, nb_lags)
     simulated_signs, nb_lags = autoregressive_model.simulate(size)
     return simulated_signs, nb_lags
 
@@ -113,7 +112,7 @@ def ar_select_order_opti(y: List[Number], max_lag: int | None = None, ic: Litera
     for i in range(max_lag + 1):
         x_selection = x_pd.values[:, slice(i + 1)]
 
-        ols_model = linear_models.OLS(y, x_selection)
+        ols_model = OLS(y, x_selection)
         ols_model.df_model = x_selection.shape[1] - 1
         ols_model.k_constant = 1
 
@@ -149,14 +148,14 @@ def ar_select_order_multi_processes(y: List[Number], max_lag: int | None, ic: Li
 
     selected_tuple = min(ics, key=lambda x: x[1])
     selected_lags = selected_tuple[0]
-    return selected_lags, ics
+    return selected_lags
 
 def compute_ic(x_pd, y, slice_indexes, ic):
     results_current_process = []
     for slice_indexe in slice_indexes:
         x_selection = x_pd.values[:, slice(slice_indexe)]
 
-        ols_model = linear_models.OLS(y, x_selection)
+        ols_model = OLS(y, x_selection)
         ols_model.df_model = x_selection.shape[1] - 1
         ols_model.k_constant = 1
 
@@ -197,7 +196,7 @@ def ar_select_order_mystic_opti(signs: List[Number], ic: Literal['aic', 'bic', '
         
         x_selection = x_pd.values[:, slice(nb_lags)]
 
-        ols_model = linear_models.OLS(y, x_selection)
+        ols_model = OLS(y, x_selection)
         ols_model.df_model = x_selection.shape[1] - 1
         ols_model.k_constant = 1
 

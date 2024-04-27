@@ -3,7 +3,7 @@ from typing import List, Literal, Tuple
 from numbers import Number
 import statsmodels.tsa.stattools as stattools
 
-from ..utils import general_utils
+from ...utils.src import general_utils
 
 class TimeSeriesModel(ABC):
     def __init__(self, time_series: List[Number]) -> None:
