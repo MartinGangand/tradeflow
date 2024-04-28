@@ -6,6 +6,7 @@ class NbLagsSelectionMethod(Enum):
     IC_CUSTOM_OLS = "ic_custom_OLS"
     IC_MULTI_PROCESSES = "ic_multi_processes"
     IC_MYSTIC_OPTI = "ic_mystic_opti"
+    PACF = "pacf"
     
 class InformationCriteria(Enum):
     AIC = "aic"

@@ -15,7 +15,7 @@ class OLS(RegressionModel):
         super().__init__(y=y, x=x)
         
     def fit(self, method: Literal["pinv"]):
-        method = general_utils.check_enum_value_is_valid(enum=OLSMethod, value=method)
+        method = general_utils.check_enum_value_is_valid(enum=OLSMethod, value=method, is_none_valid=False)
         match method:
             case OLSMethod.PINV.value:
                 pseudo_inverse, self._rank = linalg.pinv(self._x, atol=0, rtol=0, return_rank=True)
@@ -83,8 +83,8 @@ class OLSResults:
             self._llf = self._model.log_likelihood(self.beta)
         return self._llf
 
-    def info_criteria(self, criteria: str) -> float:
-        criteria = general_utils.check_enum_value_is_valid(enum=InformationCriteria, value=criteria)
+    def info_criteria(self, criteria: Literal["aic", "bic", "hqic"]) -> float:
+        criteria = general_utils.check_enum_value_is_valid(enum=InformationCriteria, value=criteria, is_none_valid=False)
         match criteria:
             case InformationCriteria.AIC.value:
                 return eval_measures.aic(self.llf, self.nobs, self.df_model_with_cst)

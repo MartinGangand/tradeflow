@@ -1,6 +1,7 @@
 from numbers import Number
 from typing import List, Literal
 from statsmodels.tsa.tsatools import lagmat
+from statsmodels.tsa.stattools import pacf
 import statsmodels.api as sm
 import pandas as pd
 from joblib import Parallel, delayed
@@ -9,6 +10,7 @@ import mystic as my
 
 from ....regression.src.linear_models.OLS import OLS
 from ....constants.src.constants import OLSMethod
+from ....utils.src import general_utils
 
 # Information criterion (statsmodels)
 def ar_select_order_ic_statsmodels(time_series: List[Number], max_nb_lags: int, criteria: Literal["aic", "bic", "hqic"]) -> int:
@@ -122,3 +124,23 @@ def ar_select_order_mystic_optimization(time_series: List[Number], max_nb_lags: 
     result = my.solvers.fmin(cost=objective_function, x0=[0], bounds=[(1, max_nb_lags + 1)], xtol=0.5, maxiter=max_nb_lags + 1, constraints=integer_constraint, disp=False)
     
     return int(result[0]) - 1
+
+
+# Partial autocorrelation function
+def ar_select_order_pacf(time_series: List[Number], max_nb_lags: int, alpha: float) -> int:
+    acf_coeffs, confidence_interval = pacf(x=time_series, nlags=max_nb_lags, method="burg", alpha=alpha)
+
+    acf_coeffs = acf_coeffs[1:]
+    confidence_interval = confidence_interval[1:]
+
+    lower_band = confidence_interval[:, 0] - acf_coeffs
+    upper_band = confidence_interval[:, 1] - acf_coeffs
+
+    ar_model_order = 0
+    for acf_coeff, value_lower_band, value_upper_band in zip(acf_coeffs, lower_band, upper_band):
+        if (general_utils.isValueWithinIntervalExclusive(lower_bound=value_lower_band, upper_bound=value_upper_band, value=acf_coeff)):
+            return ar_model_order
+        ar_model_order += 1
+
+    # If no lags within [1, max_nb_lags] are in the band, set max_nb_lags 2 * max_nb_lags and compute again the number of lags
+    return ar_select_order_pacf(time_series=time_series, max_nb_lags=max_nb_lags*2, alpha=alpha)
