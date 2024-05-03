@@ -53,3 +53,4 @@ class ARModel(TimeSeriesModel):
         max_nb_lags = int(np.ceil(12.0 * np.power(len(self._time_series) / 100.0, 1 / 4.0)))
         logger.info(f"The maximun number of lags has been set to {max_nb_lags} (Schwert 1989)")
         return max_nb_lags
+    
