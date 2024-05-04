@@ -2,7 +2,6 @@ from numbers import Number
 from typing import List, Literal
 from statsmodels.tsa.tsatools import lagmat
 from statsmodels.tsa.stattools import pacf
-import statsmodels.api as sm
 import pandas as pd
 from joblib import Parallel, delayed
 from statsmodels.tsa.ar_model import ar_select_order
@@ -10,16 +9,16 @@ import mystic as my
 
 from ....regression.src.linear_models.OLS import OLS
 from ....constants.src.constants import OLSMethod
-from ....utils.src import general_utils
+from ....utils.src.general_utils import isValueWithinIntervalExclusive
 
 # Information criterion (statsmodels)
-def ar_select_order_ic_statsmodels(time_series: List[Number], max_nb_lags: int, criteria: Literal["aic", "bic", "hqic"]) -> int:
-    model = ar_select_order(endog=time_series, maxlag=max_nb_lags, ic=criteria, trend="n")
+def ar_select_order_ic_statsmodels(time_series: List[Number], max_nb_lags: int, criterion: Literal["aic", "bic", "hqic"]) -> int:
+    model = ar_select_order(endog=time_series, maxlag=max_nb_lags, ic=criterion, trend="n")
     return len(model.ar_lags)
 
 
 # Information criterion (custom OLS)
-def ar_select_order_ic_custom_ols(time_series: List[Number], max_nb_lags: int, criteria: Literal["aic", "bic", "hqic"]) -> int:
+def ar_select_order_ic_custom_ols(time_series: List[Number], max_nb_lags: int, criterion: Literal["aic", "bic", "hqic"]) -> int:
     x, y = lagmat(time_series, max_nb_lags, original="sep")
     y = y[max_nb_lags:]
     x = x[max_nb_lags:]
@@ -37,7 +36,7 @@ def ar_select_order_ic_custom_ols(time_series: List[Number], max_nb_lags: int, c
         res = ols_model.fit(method=OLSMethod.PINV.value)
         
         lags = tuple(j for j in range(1, current_nb_lags + 1))
-        ics.append((lags, res.info_criteria(criteria=criteria)))
+        ics.append((lags, res.info_criterion(criterion=criterion)))
     
     selected_tuple = min(ics, key=lambda x: x[1])
     selected_lags = selected_tuple[0]
@@ -45,7 +44,7 @@ def ar_select_order_ic_custom_ols(time_series: List[Number], max_nb_lags: int, c
 
 
 # Information criterion (multi processes)
-def ar_select_order_ic_multi_processes(time_series: List[Number], max_nb_lags: int, criteria: Literal["aic", "bic", "hqic"], nb_processes: int) -> int:
+def ar_select_order_ic_multi_processes(time_series: List[Number], max_nb_lags: int, criterion: Literal["aic", "bic", "hqic"], nb_processes: int) -> int:
     x, y = lagmat(time_series, max_nb_lags, original="sep")
     y = y[max_nb_lags:]
     x = x[max_nb_lags:]
@@ -54,7 +53,7 @@ def ar_select_order_ic_multi_processes(time_series: List[Number], max_nb_lags: i
     slice_indexes_per_process = dispatch_indexes(max_nb_lags=max_nb_lags, nb_processes=nb_processes)
 
     result_all_processes = Parallel(n_jobs=nb_processes)(
-        delayed(compute_ic)(x_pd=x_pd, y=y, slice_indexes=slice_indexes, criteria=criteria) for slice_indexes in slice_indexes_per_process
+        delayed(compute_ic)(x_pd=x_pd, y=y, slice_indexes=slice_indexes, criterion=criterion) for slice_indexes in slice_indexes_per_process
         )
 
     ics = [current_ic for results_current_process in result_all_processes for current_ic in results_current_process]
@@ -64,7 +63,7 @@ def ar_select_order_ic_multi_processes(time_series: List[Number], max_nb_lags: i
     selected_lags = selected_tuple[0]
     return len(selected_lags) if selected_lags != (0,) else 0
 
-def compute_ic(x_pd, y, slice_indexes, criteria):
+def compute_ic(x_pd: pd.DataFrame, y: List[Number], slice_indexes: List[int], criterion: Literal['aic', 'bic', 'hqic']):
     result_current_process = []
     for current_nb_lags in slice_indexes:
         x_selection = x_pd.values[:, slice(current_nb_lags)]
@@ -77,10 +76,10 @@ def compute_ic(x_pd, y, slice_indexes, criteria):
         res = ols_model.fit(method=OLSMethod.PINV.value)
         
         lags = tuple(j for j in range(1, current_nb_lags + 1))
-        result_current_process.append((lags, res.info_criteria(criteria=criteria)))
+        result_current_process.append((lags, res.info_criterion(criterion=criterion)))
     return result_current_process
 
-def dispatch_indexes(max_nb_lags, nb_processes) -> List[List[int]]:
+def dispatch_indexes(max_nb_lags: int, nb_processes: int) -> List[List[int]]:
     slice_indexes_per_process = [[] for _ in range(nb_processes)]
     direction = True
     for i in range(max_nb_lags):
@@ -94,7 +93,7 @@ def dispatch_indexes(max_nb_lags, nb_processes) -> List[List[int]]:
 
 
 # Information criterion (optimization with mystic)
-def ar_select_order_mystic_optimization(time_series: List[Number], max_nb_lags: int, criteria: Literal['aic', 'bic', 'hqic']) -> int:
+def ar_select_order_mystic_optimization(time_series: List[Number], max_nb_lags: int, criterion: Literal['aic', 'bic', 'hqic']) -> int:
     x, y = lagmat(time_series, max_nb_lags, original="sep")
     y = y[max_nb_lags:]
     x = x[max_nb_lags:]
@@ -114,10 +113,10 @@ def ar_select_order_mystic_optimization(time_series: List[Number], max_nb_lags: 
         ols_model.k_constant = 0
 
         res = ols_model.fit(method=OLSMethod.PINV.value)
-        info_criteria = res.info_criteria(criteria=criteria)
+        info_criterion = res.info_criterion(criterion=criterion)
         
-        nb_lags_to_ic[nb_lags] = info_criteria
-        return info_criteria
+        nb_lags_to_ic[nb_lags] = info_criterion
+        return info_criterion
      
     integer_constraint = my.constraints.integers()(lambda x: x)
     result = my.solvers.fmin(cost=objective_function, x0=[1], bounds=[(1, max_nb_lags + 1)], xtol=0.5, maxiter=max_nb_lags + 1, constraints=integer_constraint, disp=False)
@@ -137,7 +136,7 @@ def ar_select_order_pacf(time_series: List[Number], max_nb_lags: int, alpha: flo
 
     ar_model_order = 0
     for acf_coeff, value_lower_band, value_upper_band in zip(acf_coeffs, lower_band, upper_band):
-        if (general_utils.isValueWithinIntervalExclusive(lower_bound=value_lower_band, upper_bound=value_upper_band, value=acf_coeff)):
+        if (isValueWithinIntervalExclusive(lower_bound=value_lower_band, upper_bound=value_upper_band, value=acf_coeff)):
             return ar_model_order
         ar_model_order += 1
 

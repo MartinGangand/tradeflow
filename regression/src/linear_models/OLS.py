@@ -7,19 +7,22 @@ from numbers import Number
 from statsmodels.tools import eval_measures
 
 from .RegressionModel import RegressionModel
-from ....constants.src.constants import InformationCriteria, OLSMethod
-from ....utils.src import general_utils
+from ....constants.src.constants import InformationCriterion, OLSMethod
+from ....utils.src.general_utils import check_enum_value_is_valid, get_valid_enum_values
+from ....exceptions.src.custom_exceptions import IllegalValueException
 
 class OLS(RegressionModel):
     def __init__(self, y: List[Number], x: List[List[Number]]) -> None:
         super().__init__(y=y, x=x)
         
     def fit(self, method: Literal["pinv"]):
-        method = general_utils.check_enum_value_is_valid(enum=OLSMethod, value=method, is_none_valid=False)
+        method = check_enum_value_is_valid(enum=OLSMethod, value=method, is_none_valid=False)
         match method:
-            case OLSMethod.PINV.value:
+            case OLSMethod.PINV:
                 pseudo_inverse, self._rank = linalg.pinv(self._x, atol=0, rtol=0, return_rank=True)
                 beta = pseudo_inverse @ self._y
+            case _:
+                raise IllegalValueException(f"The method '{method}' for the OLS fit is not valid, it must be among {list(get_valid_enum_values(enum=OLSMethod).keys())}.")
         # TODO: QR method
 
         return OLSResults(self, beta) 
@@ -83,12 +86,14 @@ class OLSResults:
             self._llf = self._model.log_likelihood(self.beta)
         return self._llf
 
-    def info_criteria(self, criteria: Literal["aic", "bic", "hqic"]) -> float:
-        criteria = general_utils.check_enum_value_is_valid(enum=InformationCriteria, value=criteria, is_none_valid=False)
-        match criteria:
-            case InformationCriteria.AIC.value:
+    def info_criterion(self, criterion: Literal["aic", "bic", "hqic"]) -> float:
+        criterion = check_enum_value_is_valid(enum=InformationCriterion, value=criterion, is_none_valid=False)
+        match criterion:
+            case InformationCriterion.AIC:
                 return eval_measures.aic(self.llf, self.nobs, self.df_model_with_cst)
-            case InformationCriteria.BIC.value:
+            case InformationCriterion.BIC:
                 return eval_measures.bic(self.llf, self.nobs, self.df_model_with_cst)
-            case InformationCriteria.HQIC.value:
+            case InformationCriterion.HQIC:
                 return eval_measures.hqic(self.llf, self.nobs, self.df_model_with_cst)
+            case _:
+                raise IllegalValueException(f"The information criterion '{criterion}' is not valid, it must be among {list(get_valid_enum_values(enum=InformationCriterion).keys())}.")

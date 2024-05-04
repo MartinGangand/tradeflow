@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import List, Literal, Tuple
+from typing import List, Literal
 from numbers import Number
 import statsmodels.tsa.stattools as stattools
 
-from ...utils.src import general_utils
+from ...utils.src.general_utils import check_condition
 
 class TimeSeriesModel(ABC):
     def __init__(self, time_series: List[Number]) -> None:
         self._time_series = time_series
 
     def check_time_series_stationarity(self, nb_lags: int) -> None:
-        general_utils.check_condition(
+        check_condition(
             self.is_time_series_stationary(max_lag=nb_lags),
-            Exception("The time series must be stationary in order to simulate signs")
+            Exception("The time series must be stationary in order to simulate signs.")
         )
 
     def is_time_series_stationary(
@@ -37,3 +37,6 @@ class TimeSeriesModel(ABC):
 
         return p_value <= significance_level
     
+    @abstractmethod
+    def fit(self, method: str) -> List[Number]:
+        pass
