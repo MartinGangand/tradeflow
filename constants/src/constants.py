@@ -1,17 +1,42 @@
 from enum import Enum
 import logging
 
-class NbLagsSelectionMethod(Enum):
-    IC_STATSMODELS = "ic_statsmodels"
-    IC_CUSTOM_OLS = "ic_custom_OLS"
-    IC_MULTI_PROCESSES = "ic_multi_processes"
-    IC_MYSTIC_OPTI = "ic_mystic_opti"
-    PACF = "pacf"
+class OrderSelectionMethodAR(Enum):        
+    IC_STATSMODELS = "ic_statsmodels", True
+    IC_CUSTOM_OLS = "ic_custom_OLS", True
+    IC_MULTI_PROCESSES = "ic_multi_processes", True
+    IC_MYSTIC_OPTI = "ic_mystic_opti", True
+    PACF = "pacf", False
+
+    def __new__(cls, *args, **kwds):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
     
-class InformationCriteria(Enum):
+    def __init__(self, _: str, requires_ic: bool) -> None:
+        self._requires_ic_ = requires_ic
+
+    def __str__(self) -> str:
+        return self._value_
+
+    @property
+    def requires_ic(self) -> bool:
+        return self._requires_ic_
+
+class FitMethodAR(Enum):
+    STATSMODELS_OLS = "statsmodels_ols"
+    YULE_WALKER = "yule_walker"
+    
+    def __str__(self) -> str:
+        return self._value_
+
+class InformationCriterion(Enum):
     AIC = "aic"
     BIC = "bic"
     HQIC = "hqic"
+
+    def __str__(self) -> str:
+        return self._value_
 
 class OLSMethod(Enum):
     PINV = "pinv"

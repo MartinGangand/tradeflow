@@ -4,7 +4,7 @@ from numbers import Number
 import numpy as np
 from statsmodels.tools.validation import array_like
 
-from ....utils.src import general_utils
+from ....utils.src.general_utils import check_condition
 from ....exceptions.src.custom_exceptions import IllegalValueException
 
 class RegressionModel(ABC):
@@ -31,7 +31,7 @@ class RegressionModel(ABC):
     
     @df_model.setter
     def df_model(self, df_model: int) -> None:
-        general_utils.check_condition(df_model >= 0, IllegalValueException("The model degree of freedom df_model must be greater than or equal to 0"))
+        check_condition(df_model >= 0, IllegalValueException("The model degree of freedom df_model must be greater than or equal to 0."))
         self._df_model = df_model
     
     @property
@@ -42,7 +42,7 @@ class RegressionModel(ABC):
     
     @rank.setter
     def rank(self, rank: int) -> None:
-        general_utils.check_condition(rank >= 0, IllegalValueException("The rank must be greater than or equal to 0"))
+        check_condition(rank >= 0, IllegalValueException("The rank must be greater than or equal to 0."))
         self._rank = rank
     
     @property
@@ -54,7 +54,7 @@ class RegressionModel(ABC):
     @k_constant.setter
     def k_constant(self, k_constant: int) -> None:
         k_constant_cond = k_constant == 0 or k_constant == 1
-        general_utils.check_condition(k_constant_cond, IllegalValueException("The number of constant must be either 0 or 1"))
+        check_condition(k_constant_cond, IllegalValueException("The number of constant must be either 0 or 1."))
         self._k_constant = k_constant
 
     def _sum_of_squares(self, x: List[Number]) -> float:
