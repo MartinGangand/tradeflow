@@ -5,3 +5,7 @@ class EnumValueException(Exception):
 class IllegalValueException(Exception):
     "Raised when a value is not in a valid state"
     pass
+
+class ModelNotFittedException(Exception):
+    "Raised when the model need the parameters but it has not been fitted"
+    pass
