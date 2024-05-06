@@ -3,6 +3,7 @@ import logging
 
 class OrderSelectionMethodAR(Enum):        
     IC_STATSMODELS = "ic_statsmodels", True
+    IC_STATSMODELS_WITH_CST = "ic_statsmodels_with_cst", True
     IC_CUSTOM_OLS = "ic_custom_OLS", True
     IC_MULTI_PROCESSES = "ic_multi_processes", True
     IC_MYSTIC_OPTI = "ic_mystic_opti", True
@@ -25,6 +26,7 @@ class OrderSelectionMethodAR(Enum):
 
 class FitMethodAR(Enum):
     STATSMODELS_OLS = "statsmodels_ols"
+    STATSMODELS_OLS_WITH_CST = "statsmodels_ols_with_cst"
     YULE_WALKER = "yule_walker"
     
     def __str__(self) -> str:

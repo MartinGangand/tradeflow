@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import List, Literal
 from numbers import Number
@@ -38,5 +40,9 @@ class TimeSeriesModel(ABC):
         return p_value <= significance_level
     
     @abstractmethod
-    def fit(self, method: str) -> List[Number]:
+    def fit(self, method: str) -> TimeSeriesModel:
+        pass
+
+    @abstractmethod
+    def simulate(self, size: int) -> List[Number]:
         pass
