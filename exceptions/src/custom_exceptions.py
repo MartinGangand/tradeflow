@@ -9,3 +9,7 @@ class IllegalValueException(Exception):
 class ModelNotFittedException(Exception):
     "Raised when the model need the parameters but it has not been fitted"
     pass
+
+class ModelNotSimulatedException(Exception):
+    "Raised when the model need the simulated time series but it has not been simulated"
+    pass

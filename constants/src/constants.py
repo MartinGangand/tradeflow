@@ -40,6 +40,13 @@ class InformationCriterion(Enum):
     def __str__(self) -> str:
         return self._value_
 
+class CorrelationFunction(Enum):
+    ACF = "acf"
+    PACF = "pacf"
+
+    def __str__(self) -> str:
+        return self._value_
+
 class OLSMethod(Enum):
     PINV = "pinv"
 
