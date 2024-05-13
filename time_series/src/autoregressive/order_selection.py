@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 from statsmodels.tsa.ar_model import ar_select_order
 import mystic as my
 
-from ....regression.src.linear_models.OLS import OLS
+from ....regression.src.linear_models.ols import OLS
 from ....constants.src.constants import OLSMethod
 from ....utils.src.general_utils import isValueWithinIntervalExclusive
 
@@ -119,7 +119,7 @@ def ar_select_order_mystic_optimization(time_series: List[Number], max_order: in
         return info_criterion
      
     integer_constraint = my.constraints.integers()(lambda x: x)
-    result = my.solvers.fmin(cost=objective_function, x0=[1], bounds=[(1, max_order + 1)], xtol=0.5, maxiter=max_order + 1, constraints=integer_constraint, disp=False)
+    result = my.solvers.fmin(cost=objective_function, x0=[1], bounds=[(1, max_order)], xtol=0.5, maxiter=max_order, constraints=integer_constraint, disp=False)
     
     return int(result[0])
 
