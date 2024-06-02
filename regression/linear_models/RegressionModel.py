@@ -4,8 +4,8 @@ from numbers import Number
 import numpy as np
 from statsmodels.tools.validation import array_like
 
-from ....utils.src.general_utils import check_condition
-from ....exceptions.src.custom_exceptions import IllegalValueException
+from ...utils.general_utils import check_condition
+from ...exceptions.custom_exceptions import IllegalValueException
 
 class RegressionModel(ABC):
     def __init__(self, y: List[Number], x: List[List[Number]]) -> None:
