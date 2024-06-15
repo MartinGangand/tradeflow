@@ -1,20 +1,18 @@
-import sys
 import logging
+import sys
 
-from ...constants.src.constants import Logger
+from ..constants.constants import Logger
 
-logging.basicConfig(filename="/Users/martingangand/Documents/dev/TradeFlowModelling/utils/src/TradeFlowModelling.log",
-                    filemode="w",
-                    format=Logger.FORMAT,
-                    level=Logger.LEVEL
-                    )
+logging.basicConfig(format=Logger.FORMAT, level=Logger.LEVEL)
+
 
 def get_logger(name: str, print_to_stdout=True) -> logging.Logger:
     logger = logging.getLogger(name)
-    if (print_to_stdout):
+    if print_to_stdout:
         handler = create_stdout_handler()
         logger.addHandler(handler)
     return logger
+
 
 def create_stdout_handler() -> logging.StreamHandler:
     handler = logging.StreamHandler(sys.stdout)

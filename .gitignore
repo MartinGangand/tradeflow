@@ -161,5 +161,9 @@ cython_debug/
 .DS_Store
 .vscode
 
+.idea
+
 data
 notebooks
+draft_trade_flow
+TODO.txt
