@@ -8,7 +8,8 @@ from statsmodels.tsa.ar_model import ar_select_order, AutoReg
 
 from ..time_series import TimeSeries
 from ...constants.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
-from ...exceptions.custom_exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException
+from ...exceptions.custom_exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
+    NonStationaryTimeSeriesException
 from ...utils import logger_utils
 from ...utils.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
     is_value_within_interval_exclusive
@@ -92,17 +93,18 @@ class AR(TimeSeries):
         method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method",
                                            is_none_valid=False)
         self._select_order()
-        check_condition(self._is_time_series_stationary(order=self._order), Exception("The time series must be stationary."))
 
         match method:
             case FitMethodAR.YULE_WALKER:
+                check_condition(self._is_time_series_stationary(regression="n"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
                 self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
             case FitMethodAR.OLS_WITH_CST:
+                check_condition(self._is_time_series_stationary(regression="c"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
                 ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
                 self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
             case _:
                 raise IllegalValueException(
-                    f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum=FitMethodAR)}.")
+                    f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
 
         logger.info(f"The AR({self._order}) model has been fitted with method '{method}'.")
         return self
@@ -135,7 +137,7 @@ class AR(TimeSeries):
                     self._order = order
                 case _:
                     raise IllegalValueException(
-                        f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum=OrderSelectionMethodAR)}")
+                        f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
 
         logger.info(
             f"AR order selection: {self._order} lags (method: {self._order_selection_method}, information criterion: {self._information_criterion}, time series length: {len(self._signs)}).")

@@ -13,8 +13,11 @@ from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tools.validation import bool_like
 from statsmodels.tsa.stattools import acf, pacf
 
+from ..utils import logger_utils
 from ..exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException, ModelNotSimulatedException
 from ..utils.general_utils import check_condition
+
+logger = logger_utils.get_logger(__name__)
 
 
 class TimeSeries(ABC):
@@ -102,27 +105,13 @@ class TimeSeries(ABC):
                         exception=IllegalValueException(f"Alpha {alpha} is invalid, it must be in the interval [0, 1]"))
         return pacf(x=signs, nlags=nb_lags, method="burg", alpha=alpha)
 
-    def _is_time_series_stationary(
-        self,
-        significance_level: float = 0.05,
-        order: Optional[int] = None,
-        regression: Literal["c", "ct", "ctt", "n"] = "c",
-        autolag: Optional[Literal["AIC", "BIC", "t-stat"]] = None,
-        verbose: bool = False
-    ) -> bool:
-        df_test = stattools.adfuller(x=self._signs, maxlag=order, regression=regression, autolag=autolag)
+    def _is_time_series_stationary(self, significance_level: float = 0.05, regression: Literal["c", "ct", "ctt", "n"] = "c") -> bool:
+        df_test = stattools.adfuller(x=self._signs, maxlag=self._order, regression=regression, autolag=None)
         p_value = df_test[1]
 
-        if verbose:
-            print(f"Test Statistic: {df_test[0]}")
-            print(f"p-value: {p_value}")
-            print(f"# Lags Used: {df_test[2]}")
-            print(f"Number of Observations Used: {df_test[3]}")
-
-            for key, value in df_test[4].items():
-                print(f"Critical Value ({key}): {value}")
-
-        return p_value <= significance_level
+        is_stationary = p_value <= significance_level
+        logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary (p-value: {np.round(p_value, decimals=4)}, number of lags used: {df_test[2]})")
+        return is_stationary
 
     def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame:
         """

@@ -3,7 +3,7 @@ from numpy.testing import assert_equal
 
 from TradeFlowModelling.datasets import signs
 from TradeFlowModelling.exceptions.custom_exceptions import IllegalNbLagsException, EnumValueException, \
-    IllegalValueException, ModelNotFittedException
+    IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException
 from TradeFlowModelling.time_series.autoregressive.ar_model import AR
 from TradeFlowModelling.time_series.autoregressive.tests.results.results_ar_model import ResultsAR
 
@@ -13,6 +13,12 @@ signs_data = signs.load()
 @pytest.fixture
 def ar_model_with_max_order_6():
     ar_model = AR(signs=signs_data, max_order=6, order_selection_method=None, information_criterion=None)
+    return ar_model
+
+
+@pytest.fixture
+def ar_model_non_stationary_with_max_order_1():
+    ar_model = AR(signs=[-1] * 500 + [1] * 500, max_order=1, order_selection_method=None, information_criterion=None)
     return ar_model
 
 
@@ -78,6 +84,13 @@ class TestFit:
             ar_model_with_max_order_6.fit(method=method)
 
         assert str(ex.value) == expected_exception_message
+
+    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
+    def test_fit_should_raise_exception_when_time_series_non_stationary(self, ar_model_non_stationary_with_max_order_1, method):
+        with pytest.raises(NonStationaryTimeSeriesException) as ex:
+            ar_model_non_stationary_with_max_order_1.fit(method="yule_walker")
+
+        assert str(ex.value) == "The time series must be stationary to be fitted."
 
 
 class TestSelectOrder:

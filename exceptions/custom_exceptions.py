@@ -21,3 +21,8 @@ class ModelNotFittedException(Exception):
 class ModelNotSimulatedException(Exception):
     """Raised when the model need the simulated time series, but it has not been simulated"""
     pass
+
+
+class NonStationaryTimeSeriesException(Exception):
+    """Raised when the time series is not stationary"""
+    pass
