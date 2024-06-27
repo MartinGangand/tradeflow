@@ -8,10 +8,10 @@ from matplotlib.axes import Axes
 from numpy.testing import assert_equal
 from pandas.testing import assert_frame_equal
 
-from TradeFlowModelling.datasets import signs
-from TradeFlowModelling.exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException
-from TradeFlowModelling.time_series.tests.results.results_time_series import ResultsTimeSeries
-from TradeFlowModelling.time_series.time_series import TimeSeries
+from tradeflow.datasets import signs
+from tradeflow.exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException
+from tradeflow.time_series.tests.results.results_time_series import ResultsTimeSeries
+from tradeflow.time_series.time_series import TimeSeries
 
 signs_data = signs.load()
 
@@ -83,13 +83,11 @@ class TestTimeSeriesStationarity:
 
     @pytest.mark.parametrize("regression", ["c", "ct", "ctt", "n"])
     def test_time_series_should_be_stationary(self, time_series_signs, regression):
-        assert time_series_signs._is_time_series_stationary(significance_level=0.05, regression=regression,
-                                                            verbose=True)
+        assert time_series_signs._is_time_series_stationary(significance_level=0.05, regression=regression)
 
     @pytest.mark.parametrize("regression", ["c", "ct", "ctt", "n"])
     def test_time_series_should_be_non_stationary(self, time_series_signs_non_stationary, regression):
-        assert not time_series_signs_non_stationary._is_time_series_stationary(significance_level=0.05,
-                                                                               regression=regression, verbose=True)
+        assert not time_series_signs_non_stationary._is_time_series_stationary(significance_level=0.05, regression=regression)
 
 
 class TestSimulationSummary:

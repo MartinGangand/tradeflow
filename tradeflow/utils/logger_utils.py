@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from ..constants.constants import Logger
+from tradeflow.constants.constants import Logger
 
 logging.basicConfig(format=Logger.FORMAT, level=Logger.LEVEL)
 

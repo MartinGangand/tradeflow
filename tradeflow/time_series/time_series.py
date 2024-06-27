@@ -13,9 +13,10 @@ from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tools.validation import bool_like
 from statsmodels.tsa.stattools import acf, pacf
 
-from ..utils import logger_utils
-from ..exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException, ModelNotSimulatedException
-from ..utils.general_utils import check_condition
+from tradeflow.exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException, \
+    ModelNotSimulatedException
+from tradeflow.utils import logger_utils
+from tradeflow.utils.general_utils import check_condition
 
 logger = logger_utils.get_logger(__name__)
 
@@ -45,13 +46,13 @@ class TimeSeries(ABC):
     @abstractmethod
     def simulate(self, size: int) -> List[Number]:
         """
-        Simulate a time series after the model has been fitted.
+        Simulate a time series of signs after the model has been fitted.
         """
         pass
 
     def calculate_acf(self, nb_lags: int, signs: Optional[ArrayLike1D] = None) -> np.ndarray:
         """
-        Calculate the autocorrelation function of a time series.
+        Calculate the autocorrelation function of a time series of signs.
 
         Parameters
         ----------
@@ -72,46 +73,6 @@ class TimeSeries(ABC):
         check_condition(condition=nb_lags is not None and 1 <= nb_lags < len(signs),
                         exception=IllegalNbLagsException(f"Can only calculate the autocorrelation function with a number of lags positive and lower than the time series length (requested number of lags {nb_lags} should be < {len(signs)})."))
         return acf(x=signs, nlags=nb_lags, qstat=False, fft=True, alpha=None, bartlett_confint=True, missing="raise")
-
-    def calculate_pacf(self, nb_lags: int, alpha: Optional[float] = None, signs: Optional[ArrayLike1D] = None) -> np.ndarray | Tuple[np.ndarray, np.ndarray]:
-        """
-        Calculate the partial autocorrelation function of a time series.
-
-        Parameters
-        ----------
-        nb_lags : int
-            Number of lags to return autocorrelation for.
-        alpha : float, optional
-            If a number is given, the confidence intervals for the given level are returned.
-            For example, if alpha=0.05, 95 % confidence intervals are returned.
-        signs : array_like, default None
-            The time series of signs. If None, the original time series of the model is used.
-
-        Returns
-        -------
-        pacf : np.ndarray
-            The partial autocorrelation for lags 0, 1, ..., nb_lags.
-            It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nlags + 1,).
-        confint : ndarray, optional
-            Confidence intervals for the pacf at lags 0, 1, ..., nb_lags.
-            The shape is (nlags + 1, 2). It is Returned if alpha is not None.
-        """
-        if signs is None:
-            signs = self._signs
-
-        check_condition(condition=1 <= nb_lags < len(signs) // 2,
-                        exception=IllegalNbLagsException(f"Can only calculate the partial autocorrelation function with a number of lags positive and lower than 50% of the time series length (requested number of lags {nb_lags} should be < {len(signs) // 2})."))
-        check_condition(condition=alpha is None or 0 < alpha <= 1,
-                        exception=IllegalValueException(f"Alpha {alpha} is invalid, it must be in the interval [0, 1]"))
-        return pacf(x=signs, nlags=nb_lags, method="burg", alpha=alpha)
-
-    def _is_time_series_stationary(self, significance_level: float = 0.05, regression: Literal["c", "ct", "ctt", "n"] = "c") -> bool:
-        df_test = stattools.adfuller(x=self._signs, maxlag=self._order, regression=regression, autolag=None)
-        p_value = df_test[1]
-
-        is_stationary = p_value <= significance_level
-        logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary (p-value: {np.round(p_value, decimals=4)}, number of lags used: {df_test[2]})")
-        return is_stationary
 
     def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame:
         """
@@ -149,6 +110,46 @@ class TimeSeries(ABC):
             self._plot_corr_training_vs_simulation(log_scale=log_scale)
 
         return statistics
+
+    def calculate_pacf(self, nb_lags: int, alpha: Optional[float] = None, signs: Optional[ArrayLike1D] = None) -> np.ndarray | Tuple[np.ndarray, np.ndarray]:
+        """
+        Calculate the partial autocorrelation function of a time series of signs.
+
+        Parameters
+        ----------
+        nb_lags : int
+            Number of lags to return autocorrelation for.
+        alpha : float, optional
+            If a number is given, the confidence intervals for the given level are returned.
+            For example, if alpha=0.05, 95 % confidence intervals are returned.
+        signs : array_like, default None
+            The time series of signs. If None, the original time series of the model is used.
+
+        Returns
+        -------
+        pacf : np.ndarray
+            The partial autocorrelation for lags 0, 1, ..., nb_lags.
+            It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nlags + 1,).
+        confint : ndarray, optional
+            Confidence intervals for the pacf at lags 0, 1, ..., nb_lags.
+            The shape is (nlags + 1, 2). It is Returned if alpha is not None.
+        """
+        if signs is None:
+            signs = self._signs
+
+        check_condition(condition=1 <= nb_lags < len(signs) // 2,
+                        exception=IllegalNbLagsException(f"Can only calculate the partial autocorrelation function with a number of lags positive and lower than 50% of the time series length (requested number of lags {nb_lags} should be < {len(signs) // 2})."))
+        check_condition(condition=alpha is None or 0 < alpha <= 1,
+                        exception=IllegalValueException(f"Alpha {alpha} is invalid, it must be in the interval [0, 1]"))
+        return pacf(x=signs, nlags=nb_lags, method="burg", alpha=alpha)
+
+    def _is_time_series_stationary(self, significance_level: float = 0.05, regression: Literal["c", "ct", "ctt", "n"] = "c") -> bool:
+        df_test = stattools.adfuller(x=self._signs, maxlag=self._order, regression=regression, autolag=None)
+        p_value = df_test[1]
+
+        is_stationary = p_value <= significance_level
+        logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary (p-value: {np.round(p_value, decimals=4)}, number of lags used: {df_test[2]})")
+        return is_stationary
 
     @classmethod
     def _compute_signs_statistics(cls, signs: List[int], column_name: str, percentiles: Tuple[float]) -> pd.DataFrame:

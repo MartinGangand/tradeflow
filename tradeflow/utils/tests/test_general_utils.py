@@ -3,8 +3,9 @@ from enum import Enum
 import numpy as np
 import pytest
 
-from TradeFlowModelling.exceptions.custom_exceptions import EnumValueException
-from TradeFlowModelling.utils.general_utils import check_condition, get_enum_values, check_enum_value_is_valid, \
+from tradeflow.exceptions.custom_exceptions import EnumValueException
+from tradeflow.utils.general_utils import check_condition, get_enum_values, \
+    check_enum_value_is_valid, \
     is_value_within_interval_exclusive
 
 
