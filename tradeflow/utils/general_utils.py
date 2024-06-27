@@ -1,7 +1,7 @@
 import enum
 from typing import List, Any, Optional
 
-from ..exceptions.custom_exceptions import EnumValueException
+from tradeflow.exceptions.custom_exceptions import EnumValueException
 
 
 def check_condition(condition: bool, exception: Exception) -> None:
@@ -13,7 +13,7 @@ def check_condition(condition: bool, exception: Exception) -> None:
     condition : bool
         The condition to check.
     exception : Exception
-        The exception to raise if the conditional is false.
+        The exception to raise if the condition is false.
 
     Raises
     ------
