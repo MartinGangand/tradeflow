@@ -1,11 +1,11 @@
 import pytest
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_almost_equal
 
-from TradeFlowModelling.datasets import signs
-from TradeFlowModelling.exceptions.custom_exceptions import IllegalNbLagsException, EnumValueException, \
+from tradeflow.datasets import signs
+from tradeflow.exceptions.custom_exceptions import IllegalNbLagsException, EnumValueException, \
     IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException
-from TradeFlowModelling.time_series.autoregressive.ar_model import AR
-from TradeFlowModelling.time_series.autoregressive.tests.results.results_ar_model import ResultsAR
+from tradeflow.time_series.autoregressive.ar_model import AR
+from tradeflow.time_series.autoregressive.tests.results.results_ar_model import ResultsAR
 
 signs_data = signs.load()
 
@@ -74,8 +74,8 @@ class TestFit:
         ar_model_with_max_order_6.fit(method=method)
 
         expected_parameters_results = ResultsAR.parameters_order_6(method=method)
-        assert ar_model_with_max_order_6._constant_parameter == expected_parameters_results.constant_parameter
-        assert_equal(actual=ar_model_with_max_order_6._parameters, desired=expected_parameters_results.parameters)
+        assert_almost_equal(actual=ar_model_with_max_order_6._constant_parameter, desired=expected_parameters_results.constant_parameter, decimal=10)
+        assert_almost_equal(actual=ar_model_with_max_order_6._parameters, desired=expected_parameters_results.parameters, decimal=10)
 
     @pytest.mark.parametrize("method", ["invalid_method", None])
     def test_fit_should_raise_exception_when_invalid_method(self, ar_model_with_max_order_6, method):

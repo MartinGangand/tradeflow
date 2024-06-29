@@ -13,9 +13,10 @@ from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tools.validation import bool_like
 from statsmodels.tsa.stattools import acf, pacf
 
-from ..utils import logger_utils
-from ..exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException, ModelNotSimulatedException
-from ..utils.general_utils import check_condition
+from tradeflow.exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException, \
+    ModelNotSimulatedException
+from tradeflow.utils import logger_utils
+from tradeflow.utils.general_utils import check_condition
 
 logger = logger_utils.get_logger(__name__)
 
@@ -45,13 +46,13 @@ class TimeSeries(ABC):
     @abstractmethod
     def simulate(self, size: int) -> List[Number]:
         """
-        Simulate a time series after the model has been fitted.
+        Simulate a time series of signs after the model has been fitted.
         """
         pass
 
     def calculate_acf(self, nb_lags: int, signs: Optional[ArrayLike1D] = None) -> np.ndarray:
         """
-        Calculate the autocorrelation function of a time series.
+        Calculate the autocorrelation function of a time series of signs.
 
         Parameters
         ----------
@@ -73,9 +74,47 @@ class TimeSeries(ABC):
                         exception=IllegalNbLagsException(f"Can only calculate the autocorrelation function with a number of lags positive and lower than the time series length (requested number of lags {nb_lags} should be < {len(signs)})."))
         return acf(x=signs, nlags=nb_lags, qstat=False, fft=True, alpha=None, bartlett_confint=True, missing="raise")
 
+    def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame:
+        """
+        Return a statistical summary comparing the original signs and the simulated ones.
+
+        The function is to be called after a model has been fitted and simulated.
+
+        The statistics are computed over the series counting the number of consecutive signs in a row.
+
+        Parameters
+        ----------
+        plot : bool
+            If True, plots two graphs. One comparing the autocorrelation function
+            of the original and simulated time series, and another comparing the partial autocorrelation.
+        log_scale : bool, default true
+            If True, use a log scale for plotting graphs, otherwise use a linear scale.
+            It has no effect if `plot` is False.
+        percentiles: tuple of float
+            The percentiles to use .
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the statistics for the original and simulated time series.
+        """
+        plot = bool_like(value=plot, name="plot", optional=False, strict=True)
+        log_scale = bool_like(value=log_scale, name="log_scale", optional=False, strict=True)
+        check_condition(self._simulation is not None, ModelNotSimulatedException("The model has not yet been simulated. Simulate the model first by calling 'simulate()'."))
+
+        statistics_training = self._compute_signs_statistics(signs=self._signs, column_name="Training", percentiles=percentiles)
+        statistics_simulation = self._compute_signs_statistics(signs=self._simulation, column_name="Simulation", percentiles=percentiles)
+        statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
+
+        if plot:
+            self._build_fig_corr_training_vs_simulation(log_scale=log_scale)
+            plt.show()
+
+        return statistics
+
     def calculate_pacf(self, nb_lags: int, alpha: Optional[float] = None, signs: Optional[ArrayLike1D] = None) -> np.ndarray | Tuple[np.ndarray, np.ndarray]:
         """
-        Calculate the partial autocorrelation function of a time series.
+        Calculate the partial autocorrelation function of a time series of signs.
 
         Parameters
         ----------
@@ -113,43 +152,6 @@ class TimeSeries(ABC):
         logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary (p-value: {np.round(p_value, decimals=4)}, number of lags used: {df_test[2]})")
         return is_stationary
 
-    def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame:
-        """
-        Return a statistical summary comparing the original signs and the simulated ones.
-
-        The function is to be called after a model has been fitted and simulated.
-
-        The statistics are computed over the series counting the number of consecutive signs in a row.
-
-        Parameters
-        ----------
-        plot : bool
-            If True, plots two graphs. One comparing the autocorrelation function
-            of the original and simulated time series, and another comparing the partial autocorrelation.
-        log_scale : bool, default true
-            If True, use a log scale for plotting graphs, otherwise use a linear scale.
-            It has no effect if `plot` is False.
-        percentiles: tuple of float
-            The percentiles to use .
-
-        Returns
-        -------
-        pd.DataFrame
-            A DataFrame containing the statistics for the original and simulated time series.
-        """
-        plot = bool_like(value=plot, name="plot", optional=False, strict=True)
-        log_scale = bool_like(value=log_scale, name="log_scale", optional=False, strict=True)
-        check_condition(self._simulation is not None, ModelNotSimulatedException("The model has not yet been simulated. Simulate the model first by calling 'simulate()'."))
-
-        statistics_training = self._compute_signs_statistics(signs=self._signs, column_name="Training", percentiles=percentiles)
-        statistics_simulation = self._compute_signs_statistics(signs=self._simulation, column_name="Simulation", percentiles=percentiles)
-        statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
-
-        if plot:
-            self._plot_corr_training_vs_simulation(log_scale=log_scale)
-
-        return statistics
-
     @classmethod
     def _compute_signs_statistics(cls, signs: List[int], column_name: str, percentiles: Tuple[float]) -> pd.DataFrame:
         series_nb_consecutive_signs = cls._compute_series_nb_consecutive_signs(signs=signs)
@@ -182,7 +184,7 @@ class TimeSeries(ABC):
     def _percentage_buy(signs: List[Number]) -> float:
         return round(100 * sum([1 for sign in signs if sign == 1]) / len(signs), 2)
 
-    def _plot_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
+    def _build_fig_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
         nb_lags = min(2 * self._order, len(self._signs) // 2 - 1)
         acf_training = self.calculate_acf(nb_lags=nb_lags)
         acf_simulation = self.calculate_acf(nb_lags=nb_lags, signs=self._simulation)
@@ -192,18 +194,17 @@ class TimeSeries(ABC):
         fig, axe = plt.subplots(1, 2, figsize=(16, 4))
 
         acf_title = f"ACF plot for training and simulated time series"
-        self._plot_training_vs_simulation(axe=axe[0], training=acf_training, simulation=acf_simulation, title=acf_title,
-                                          order=self._order, log_scale=log_scale)
+        self._fill_axe_training_vs_simulation(axe=axe[0], training=acf_training, simulation=acf_simulation, title=acf_title,
+                                              order=self._order, log_scale=log_scale)
 
         pacf_title = f"PACF plot for training and simulated time series"
-        self._plot_training_vs_simulation(axe=axe[1], training=pacf_training, simulation=pacf_simulation, title=pacf_title,
-                                          order=self._order, log_scale=log_scale)
+        self._fill_axe_training_vs_simulation(axe=axe[1], training=pacf_training, simulation=pacf_simulation, title=pacf_title,
+                                              order=self._order, log_scale=log_scale)
 
-        plt.show()
         return fig
 
     @staticmethod
-    def _plot_training_vs_simulation(axe: Any, training: np.ndarray, simulation: np.ndarray, order: int, title: str, log_scale: bool) -> None:
+    def _fill_axe_training_vs_simulation(axe: Any, training: np.ndarray, simulation: np.ndarray, order: int, title: str, log_scale: bool) -> None:
         all_values = np.concatenate((training, simulation))
         y_scale = f"{'log' if log_scale else 'linear'}"
 
