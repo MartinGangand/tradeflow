@@ -24,13 +24,13 @@ def check_condition(condition: bool, exception: Exception) -> None:
         raise exception
 
 
-def get_enum_values(enum_obj: enum.EnumType) -> List[Any]:
+def get_enum_values(enum_obj: enum) -> List[Any]:
     """
     Return a list containing the values of an enum.
 
     Parameters
     ----------
-    enum_obj : enum.Enum
+    enum_obj : enum.EnumType
         The enum for which the values will be retrieved.
 
     Returns
@@ -41,7 +41,7 @@ def get_enum_values(enum_obj: enum.EnumType) -> List[Any]:
     return [enum_object.value for enum_object in enum_obj]
 
 
-def check_enum_value_is_valid(enum_obj: enum.EnumType, value: object | None, is_none_valid: bool, parameter_name: str) -> Optional[enum.Enum]:
+def check_enum_value_is_valid(enum_obj: enum, value: object | None, is_none_valid: bool, parameter_name: str) -> Optional[enum.Enum]:
     """
     Raise an EnumValueException if a value is not within an enum.
 

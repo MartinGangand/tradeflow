@@ -74,7 +74,7 @@ class TimeSeries(ABC):
                         exception=IllegalNbLagsException(f"Can only calculate the autocorrelation function with a number of lags positive and lower than the time series length (requested number of lags {nb_lags} should be < {len(signs)})."))
         return acf(x=signs, nlags=nb_lags, qstat=False, fft=True, alpha=None, bartlett_confint=True, missing="raise")
 
-    def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame:
+    def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame:
         """
         Return a statistical summary comparing the original signs and the simulated ones.
 
@@ -107,7 +107,8 @@ class TimeSeries(ABC):
         statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
 
         if plot:
-            self._plot_corr_training_vs_simulation(log_scale=log_scale)
+            self._build_fig_corr_training_vs_simulation(log_scale=log_scale)
+            plt.show()
 
         return statistics
 
@@ -183,7 +184,7 @@ class TimeSeries(ABC):
     def _percentage_buy(signs: List[Number]) -> float:
         return round(100 * sum([1 for sign in signs if sign == 1]) / len(signs), 2)
 
-    def _plot_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
+    def _build_fig_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
         nb_lags = min(2 * self._order, len(self._signs) // 2 - 1)
         acf_training = self.calculate_acf(nb_lags=nb_lags)
         acf_simulation = self.calculate_acf(nb_lags=nb_lags, signs=self._simulation)
@@ -193,18 +194,17 @@ class TimeSeries(ABC):
         fig, axe = plt.subplots(1, 2, figsize=(16, 4))
 
         acf_title = f"ACF plot for training and simulated time series"
-        self._plot_training_vs_simulation(axe=axe[0], training=acf_training, simulation=acf_simulation, title=acf_title,
-                                          order=self._order, log_scale=log_scale)
+        self._fill_axe_training_vs_simulation(axe=axe[0], training=acf_training, simulation=acf_simulation, title=acf_title,
+                                              order=self._order, log_scale=log_scale)
 
         pacf_title = f"PACF plot for training and simulated time series"
-        self._plot_training_vs_simulation(axe=axe[1], training=pacf_training, simulation=pacf_simulation, title=pacf_title,
-                                          order=self._order, log_scale=log_scale)
+        self._fill_axe_training_vs_simulation(axe=axe[1], training=pacf_training, simulation=pacf_simulation, title=pacf_title,
+                                              order=self._order, log_scale=log_scale)
 
-        plt.show()
         return fig
 
     @staticmethod
-    def _plot_training_vs_simulation(axe: Any, training: np.ndarray, simulation: np.ndarray, order: int, title: str, log_scale: bool) -> None:
+    def _fill_axe_training_vs_simulation(axe: Any, training: np.ndarray, simulation: np.ndarray, order: int, title: str, log_scale: bool) -> None:
         all_values = np.concatenate((training, simulation))
         y_scale = f"{'log' if log_scale else 'linear'}"
 
