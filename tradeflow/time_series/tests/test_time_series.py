@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.axes import Axes
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_almost_equal
 from pandas.testing import assert_frame_equal
 
 from tradeflow.datasets import signs
@@ -48,7 +48,7 @@ class TestCalculateAcf:
         assert len(actual_acf) == nb_lags + 1
 
         expected_acf = ResultsTimeSeries.correlation().acf[:nb_lags + 1]
-        assert_equal(actual=actual_acf, desired=expected_acf)
+        assert_almost_equal(actual=actual_acf, desired=expected_acf, decimal=10)
 
 
 class TestCalculatePacf:
@@ -76,7 +76,7 @@ class TestCalculatePacf:
         assert len(actual_pacf) == nb_lags + 1
 
         expected_pacf = ResultsTimeSeries.correlation().pacf[:nb_lags + 1]
-        assert_equal(actual=actual_pacf, desired=expected_pacf)
+        assert_almost_equal(actual=actual_pacf, desired=expected_pacf, decimal=10)
 
 
 class TestTimeSeriesStationarity:
@@ -96,7 +96,7 @@ class TestSimulationSummary:
         time_series_signs._simulation = time_series_signs._signs
         time_series_signs._order = 6
 
-        actual_simulation_summary_df = time_series_signs.simulation_summary(plot=False, log_scale=False)
+        actual_simulation_summary_df = time_series_signs.simulation_summary(plot=False, log_scale=False, percentiles=(50.0, 75.0, 95.0, 99.0, 99.9))
 
         expected_training_stats_df = ResultsTimeSeries.signs_statistics(column_name="Training").stats_df
         expected_simulation_stats_df = ResultsTimeSeries.signs_statistics(column_name="Simulation").stats_df
@@ -129,8 +129,8 @@ class TestSimulationSummary:
 
     @pytest.mark.parametrize("signs,expected_buy_pct", [
         ([1., -1., 1., 1., -1.], 100 * 3 / 5),
-        ([1., 1., 1., 1., 1.], 100),
-        ([-1., -1., -1., -1., -1.], 0),
+        ([1., 1., 1., 1., 1.], 100.0),
+        ([-1., -1., -1., -1., -1.], 0.0),
         ([-1., -1., -1., -1., 1.], 100 * 1 / 5)
     ])
     def test_percentage_buy(self, signs, expected_buy_pct):
@@ -143,10 +143,10 @@ class TestPlot:
     def check_axe_values_training_vs_simulation(axe: Axes, training_values: np.ndarray, simulation_values: np.ndarray,
                                                 order: int, title: str, y_scale: str, x_lim: Tuple[float, float],
                                                 y_lim: Tuple[float, float] | None = None):
-        assert_equal(actual=axe.lines[0].get_xydata()[:, 1], desired=training_values)
+        assert_almost_equal(actual=axe.lines[0].get_xydata()[:, 1], desired=training_values, decimal=10)
         assert axe.lines[0].get_label() == "Training"
 
-        assert_equal(actual=axe.lines[1].get_xydata()[:, 1], desired=simulation_values)
+        assert_almost_equal(actual=axe.lines[1].get_xydata()[:, 1], desired=simulation_values, decimal=10)
         assert axe.lines[1].get_label() == "Simulation"
 
         assert np.all([x == order for x in axe.lines[2].get_xydata()[:, 0]])
@@ -161,12 +161,12 @@ class TestPlot:
             assert axe.get_ylim() == y_lim
 
     @pytest.mark.parametrize("log_scale", [True, False])
-    def test_plot_corr_training_vs_simulation(self, time_series_signs, log_scale):
+    def test_build_fig_corr_training_vs_simulation(self, time_series_signs, log_scale):
         order = time_series_signs._order
         time_series_signs._simulation = time_series_signs._signs
         y_scale = "log" if log_scale else "linear"
 
-        fig = time_series_signs._plot_corr_training_vs_simulation(log_scale=log_scale)
+        fig = time_series_signs._build_fig_corr_training_vs_simulation(log_scale=log_scale)
 
         acf_axe = fig.get_axes()[0]
         expected_acf = ResultsTimeSeries.correlation().acf[:2 * order + 1]
@@ -185,7 +185,7 @@ class TestPlot:
                                                      y_scale=y_scale, x_lim=(-1.0, 2 * order))
 
     @pytest.mark.parametrize("log_scale", [True, False])
-    def test_plot_training_vs_simulation(self, log_scale):
+    def test_fill_axe_training_vs_simulation(self, log_scale):
         training_values = np.array([1, 2, 3, 2, 2.5])
         simulation_values = np.array([1.3, 2.1, 2.9, 2.2, 2.4])
         order = 2
@@ -198,9 +198,9 @@ class TestPlot:
         title = "Test plot training vs simulation"
 
         fig, axe = plt.subplots(1, 1, figsize=(8, 4))
-        time_series._plot_training_vs_simulation(axe=axe, training=training_values,
-                                                 simulation=simulation_values,
-                                                 order=order, title=title, log_scale=log_scale)
+        time_series._fill_axe_training_vs_simulation(axe=axe, training=training_values,
+                                                     simulation=simulation_values,
+                                                     order=order, title=title, log_scale=log_scale)
 
         y_scale = "log" if log_scale else "linear"
         expected_title = f"{title} ({y_scale} scale)"

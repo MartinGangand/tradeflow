@@ -1,6 +1,5 @@
 
-matplotlib==3.8.0
-numpy>=1.26.3
-pandas==2.2.2
-pytest==7.4.0
-statsmodels==0.14.0
+matplotlib>=3.0.0
+numpy>=1.21.0
+pandas>=2.2.2
+statsmodels>=0.12.2
