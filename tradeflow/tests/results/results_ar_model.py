@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from tradeflow.constants.constants import FitMethodAR
+from tradeflow.constants import FitMethodAR
 
 current_directory = os.path.abspath(os.path.dirname(__file__))
 

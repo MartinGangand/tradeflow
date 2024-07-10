@@ -6,13 +6,13 @@ import numpy as np
 from statsmodels.regression import yule_walker
 from statsmodels.tsa.ar_model import ar_select_order, AutoReg
 
-from tradeflow.time_series.time_series import TimeSeries
-from tradeflow.constants.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
-from tradeflow.exceptions.custom_exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
+from tradeflow import logger_utils
+from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
+from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
     NonStationaryTimeSeriesException
-from tradeflow.utils import logger_utils
-from tradeflow.utils.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
+from tradeflow.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
     is_value_within_interval_exclusive
+from tradeflow.time_series import TimeSeries
 
 logger = logger_utils.get_logger(__name__)
 

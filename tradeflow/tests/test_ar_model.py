@@ -1,11 +1,11 @@
 import pytest
 from numpy.testing import assert_equal, assert_almost_equal
 
+from tradeflow.ar_model import AR
 from tradeflow.datasets import signs
-from tradeflow.exceptions.custom_exceptions import IllegalNbLagsException, EnumValueException, \
+from tradeflow.exceptions import IllegalNbLagsException, EnumValueException, \
     IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException
-from tradeflow.time_series.autoregressive.ar_model import AR
-from tradeflow.time_series.autoregressive.tests.results.results_ar_model import ResultsAR
+from tradeflow.tests.results.results_ar_model import ResultsAR
 
 signs_data = signs.load()
 
