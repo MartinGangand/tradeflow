@@ -30,9 +30,16 @@ class AR(TimeSeries):
         If None, the maximum order is set to 12*(nobs/100)^{1/4} as outlined in Schwert (1989).
     order_selection_method : {'information_criterion', 'pacf'}, default None
         The method for selecting the order of the model. If None, the order of the model will be `max_order`.
+
+        * 'information_criterion' - Choose the model that minimizes a given information criterion.
+        * 'pacf' - Choose the model using the number of significant lags in the partial autocorrelation function of the time series of signs.
+
     information_criterion : {'aic', 'bic', 'hqic'}, optional
         The information criterion to use in the order selection.
         It has no effect if `order_selection_method` is not 'information_criterion'.
+        * 'aic' - Akaike information criterion.
+        * 'bic' - Bayesian information criterion.
+        * 'hqic' - Hannan–Quinn information criterion.
     """
 
     def __init__(self, signs: List[{1, -1}], max_order: Optional[int] = None,
