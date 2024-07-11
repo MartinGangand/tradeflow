@@ -9,9 +9,9 @@ from numpy.testing import assert_equal, assert_almost_equal
 from pandas.testing import assert_frame_equal
 
 from tradeflow.datasets import signs
-from tradeflow.exceptions.custom_exceptions import IllegalNbLagsException, IllegalValueException
-from tradeflow.time_series.tests.results.results_time_series import ResultsTimeSeries
-from tradeflow.time_series.time_series import TimeSeries
+from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException
+from tradeflow.tests.results.results_time_series import ResultsTimeSeries
+from tradeflow.time_series import TimeSeries
 
 signs_data = signs.load()
 
