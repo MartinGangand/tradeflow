@@ -1,7 +1,7 @@
 import enum
 from typing import List, Any, Optional
 
-from tradeflow.exceptions.custom_exceptions import EnumValueException
+from tradeflow.exceptions import EnumValueException
 
 
 def check_condition(condition: bool, exception: Exception) -> None:

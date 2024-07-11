@@ -1,1 +1,1 @@
-from .time_series.autoregressive.ar_model import AR
+from .ar_model import AR
