@@ -1,0 +1,23 @@
+ [build-system]
+ requires = ["setuptools>=61.0", "versioneer-518"]
+ build-backend = "setuptools.build_meta"
+
+ [project]
+ name = "tradeflow"
+dynamic = ["version"]
+ authors = [
+   { name="Martin Gangand", email="martin.gangand@gmail.com" },
+ ]
+ description = "A package to simulate autocorrelated time series of signs"
+ readme = "README.md"
+ requires-python = ">=3.10"
+ classifiers = [
+     "Programming Language :: Python :: 3.10",
+     "Programming Language :: Python :: 3.11",
+     "Programming Language :: Python :: 3.12",
+     "License :: OSI Approved :: MIT License",
+     "Operating System :: OS Independent",
+ ]
+
+ [project.urls]
+ Homepage = "https://martingangand.github.io/tradeflow/"
