@@ -1,10 +1,10 @@
- [build-system]
- requires = ["setuptools>=61.0", "versioneer-518"]
- build-backend = "setuptools.build_meta"
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "tradeflow"
-dynamic = ["version"]
+version = "0.0.6"
 dependencies = [
     "matplotlib>=3.0.0",
     "numpy>=1.21.0",
@@ -19,6 +19,7 @@ description = "A package to simulate autocorrelated time series of signs"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -28,11 +29,3 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://martingangand.github.io/tradeflow/"
-
-#[tool.versioneer]
-#VCS = "git"
-#style = "pep440"
-#versionfile_source = "tradeflow/_version.py"
-#versionfile_build = "tradeflow/_version.py"
-#tag_prefix = "release-"
-#parentdir_prefix = "tradeflow-"
