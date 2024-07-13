@@ -21,6 +21,6 @@ setup(
     description="A package to simulate autocorrelated time series of signs",  # Optional
     packages=find_packages(),  # Required,
     # version=versioneer.get_version(),
-    version="0.0.3",
+    version="0.0.4",
     # cmdclass=versioneer.get_cmdclass(),
 )
