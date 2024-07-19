@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 import numpy as np
 from statsmodels.regression import yule_walker
+from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import ar_select_order, AutoReg
 
 from tradeflow import logger_utils
@@ -23,8 +24,8 @@ class AR(TimeSeries):
 
     Parameters
     ----------
-    signs : list of {1, -1}
-        A list of signs where each element is either 1 (representing a buy) or -1 (representing a sell).
+    signs : array_like
+        An array of signs where each element is either 1 (representing a buy) or -1 (representing a sell).
     max_order : int, default None
         The maximum order of the autoregressive model.
         If None, the maximum order is set to 12*(nobs/100)^{1/4} as outlined in Schwert (1989).
@@ -42,7 +43,7 @@ class AR(TimeSeries):
         * 'hqic' - Hannan–Quinn information criterion.
     """
 
-    def __init__(self, signs: List[{1, -1}], max_order: Optional[int] = None,
+    def __init__(self, signs: ArrayLike1D, max_order: Optional[int] = None,
                  order_selection_method: Optional[Literal["information_criterion", "pacf"]] = None,
                  information_criterion: Optional[Literal["aic", "bic", "hqic"]] = None) -> None:
         super().__init__(signs=signs)
@@ -149,7 +150,7 @@ class AR(TimeSeries):
         logger.info(
             f"AR order selection: {self._order} lags (method: {self._order_selection_method}, information criterion: {self._information_criterion}, time series length: {len(self._signs)}).")
 
-    def simulate(self, size: int, seed: Optional[int] = None) -> List[int]:
+    def simulate(self, size: int, seed: Optional[int] = None) -> np.ndarray:
         """
         Simulate a time series of signs after the model has been fitted.
 
@@ -163,8 +164,8 @@ class AR(TimeSeries):
 
         Returns
         -------
-        list of int
-            The simulated signs.
+        np.ndarray
+            The simulated signs (+1 for buy, -1 for sell).
         """
         check_condition(size > 0, IllegalValueException(
             f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
@@ -173,13 +174,18 @@ class AR(TimeSeries):
 
         np.random.seed(seed=seed)
 
-        previous_signs = self._signs[-self._order:]
-        for _ in range(size):
-            next_sign_expected_value = self._constant_parameter + np.dot(a=self._parameters,
-                                                                         b=previous_signs[-self._order:][::-1])
+        uniforms = np.random.uniform(low=0, high=1, size=size)
+        inverted_params = self._parameters[::-1]
+        last_signs = np.array(self._signs[-self._order:])
+        simulated_signs = []
+        for i in range(size):
+            next_sign_expected_value = self._constant_parameter + np.dot(a=inverted_params, b=last_signs)
             next_sign_buy_proba = 0.5 * (1 + next_sign_expected_value)
-            next_sign = 1 if np.random.uniform() <= next_sign_buy_proba else -1
-            previous_signs = np.append(arr=previous_signs, values=next_sign)
+            next_sign = 1 if uniforms[i] <= next_sign_buy_proba else -1
 
-        self._simulation = previous_signs[self._order:]
+            simulated_signs.append(next_sign)
+            last_signs[:-1] = last_signs[1:]
+            last_signs[-1] = next_sign
+
+        self._simulation = np.array(simulated_signs)
         return self._simulation
