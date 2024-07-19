@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from numbers import Number
-from typing import List, Literal, Tuple, Any, Optional
+from typing import Literal, Tuple, Any, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,7 +43,7 @@ class TimeSeries(ABC):
         pass
 
     @abstractmethod
-    def simulate(self, size: int) -> List[Number]:
+    def simulate(self, size: int) -> np.ndarray:
         """
         Simulate a time series of signs after the model has been fitted.
         """
@@ -149,11 +148,11 @@ class TimeSeries(ABC):
         p_value = df_test[1]
 
         is_stationary = p_value <= significance_level
-        logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary (p-value: {np.round(p_value, decimals=4)}, number of lags used: {df_test[2]})")
+        logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary (p-value: {np.round(p_value, decimals=6)}, number of lags used: {df_test[2]})")
         return is_stationary
 
     @classmethod
-    def _compute_signs_statistics(cls, signs: List[int], column_name: str, percentiles: Tuple[float]) -> pd.DataFrame:
+    def _compute_signs_statistics(cls, signs: ArrayLike1D, column_name: str, percentiles: Tuple[float]) -> pd.DataFrame:
         series_nb_consecutive_signs = cls._compute_series_nb_consecutive_signs(signs=signs)
         names, values = [], []
         names.append("size"), values.append(len(signs))
@@ -166,7 +165,7 @@ class TimeSeries(ABC):
         return pd.DataFrame(data=values, columns=[column_name], index=names)
 
     @staticmethod
-    def _compute_series_nb_consecutive_signs(signs: list[int]) -> List[int]:
+    def _compute_series_nb_consecutive_signs(signs: ArrayLike1D) -> np.ndarray:
         series_nb_consecutive_signs = []
         current_nb = 1
         for i in range(1, len(signs)):
@@ -178,10 +177,10 @@ class TimeSeries(ABC):
 
         series_nb_consecutive_signs.append(current_nb)
         assert np.sum(series_nb_consecutive_signs) == len(signs)
-        return series_nb_consecutive_signs
+        return np.array(series_nb_consecutive_signs)
 
     @staticmethod
-    def _percentage_buy(signs: List[Number]) -> float:
+    def _percentage_buy(signs: ArrayLike1D) -> float:
         return round(100 * sum([1 for sign in signs if sign == 1]) / len(signs), 2)
 
     def _build_fig_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
