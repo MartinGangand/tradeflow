@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import pathlib
+import glob
 from typing import Literal, Optional
 
 import numpy as np
@@ -14,6 +17,7 @@ from tradeflow.exceptions import IllegalValueException, ModelNotFittedException,
 from tradeflow.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
     is_value_within_interval_exclusive
 from tradeflow.time_series import TimeSeries
+import ctypes as ct
 
 logger = logger_utils.get_logger(__name__)
 
@@ -189,3 +193,19 @@ class AR(TimeSeries):
 
         self._simulation = np.array(simulated_signs)
         return self._simulation
+
+    def call_cpp(self, ev: float = 0.5):
+
+        # libfile = pathlib.Path(__file__).parent / "csumlib.so"
+        libfile = glob.glob('cmult*.so')[0]
+        clib = ct.CDLL(str(libfile))
+
+        # current_folder = pathlib.Path(__file__).parent.absolute()
+        # tradeflow_root = current_folder.parent.absolute()
+        # lib = os.path.join(tradeflow_root, "lib")
+        # clib = ct.CDLL(os.path.join(lib, "cmult.so"))
+
+        clib.my_expected_value_to_proba.argtypes = (ct.c_double,)
+        clib.my_expected_value_to_proba.restype = ct.c_double
+
+        return clib.my_expected_value_to_proba(ev)

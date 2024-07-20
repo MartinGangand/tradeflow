@@ -28,5 +28,8 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: cpp
+        run: g++ -fPIC -shared -o tradeflow/cmult.so tradeflow/cmult.cpp
+
       - name: Run tests
         run: pytest -v -s --doctest-modules
