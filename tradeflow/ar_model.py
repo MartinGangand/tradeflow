@@ -194,16 +194,76 @@ class AR(TimeSeries):
         self._simulation = np.array(simulated_signs)
         return self._simulation
 
+    def c_array(self, arr: np.ndarray, of: Literal["int", "double"]) -> ct.Array:
+        match of:
+            case "int":
+                c_type = ct.c_int
+            case "double":
+                c_type = ct.c_double
+        return (c_type * len(arr))(*arr)
+
+    def c_empty_array(self, size, of: Literal["int", "double"]) -> ct.Array:
+        match of:
+            case "int":
+                c_type = ct.c_int
+            case "double":
+                c_type = ct.c_double
+        return (c_type * size)()
+
+    def simulate_from_uniforms_cpp(self, size: int, seed: Optional[int] = None) -> np.ndarray:
+        root_dir = pathlib.Path(__file__).parent.absolute()
+        libfile = glob.glob('simulate*.so', root_dir=root_dir)[0]
+        clib = ct.CDLL(os.path.join(root_dir, libfile))
+
+        clib.my_simulate_from_unifs.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_double, ct.POINTER(ct.c_int), ct.c_int, ct.c_int, ct.POINTER(ct.c_int))
+        clib.my_simulate_from_unifs.restype = ct.c_void_p
+
+        check_condition(size > 0, IllegalValueException(
+            f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
+        check_condition(self._parameters is not None, ModelNotFittedException(
+            "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
+
+        np.random.seed(seed=seed)
+
+        uniforms = np.random.uniform(low=0, high=1, size=size)
+        inverted_params = self._parameters[::-1]
+        last_signs = np.array(self._signs[-self._order:]).astype(int)
+        self._simulation = self.c_empty_array(size=size, of="int")
+        clib.my_simulate_from_unifs(self.c_array(arr=uniforms, of="double"),
+                                    self.c_array(arr=inverted_params, of="double"),
+                                    self._constant_parameter,
+                                    self.c_array(arr=last_signs, of="int"),
+                                    len(inverted_params),
+                                    size,
+                                    self._simulation)
+        return self._simulation
+
+    def simulate_from_cpp(self, size: int, seed: Optional[int] = None) -> np.ndarray:
+        root_dir = pathlib.Path(__file__).parent.absolute()
+        libfile = glob.glob('simulate*.so', root_dir=root_dir)[0]
+        clib = ct.CDLL(os.path.join(root_dir, libfile))
+
+        clib.my_simulate.argtypes = (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int))
+        clib.my_simulate.restype = ct.c_void_p
+
+        check_condition(size > 0, IllegalValueException(
+            f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
+        check_condition(self._parameters is not None, ModelNotFittedException(
+            "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
+
+        np.random.seed(seed=seed)
+
+        inverted_params = self._parameters[::-1]
+        last_signs = np.array(self._signs[-self._order:]).astype(int)
+        self._simulation = self.c_empty_array(size=size, of="int")
+        clib.my_simulate(size, seed, self.c_array(arr=inverted_params, of="double"), self._constant_parameter,
+                         self.c_array(arr=last_signs, of="int"), len(inverted_params), self._simulation)
+        return self._simulation
+
     def call_cpp(self, ev: float = 0.5):
-
-        # libfile = pathlib.Path(__file__).parent / "csumlib.so"
-        libfile = glob.glob('cmult*.so')[0]
-        clib = ct.CDLL(str(libfile))
-
-        # current_folder = pathlib.Path(__file__).parent.absolute()
-        # tradeflow_root = current_folder.parent.absolute()
-        # lib = os.path.join(tradeflow_root, "lib")
-        # clib = ct.CDLL(os.path.join(lib, "cmult.so"))
+        root_dir = pathlib.Path(__file__).parent.absolute()
+        libfile = glob.glob('cmult*.so', root_dir=root_dir)[0]
+        clib = ct.CDLL(os.path.join(root_dir, libfile))
 
         clib.my_expected_value_to_proba.argtypes = (ct.c_double,)
         clib.my_expected_value_to_proba.restype = ct.c_double

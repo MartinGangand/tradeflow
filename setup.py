@@ -41,7 +41,14 @@ setup(
         CTypesExtension(
             "tradeflow.cmult",
             ["tradeflow/cmult.cpp"],
+            extra_compile_args=["-std=c++17", "-Wextra"]
         ),
+        CTypesExtension(
+            name="tradeflow.simulate",
+            sources=["tradeflow/simulate.cpp"],
+            extra_compile_args=["-std=c++17", "-Wextra"],
+            language="c++"
+        )
     ],
     cmdclass={'build_ext': build_ext_orig}
 )

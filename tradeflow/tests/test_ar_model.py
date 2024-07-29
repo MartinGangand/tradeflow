@@ -131,6 +131,26 @@ class TestSimulate:
         assert len(actual_simulation) == size
         assert_equal(actual=actual_simulation, desired=expected_signs.simulation[:size])
 
+    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
+    @pytest.mark.parametrize("size", [50, 1000])
+    def test_simulate_from_uniforms_cpp(self, ar_model_with_max_order_6, method, size):
+        actual_simulation = ar_model_with_max_order_6.fit(method=method).simulate_from_uniforms_cpp(size=size, seed=1)
+
+        expected_signs = ResultsAR.simulated_signs(fit_method=method)
+        assert len(actual_simulation) == size
+        assert_equal(actual=actual_simulation[:size], desired=expected_signs.simulation[:size])
+
+    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
+    def test_simulate_from_cpp(self, ar_model_with_max_order_6, method):
+        size = 1000
+        actual_simulation = ar_model_with_max_order_6.fit(method=method).simulate_from_cpp(size=size, seed=1)
+        print(f"\n!!!! {method} cst: {ar_model_with_max_order_6._constant_parameter} | params: {ar_model_with_max_order_6._parameters}")
+        print(actual_simulation[:])
+        print()
+        expected_signs = ResultsAR.simulated_signs(fit_method="cpp_yu" if method == "yule_walker" else "cpp_cst")
+        assert len(actual_simulation) == size
+        assert_equal(actual=actual_simulation[:size], desired=expected_signs.simulation[:size])
+
     @pytest.mark.parametrize("size", [-50, 0])
     def test_simulate_should_raise_exception_when_invalid_size(self, ar_model_with_max_order_6, size):
         with pytest.raises(IllegalValueException) as ex:
