@@ -8,18 +8,16 @@ from matplotlib.axes import Axes
 from numpy.testing import assert_equal, assert_almost_equal
 from pandas.testing import assert_frame_equal
 
-from tradeflow.datasets import signs
+from tradeflow.datasets import trade_signs_sample
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException
 from tradeflow.tests.results.results_time_series import ResultsTimeSeries
 from tradeflow.time_series import TimeSeries
-
-signs_data = signs.load()
 
 
 @pytest.fixture
 def time_series_signs():
     TimeSeries.__abstractmethods__ = set()
-    time_series = TimeSeries(signs=signs_data)
+    time_series = TimeSeries(signs=trade_signs_sample.load())
     time_series._order = 6
     return time_series
 
@@ -98,8 +96,8 @@ class TestSimulationSummary:
 
         actual_simulation_summary_df = time_series_signs.simulation_summary(plot=False, log_scale=False, percentiles=(50.0, 75.0, 95.0, 99.0, 99.9))
 
-        expected_training_stats_df = ResultsTimeSeries.signs_statistics(column_name="Training").stats_df
-        expected_simulation_stats_df = ResultsTimeSeries.signs_statistics(column_name="Simulation").stats_df
+        expected_training_stats_df = ResultsTimeSeries.simulation_summary(column_name="Training").stats_df
+        expected_simulation_stats_df = ResultsTimeSeries.simulation_summary(column_name="Simulation").stats_df
         expected_simulation_summary_df = pd.concat([expected_training_stats_df, expected_simulation_stats_df],
                                                    axis=1).round(decimals=2)
 
@@ -107,8 +105,8 @@ class TestSimulationSummary:
                            check_index_type=True, check_names=True, check_exact=True, obj="stats")
 
     def test_compute_signs_statistics(self):
-        results_signs_stats = ResultsTimeSeries.signs_statistics(column_name="Test signs")
-        actual_stats_df = TimeSeries._compute_signs_statistics(signs=signs_data, column_name="Test signs",
+        results_signs_stats = ResultsTimeSeries.simulation_summary(column_name="Test signs")
+        actual_stats_df = TimeSeries._compute_signs_statistics(signs=trade_signs_sample.load(), column_name="Test signs",
                                                                percentiles=results_signs_stats.percentiles)
 
         expected_stats_df = results_signs_stats.stats_df

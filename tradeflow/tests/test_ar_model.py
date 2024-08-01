@@ -1,18 +1,26 @@
 import pytest
-from numpy.testing import assert_equal, assert_almost_equal
+from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
 
 from tradeflow.ar_model import AR
-from tradeflow.datasets import signs
+from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.exceptions import IllegalNbLagsException, EnumValueException, \
     IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException
 from tradeflow.tests.results.results_ar_model import ResultsAR
 
-signs_data = signs.load()
+
+@pytest.fixture
+def signs_sample():
+    return trade_signs_sample.load()
 
 
 @pytest.fixture
-def ar_model_with_max_order_6():
-    ar_model = AR(signs=signs_data, max_order=6, order_selection_method=None, information_criterion=None)
+def signs_btcusdt():
+    return trade_signs_btcusdt_20240720.load()
+
+
+@pytest.fixture
+def ar_model_with_max_order_6(signs_sample):
+    ar_model = AR(signs=signs_sample, max_order=6, order_selection_method=None, information_criterion=None)
     return ar_model
 
 
@@ -25,15 +33,15 @@ def ar_model_non_stationary_with_max_order_1():
 class TestInit:
 
     @pytest.mark.parametrize("max_order", [500, 1000])
-    def test_init_max_order_should_raise_exception_when_invalid_max_order(self, max_order):
+    def test_init_max_order_should_raise_exception_when_invalid_max_order(self, signs_sample, max_order):
         with pytest.raises(IllegalNbLagsException) as ex:
-            AR(signs=signs_data, max_order=max_order, order_selection_method=None, information_criterion=None)
+            AR(signs=signs_sample, max_order=max_order, order_selection_method=None, information_criterion=None)
 
         assert str(ex.value) == f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< 500)."
 
-    def test_init_should_raise_exception_when_invalid_order_selection_method(self):
+    def test_init_should_raise_exception_when_invalid_order_selection_method(self, signs_sample):
         with pytest.raises(EnumValueException) as ex:
-            AR(signs=signs_data, max_order=6, order_selection_method="invalid_order_selection_method", information_criterion="aic")
+            AR(signs=signs_sample, max_order=6, order_selection_method="invalid_order_selection_method", information_criterion="aic")
 
         assert str(ex.value) == "The value 'invalid_order_selection_method' for order_selection_method is not valid, it must be among ['information_criterion', 'pacf'] or None if it is valid."
 
@@ -41,10 +49,10 @@ class TestInit:
         ("information_criterion", "invalid_ic"),
         ("information_criterion", None)
     ])
-    def test_init_should_raise_exception_when_invalid_information_criterion(self, order_selection_method, information_criterion):
+    def test_init_should_raise_exception_when_invalid_information_criterion(self, signs_sample, order_selection_method, information_criterion):
         expected_exception_message = f"The value '{information_criterion}' for information_criterion is not valid, it must be among ['aic', 'bic', 'hqic'] or None if it is valid."
         with pytest.raises(EnumValueException) as ex:
-            AR(signs=signs_data, max_order=6, order_selection_method=order_selection_method, information_criterion=information_criterion)
+            AR(signs=signs_sample, max_order=6, order_selection_method=order_selection_method, information_criterion=information_criterion)
 
         assert str(ex.value) == expected_exception_message
 
@@ -101,8 +109,8 @@ class TestSelectOrder:
         (25, "information_criterion", "hqic", 6), (2, "information_criterion", "hqic", 2),
         (499, "pacf", "hqic", 6), (1, "pacf", "hqic", 1)
     ])
-    def test_select_order_with_selection_method(self, max_order, order_selection_method, information_criterion, expected_order):
-        ar_model = AR(signs=signs_data, max_order=max_order, order_selection_method=order_selection_method, information_criterion=information_criterion)
+    def test_select_order_with_selection_method(self, signs_sample, max_order, order_selection_method, information_criterion, expected_order):
+        ar_model = AR(signs=signs_sample, max_order=max_order, order_selection_method=order_selection_method, information_criterion=information_criterion)
         assert ar_model._max_order == max_order
 
         ar_model._select_order()
@@ -114,8 +122,8 @@ class TestSelectOrder:
         (None, None, 22),  # Schwert (1989)
         (None, "aic", 22)  # Schwert (1989)
     ])
-    def test_select_order_without_selection_method(self, max_order, information_criterion, expected_order):
-        ar_model = AR(signs=signs_data, max_order=max_order, order_selection_method=None, information_criterion=information_criterion)
+    def test_select_order_without_selection_method(self, signs_sample, max_order, information_criterion, expected_order):
+        ar_model = AR(signs=signs_sample, max_order=max_order, order_selection_method=None, information_criterion=information_criterion)
         ar_model._select_order()
         assert ar_model._order == expected_order == ar_model._max_order
 
@@ -143,3 +151,41 @@ class TestSimulate:
             ar_model_with_max_order_6.simulate(size=50)
 
         assert str(ex.value) == "The model has not yet been fitted. Fit the model first by calling 'fit()'."
+
+
+class TestSimulationSummary:
+
+    @pytest.mark.parametrize("fit_method", ["ols_with_cst", "yule_walker"])
+    def test_simulation_summary(self, signs_btcusdt, fit_method):
+        size_simulation = 2_000_000
+        ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf", information_criterion=None)
+        actual_simulation = ar_model.fit(method=fit_method).simulate(size=size_simulation, seed=1)
+        summary_df = ar_model.simulation_summary(plot=False, percentiles=(50.0, 75.0, 95.0, 99.0))
+
+        res_training_signs_stats = ResultsAR.simulation_summary_training_signs(fit_method=fit_method)
+
+        assert ar_model._order == 52
+        assert_almost_equal(actual=ar_model._constant_parameter, desired=res_training_signs_stats.constant_parameter, decimal=10)
+        assert_almost_equal(actual=ar_model._parameters, desired=res_training_signs_stats.parameters, decimal=10)
+
+        # Checks that training signs statistics did not change
+        assert len(signs_btcusdt) == res_training_signs_stats.size
+        assert summary_df.loc["pct_buy (%)"]["Training"] == res_training_signs_stats.pct_buy
+        assert summary_df.loc["mean_nb_consecutive_values"]["Training"] == res_training_signs_stats.mean_nb_consecutive_values
+        assert summary_df.loc["std_nb_consecutive_values"]["Training"] == res_training_signs_stats.std_nb_consecutive_values
+        assert summary_df.loc["Q50.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q50_nb_consecutive_values
+        assert summary_df.loc["Q75.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q75_nb_consecutive_values
+        assert summary_df.loc["Q95.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q95_nb_consecutive_values
+        assert summary_df.loc["Q99.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q99_nb_consecutive_values
+
+        # Checks that simulated signs are close to training signs statistics
+        assert len(actual_simulation) == size_simulation
+        expected_pct_buy = summary_df.loc["pct_buy (%)"]["Training"] if fit_method == "ols_with_cst" else 50.0  # If the fit method is yule_walker there is no constant parameter, so we expect 50% of buy
+        assert_allclose(actual=summary_df.loc["pct_buy (%)"]["Simulation"], desired=expected_pct_buy, rtol=0, atol=1.0, equal_nan=False)
+        assert_allclose(actual=summary_df.loc["mean_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["mean_nb_consecutive_values"]["Training"], rtol=0, atol=0.25, equal_nan=False)
+        assert_allclose(actual=summary_df.loc["std_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["std_nb_consecutive_values"]["Training"], rtol=0, atol=15, equal_nan=False)
+
+        assert_allclose(actual=summary_df.loc["Q50.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q50.0_nb_consecutive_values"]["Training"], rtol=0, atol=1, equal_nan=False)
+        assert_allclose(actual=summary_df.loc["Q75.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q75.0_nb_consecutive_values"]["Training"], rtol=0, atol=2, equal_nan=False)
+        assert_allclose(actual=summary_df.loc["Q95.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q95.0_nb_consecutive_values"]["Training"], rtol=0, atol=3, equal_nan=False)
+        assert_allclose(actual=summary_df.loc["Q99.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q99.0_nb_consecutive_values"]["Training"], rtol=0, atol=6, equal_nan=False)
