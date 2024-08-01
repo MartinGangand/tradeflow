@@ -7,7 +7,13 @@ current_directory = os.path.abspath(os.path.dirname(__file__))
 
 
 class Namespace:
-    pass
+
+    def __init__(self):
+        self.acf = None
+        self.pacf = None
+
+        self.percentiles = None
+        self.stats_df = None
 
 
 class ResultsTimeSeries:
@@ -23,7 +29,7 @@ class ResultsTimeSeries:
         return obj
 
     @staticmethod
-    def signs_statistics(column_name: str) -> Namespace:
+    def simulation_summary(column_name: str) -> Namespace:
         obj = Namespace()
         obj.percentiles = (50.0, 75.0, 95.0, 99.0, 99.9)
         index = ["size", "pct_buy (%)", "mean_nb_consecutive_values", "std_nb_consecutive_values",

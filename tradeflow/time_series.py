@@ -77,9 +77,9 @@ class TimeSeries(ABC):
         """
         Return a statistical summary comparing the original signs and the simulated ones.
 
-        The function is to be called after a model has been fitted and simulated.
-
         The statistics are computed over the series counting the number of consecutive signs in a row.
+
+        The function is to be called after a model has been fitted and simulated.
 
         Parameters
         ----------
