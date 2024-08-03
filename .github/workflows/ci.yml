@@ -29,7 +29,7 @@ jobs:
           pip install pytest
 
       - name: cpp
-        run: g++ -fPIC -shared -o tradeflow/simulate.so tradeflow/simulate.cpp
+        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/simulate.so tradeflow/simulate.cpp -std=c++17
 
       - name: Run tests
         run: pytest -v -s --doctest-modules

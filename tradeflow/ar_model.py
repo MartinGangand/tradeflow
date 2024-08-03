@@ -1,23 +1,22 @@
 from __future__ import annotations
 
 from typing import Literal, Optional
-import os
-import pathlib
-import glob
 
 import numpy as np
 from statsmodels.regression import yule_walker
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import ar_select_order, AutoReg
 
+import tradeflow.ctypes_utils as ctypes_utils
 from tradeflow import logger_utils
 from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
+from tradeflow.ctypes_utils import CArray, CArrayEmpty
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
     NonStationaryTimeSeriesException
 from tradeflow.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
     is_value_within_interval_exclusive
 from tradeflow.time_series import TimeSeries
-import ctypes as ct
+
 logger = logger_utils.get_logger(__name__)
 
 
@@ -175,86 +174,10 @@ class AR(TimeSeries):
         check_condition(self._parameters is not None, ModelNotFittedException(
             "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
 
-        np.random.seed(seed=seed)
+        inverted_params = CArray.of(c_type="double", arr=self._parameters[::-1])
+        last_signs = CArray.of(c_type="int", arr=np.array(self._signs[-self._order:]).astype(int))
+        self._simulation = CArrayEmpty.of(c_type="int", size=size)
 
-        uniforms = np.random.uniform(low=0, high=1, size=size)
-        inverted_params = self._parameters[::-1]
-        last_signs = np.array(self._signs[-self._order:])
-        simulated_signs = []
-        for i in range(size):
-            next_sign_expected_value = self._constant_parameter + np.dot(a=inverted_params, b=last_signs)
-            next_sign_buy_proba = 0.5 * (1 + next_sign_expected_value)
-            next_sign = 1 if uniforms[i] <= next_sign_buy_proba else -1
-
-            simulated_signs.append(next_sign)
-            last_signs[:-1] = last_signs[1:]
-            last_signs[-1] = next_sign
-
-        self._simulation = np.array(simulated_signs)
-        return self._simulation
-
-    def c_array(self, arr: np.ndarray, of: Literal["int", "double"]) -> ct.Array:
-        match of:
-            case "int":
-                c_type = ct.c_int
-            case "double":
-                c_type = ct.c_double
-        return (c_type * len(arr))(*arr)
-
-    def c_empty_array(self, size, of: Literal["int", "double"]) -> ct.Array:
-        match of:
-            case "int":
-                c_type = ct.c_int
-            case "double":
-                c_type = ct.c_double
-        return (c_type * size)()
-
-    def simulate_from_uniforms_cpp(self, size: int, seed: Optional[int] = None) -> np.ndarray:
-        root_dir = pathlib.Path(__file__).parent.absolute()
-        libfile = glob.glob('simulate*.so', root_dir=root_dir)[0]
-        clib = ct.CDLL(os.path.join(root_dir, libfile))
-
-        clib.my_simulate_from_unifs.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_double, ct.POINTER(ct.c_int), ct.c_int, ct.c_int, ct.POINTER(ct.c_int))
-        clib.my_simulate_from_unifs.restype = ct.c_void_p
-
-        check_condition(size > 0, IllegalValueException(
-            f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
-        check_condition(self._parameters is not None, ModelNotFittedException(
-            "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
-
-        np.random.seed(seed=seed)
-
-        uniforms = np.random.uniform(low=0, high=1, size=size)
-        inverted_params = self._parameters[::-1]
-        last_signs = np.array(self._signs[-self._order:]).astype(int)
-        self._simulation = self.c_empty_array(size=size, of="int")
-        clib.my_simulate_from_unifs(self.c_array(arr=uniforms, of="double"),
-                                    self.c_array(arr=inverted_params, of="double"),
-                                    self._constant_parameter,
-                                    self.c_array(arr=last_signs, of="int"),
-                                    len(inverted_params),
-                                    size,
-                                    self._simulation)
-        return self._simulation
-
-    def simulate_from_cpp(self, size: int, seed: Optional[int] = None) -> np.ndarray:
-        root_dir = pathlib.Path(__file__).parent.absolute()
-        libfile = glob.glob('simulate*.so', root_dir=root_dir)[0]
-        clib = ct.CDLL(os.path.join(root_dir, libfile))
-
-        clib.my_simulate.argtypes = (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int))
-        clib.my_simulate.restype = ct.c_void_p
-
-        check_condition(size > 0, IllegalValueException(
-            f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
-        check_condition(self._parameters is not None, ModelNotFittedException(
-            "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
-
-        np.random.seed(seed=seed)
-
-        inverted_params = self._parameters[::-1]
-        last_signs = np.array(self._signs[-self._order:]).astype(int)
-        self._simulation = self.c_empty_array(size=size, of="int")
-        clib.my_simulate(size, seed, self.c_array(arr=inverted_params, of="double"), self._constant_parameter,
-                         self.c_array(arr=last_signs, of="int"), len(inverted_params), self._simulation)
-        return self._simulation
+        clib = ctypes_utils.load_simulate_lib()
+        clib.my_simulate(size, seed, inverted_params, self._constant_parameter, len(inverted_params), last_signs, self._simulation)
+        return self._simulation[:]
