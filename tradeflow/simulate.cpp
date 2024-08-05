@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <numeric>
 #include <random>
 
 using namespace std;
@@ -41,10 +42,16 @@ vector<int> simulate(const int size, const int seed, const vector<double>& inver
     return simulation;
 }
 
-extern "C"
-void my_simulate(const int size, const int seed, const double* inverted_params, const double constant_parameter, const int nb_params, int* last_signs, int* res) {
-    auto last_signs_vec = vector(last_signs, last_signs + nb_params);
-    const auto inverted_params_vect = vector(inverted_params, inverted_params + nb_params);
-    vector<int> simulation = simulate(size, seed, inverted_params_vect, constant_parameter, last_signs_vec);
-    copy(simulation.begin(), simulation.end(), res);
+extern "C" {
+    void my_simulate(const int size, const int seed, const double* inverted_params, const double constant_parameter, const int nb_params, int* last_signs, int* res) {
+        auto last_signs_vec = vector(last_signs, last_signs + nb_params);
+        const auto inverted_params_vect = vector(inverted_params, inverted_params + nb_params);
+        vector<int> simulation = simulate(size, seed, inverted_params_vect, constant_parameter, last_signs_vec);
+        copy(simulation.begin(), simulation.end(), res);
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    return 0;
 }

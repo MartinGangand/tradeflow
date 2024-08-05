@@ -75,9 +75,33 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+
+
+#name: Upload Python Package
 #
-
-
+#on:
+#  push
+#
+#permissions:
+#  contents: read
+#
+#jobs:
+#  release-build:
+#    name: Build wheels on ${{ matrix.os }}
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ubuntu-latest]
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: "3.x"
+#
 #      - name: Build release distributions
 #        run: |
 #          python3 -m pip install build
@@ -88,7 +112,7 @@ jobs:
 #        with:
 #          name: release-dists
 #          path: dist/
-
+#
 #  pypi-publish:
 #    runs-on: ubuntu-latest
 #
@@ -99,7 +123,7 @@ jobs:
 #      id-token: write
 #
 #    environment:
-#      name: pypi
+#      name: testpypi
 #      url: https://test.pypi.org/p/tradeflow
 #
 #    steps:

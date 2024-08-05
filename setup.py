@@ -41,7 +41,7 @@ setup(
         CTypesExtension(
             name="tradeflow.simulate",
             sources=["tradeflow/simulate.cpp"],
-            extra_compile_args=["-std=c++17", "-Wextra"],
+            extra_compile_args=["-std=c++17"],
             language="c++"
         )
     ],
