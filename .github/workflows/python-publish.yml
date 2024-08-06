@@ -11,8 +11,9 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
 
 
@@ -27,7 +28,7 @@ jobs:
 
 
       - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel==2.20.0
+        run: python -m pip install cibuildwheel==2.20.0 libpython
 
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
@@ -80,18 +81,14 @@ jobs:
 #name: Upload Python Package
 #
 #on:
-#  push
+#  push:
 #
 #permissions:
 #  contents: read
 #
 #jobs:
 #  release-build:
-#    name: Build wheels on ${{ matrix.os }}
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest]
+#    runs-on: ubuntu-latest
 #
 #    steps:
 #      - name: Checkout code
