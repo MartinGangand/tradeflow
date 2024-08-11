@@ -76,8 +76,12 @@ def load_simulate_lib() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
+    os_to_extension = {
+        "nt": "pyd",
+        "posix": "so"
+    }
     root_dir = pathlib.Path(__file__).parent.absolute()
-    lib_file = glob.glob('simulate*.so', root_dir=root_dir)[0]
+    lib_file = glob.glob(f"simulate*.{os_to_extension.get(os.name)}", root_dir=root_dir)[0]
     clib = ct.CDLL(os.path.join(root_dir, lib_file), winmode=0)
 
     # Arguments: size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)

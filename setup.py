@@ -34,6 +34,7 @@ class new_build_ext(build_ext):
     #     self.compiler = "unix"
 
     def get_export_symbols(self, ext):
+        # return ext.export_symbols
         return ["my_simulate"]
 
     # def get_ext_filename(self, ext_name):

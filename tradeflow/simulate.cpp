@@ -50,8 +50,3 @@ extern "C" {
         copy(simulation.begin(), simulation.end(), res);
     }
 }
-
-int main(int argc, char *argv[])
-{
-    return 0;
-}
