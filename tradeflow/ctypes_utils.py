@@ -77,7 +77,7 @@ def load_simulate_lib() -> ct.CDLL:
         The loaded shared library.
     """
     os_to_extension = {
-        "nt": "pyd",
+        "nt": "so",
         "posix": "so"
     }
     root_dir = pathlib.Path(__file__).parent.absolute()

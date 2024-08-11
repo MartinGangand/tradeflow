@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tradeflow"
-version = "0.0.8.12"
+version = "0.0.8.13"
 dependencies = [
     "matplotlib>=3.0.0",
     "numpy>=1.21.0, < 2.0.0",
@@ -17,7 +17,7 @@ authors = [
 ]
 description = "A package to simulate autocorrelated time series of signs"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
