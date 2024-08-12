@@ -7,6 +7,10 @@ from typing import Literal
 import numpy as np
 from statsmodels.tools.typing import ArrayLike1D
 
+from tradeflow import logger_utils
+
+logger = logger_utils.get_logger(__name__)
+
 
 class CArray:
 
@@ -76,15 +80,18 @@ def load_simulate_lib() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
-    os_to_extension = {
-        "nt": "so",
-        "posix": "so"
-    }
+    extensions = ["so", "pyd"]
     root_dir = pathlib.Path(__file__).parent.absolute()
-    lib_file = glob.glob(f"simulate*.{os_to_extension.get(os.name)}", root_dir=root_dir)[0]
-    clib = ct.CDLL(os.path.join(root_dir, lib_file), winmode=0)
+    for extension in extensions:
+        try:
+            lib_file = glob.glob(f"simulate*.{extension}", root_dir=root_dir)[0]
+        except IndexError:
+            logger.debug(f"Did not find any file matching simulate*.{extension}")
+        else:
+            clib = ct.CDLL(os.path.join(root_dir, lib_file), winmode=0)
 
-    # Arguments: size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
-    clib.my_simulate.argtypes = (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int))
-    clib.my_simulate.restype = ct.c_void_p
-    return clib
+            # Arguments: size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
+            clib.my_simulate.argtypes = (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int))
+            clib.my_simulate.restype = ct.c_void_p
+            return clib
+    raise Exception(f"Np file with one of the extension in {extensions}")
