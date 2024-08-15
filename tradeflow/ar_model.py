@@ -178,6 +178,6 @@ class AR(TimeSeries):
         last_signs = CArray.of(c_type="int", arr=np.array(self._signs[-self._order:]).astype(int))
         self._simulation = CArrayEmpty.of(c_type="int", size=size)
 
-        clib = ctypes_utils.load_simulate_lib()
-        clib.my_simulate(size, seed, inverted_params, self._constant_parameter, len(inverted_params), last_signs, self._simulation)
+        cpp_lib = ctypes_utils.load_simulate_lib()
+        cpp_lib.my_simulate(size, seed, inverted_params, self._constant_parameter, len(inverted_params), last_signs, self._simulation)
         return self._simulation[:]

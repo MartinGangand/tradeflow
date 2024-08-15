@@ -43,7 +43,6 @@ def build_cpp_extensions() -> List[CTypesExtension]:
 
 setup(
     packages=find_packages(),
-    py_modules=["tradeflow.ar_model"],
     ext_modules=build_cpp_extensions(),
     cmdclass={'build_ext': new_build_ext}
 )
