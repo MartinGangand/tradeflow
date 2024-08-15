@@ -36,6 +36,8 @@ class CArray:
                 c_type = ct.c_int
             case "double":
                 c_type = ct.c_double
+            case _:
+                raise Exception(f"Unknown type {c_type}")
 
         return (c_type * len(arr))(*arr)
 
@@ -64,6 +66,8 @@ class CArrayEmpty:
                 c_type = ct.c_int
             case "double":
                 c_type = ct.c_double
+            case _:
+                raise Exception(f"Unknown type {c_type}")
 
         return (c_type * size)()
 
