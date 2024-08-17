@@ -2,11 +2,14 @@ import ctypes as ct
 import glob
 import os
 import pathlib
+from pathlib import Path
 from typing import Literal
 
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
+from tradeflow.constants import SHARED_LIBRARY_EXTENSIONS
+from tradeflow.definitions import ROOT_DIR
 
 logger = logger_utils.get_logger(__name__)
 
@@ -84,18 +87,26 @@ def load_simulate_lib() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
-    extensions = ["so", "pyd"]
-    root_dir = pathlib.Path(__file__).parent.absolute()
-    lib_files = []
-    [lib_files.extend(glob.glob(f"simulate*.{extension}", root_dir=root_dir)) for extension in extensions]
-    if len(lib_files) == 0:
-        raise FileNotFoundError(f"No file with one of the extension in {extensions}")
-    assert len(lib_files) == 1
-
-    lib_file = [0]
-    cpp_lib = ct.CDLL(os.path.join(root_dir, lib_file), winmode=0)
+    lib_file = get_shared_library_file(directory=ROOT_DIR, lib_name="simulate")
+    cpp_lib = ct.CDLL(lib_file, winmode=0)
 
     # Arguments: size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
+    # setattr(getattr(cpp_lib, "my_simulate"), "argtypes", (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int)))
     cpp_lib.my_simulate.argtypes = (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int))
     cpp_lib.my_simulate.restype = ct.c_void_p
     return cpp_lib
+
+
+def get_shared_library_file(directory: str, lib_name: str) -> str:
+    directory = Path(directory)
+    shared_library_files = []
+    for potential_extension in SHARED_LIBRARY_EXTENSIONS:
+        shared_library_files.extend(glob.glob(f"{lib_name}.{potential_extension}", root_dir=directory))
+        shared_library_files.extend(glob.glob(f"{lib_name}.*.{potential_extension}", root_dir=directory))
+
+    if len(shared_library_files) == 0:
+        raise FileNotFoundError(f"No shared libray file for library {lib_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {directory}")
+    if len(shared_library_files) >= 2:
+        raise Exception(f"{len(shared_library_files)} shared library files for library {lib_name} with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} (directory: {directory})")
+
+    return str(directory.joinpath(shared_library_files[0]))

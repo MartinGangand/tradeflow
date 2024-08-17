@@ -2,6 +2,9 @@ import logging
 from enum import Enum
 
 
+SHARED_LIBRARY_EXTENSIONS = ["so", "pyd", "dll"]
+
+
 class OrderSelectionMethodAR(Enum):        
     INFORMATION_CRITERION = "information_criterion"
     PACF = "pacf"
@@ -33,10 +36,6 @@ class CorrelationFunction(Enum):
 
     def __str__(self) -> str:
         return self._value_
-
-
-class OLSMethod(Enum):
-    PINV = "pinv"
 
 
 class Logger:
