@@ -44,7 +44,7 @@ def test_get_shared_library_file_should_raise_exception_when_no_shared_library()
     with pytest.raises(FileNotFoundError) as ex:
         get_shared_library_file(directory=TEMP_FOLDER, lib_name="lib1")
 
-    pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'pyd', 'dll'\] in directory .*$"
+    pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'pyd', 'dll'\] in directory .*os.path.join("tradeflow", "tests", "temp")$"
     assert re.match(pattern, str(ex.value))
 
 
@@ -57,5 +57,5 @@ def test_get_shared_library_file_should_raise_exception_when_several_shared_libr
     with pytest.raises(Exception) as ex:
         get_shared_library_file(directory=TEMP_FOLDER, lib_name="lib1")
 
-    pattern = fr"{len(expected_matched_files)} shared library files for library lib1 with extension in \['so', 'pyd', 'dll'\] have been found: {', '.join(expected_matched_files)} \(directory: .*\)$"
+    pattern = fr"{len(expected_matched_files)} shared library files for library lib1 with extension in \['so', 'pyd', 'dll'\] have been found: {', '.join(expected_matched_files)} \(directory: .*os.path.join("tradeflow", "tests", "temp")\)$"
     assert re.match(pattern, str(ex.value))
