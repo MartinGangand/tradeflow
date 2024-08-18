@@ -98,6 +98,7 @@ def load_simulate_lib() -> ct.CDLL:
 
 
 def get_shared_library_file(directory: str, lib_name: str) -> str:
+    dir_ = directory
     directory = Path(directory)
     shared_library_files = []
     for potential_extension in SHARED_LIBRARY_EXTENSIONS:
@@ -105,7 +106,7 @@ def get_shared_library_file(directory: str, lib_name: str) -> str:
         shared_library_files.extend(glob.glob(f"{lib_name}.*.{potential_extension}", root_dir=directory))
 
     if len(shared_library_files) == 0:
-        raise FileNotFoundError(f"No shared libray file for library {lib_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {directory}")
+        raise FileNotFoundError(f"No shared libray file for library {lib_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {dir_}")
     if len(shared_library_files) >= 2:
         raise Exception(f"{len(shared_library_files)} shared library files for library {lib_name} with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} (directory: {directory})")
 
