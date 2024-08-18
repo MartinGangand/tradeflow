@@ -14,7 +14,7 @@ TEMP_FOLDER = str(pathlib.Path(__file__).parent.joinpath("temp").resolve())
 
 @pytest.fixture(autouse=True)
 def my_setup_and_tear_down():
-    if not os.path.isdir(path=TEMP_FOLDER):
+    if not os.path.exists(TEMP_FOLDER):
         os.makedirs(name=TEMP_FOLDER)
 
     yield
