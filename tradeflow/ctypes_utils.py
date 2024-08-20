@@ -1,7 +1,5 @@
 import ctypes as ct
 import glob
-import os
-import pathlib
 from pathlib import Path
 from typing import Literal
 
@@ -12,6 +10,20 @@ from tradeflow.constants import SHARED_LIBRARY_EXTENSIONS
 from tradeflow.definitions import ROOT_DIR
 
 logger = logger_utils.get_logger(__name__)
+
+lib_to_function_to_argtypes_and_restype = {
+    "simulate": {
+        "my_simulate": {
+            # size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
+            "argtypes": (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int),
+                         ct.POINTER(ct.c_int)),
+            "restype": ct.c_void_p
+        }
+    }
+}
+
+ARGSTYPES = "argtypes"
+RESTYPE = "restype"
 
 
 class CArray:
@@ -74,7 +86,7 @@ class CArrayEmpty:
         return (c_type * size)()
 
 
-def load_simulate_lib() -> ct.CDLL:
+def load_shared_library(shared_lib_name: str) -> ct.CDLL:
     """
     Return the shared library used to simulate signs.
 
@@ -87,17 +99,23 @@ def load_simulate_lib() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
-    lib_file = get_shared_library_file(directory=ROOT_DIR, lib_name="simulate")
+    lib_file = get_shared_library_file(directory=ROOT_DIR, lib_name=shared_lib_name)
     cpp_lib = ct.CDLL(lib_file, winmode=0)
+    set_function_argtypes_and_restype(cpp_lib=cpp_lib, shared_lib_name=shared_lib_name)
 
-    # Arguments: size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
-    # setattr(getattr(cpp_lib, "my_simulate"), "argtypes", (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int)))
-    cpp_lib.my_simulate.argtypes = (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int))
-    cpp_lib.my_simulate.restype = ct.c_void_p
     return cpp_lib
 
 
+def set_function_argtypes_and_restype(cpp_lib: ct.CDLL, shared_lib_name: str) -> None:
+    # TODO: doc
+    function_to_argtypes_and_restype = lib_to_function_to_argtypes_and_restype.get(shared_lib_name)
+    for function in function_to_argtypes_and_restype.keys():
+        setattr(getattr(cpp_lib, function), ARGSTYPES, function_to_argtypes_and_restype.get(function).get(ARGSTYPES))
+        setattr(getattr(cpp_lib, function), RESTYPE, function_to_argtypes_and_restype.get(function).get(RESTYPE))
+
+
 def get_shared_library_file(directory: str, lib_name: str) -> str:
+    # TODO: doc
     dir_ = directory
     directory = Path(directory)
     shared_library_files = []
@@ -106,8 +124,10 @@ def get_shared_library_file(directory: str, lib_name: str) -> str:
         shared_library_files.extend(glob.glob(f"{lib_name}.*.{potential_extension}", root_dir=directory))
 
     if len(shared_library_files) == 0:
-        raise FileNotFoundError(f"No shared libray file for library {lib_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {dir_}")
+        raise FileNotFoundError(
+            f"No shared libray file for library {lib_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {dir_}")
     if len(shared_library_files) >= 2:
-        raise Exception(f"{len(shared_library_files)} shared library files for library {lib_name} with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} (directory: {directory})")
+        raise Exception(
+            f"{len(shared_library_files)} shared library files for library {lib_name} with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} (directory: {directory})")
 
     return str(directory.joinpath(shared_library_files[0]))
