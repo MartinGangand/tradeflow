@@ -88,11 +88,7 @@ class CArrayEmpty:
 
 def load_shared_library(shared_lib_name: str) -> ct.CDLL:
     """
-    Return the shared library used to simulate signs.
-
-    The simulation of signs is performed with the `simulate(...)` function.
-
-    This function is written in C++ for efficiency reasons.
+    Return a shared library written in C++ for efficiency reasons.
 
     Returns
     -------
@@ -101,13 +97,22 @@ def load_shared_library(shared_lib_name: str) -> ct.CDLL:
     """
     lib_file = get_shared_library_file(directory=ROOT_DIR, lib_name=shared_lib_name)
     cpp_lib = ct.CDLL(lib_file, winmode=0)
-    set_function_argtypes_and_restype(cpp_lib=cpp_lib, shared_lib_name=shared_lib_name)
+    set_modules_functions_argtypes_and_restype(cpp_lib=cpp_lib, shared_lib_name=shared_lib_name)
 
     return cpp_lib
 
 
-def set_function_argtypes_and_restype(cpp_lib: ct.CDLL, shared_lib_name: str) -> None:
-    # TODO: doc
+def set_module_functions_argtypes_and_restype(cpp_lib: ct.CDLL, shared_lib_name: str) -> None:
+    """
+    Set the argument and result types of all function of a module.
+
+    Parameters
+    ----------
+    cpp_lib : ct.CDLL
+        The shared library for which to set argument and results types for all functions.
+    shared_library_name : str
+        The nane of the shared library (the name of the C++ file).
+    """
     function_to_argtypes_and_restype = lib_to_function_to_argtypes_and_restype.get(shared_lib_name)
     for function in function_to_argtypes_and_restype.keys():
         setattr(getattr(cpp_lib, function), ARGSTYPES, function_to_argtypes_and_restype.get(function).get(ARGSTYPES))
