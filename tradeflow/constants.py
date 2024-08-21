@@ -2,10 +2,7 @@ import logging
 from enum import Enum
 
 
-SHARED_LIBRARY_EXTENSIONS = ["so", "pyd", "dll"]
-
-
-class OrderSelectionMethodAR(Enum):        
+class OrderSelectionMethodAR(Enum):
     INFORMATION_CRITERION = "information_criterion"
     PACF = "pacf"
 
@@ -41,4 +38,3 @@ class CorrelationFunction(Enum):
 class Logger:
     FORMAT = "%(asctime)s [%(filename)s] [%(levelname)s] - %(message)s"
     LEVEL = logging.INFO
-    

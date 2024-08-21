@@ -35,7 +35,7 @@ def save_empty_files(file_names: List[str]) -> None:
 ])
 def test_get_shared_library_file(files_to_save, library_name, expected_shared_library_rel):
     save_empty_files(file_names=files_to_save)
-    shared_library_abs = get_shared_library_file(directory=TEMP_FOLDER, lib_name=library_name)
+    shared_library_abs = get_shared_library_file(directory=TEMP_FOLDER, shared_library_name=library_name)
     shared_library_rel = Path(shared_library_abs).relative_to(TEMP_FOLDER)
     assert str(shared_library_rel) == expected_shared_library_rel
 
@@ -48,7 +48,7 @@ def test_get_shared_library_file(files_to_save, library_name, expected_shared_li
 def test_get_shared_library_file_should_raise_exception_when_no_shared_library(files_to_save):
     save_empty_files(file_names=files_to_save)
     with pytest.raises(FileNotFoundError) as ex:
-        get_shared_library_file(directory=TEMP_FOLDER, lib_name="lib1")
+        get_shared_library_file(directory=TEMP_FOLDER, shared_library_name="lib1")
 
     pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'pyd', 'dll'\] in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}$"
     # pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'pyd', 'dll'\] in directory .*[\\/]tradeflow[\\/]tests[\\/]temp"
@@ -62,6 +62,6 @@ def test_get_shared_library_file_should_raise_exception_when_no_shared_library(f
 def test_get_shared_library_file_should_raise_exception_when_several_shared_libraries(files_to_save, lib_name, expected_matched_files):
     save_empty_files(file_names=files_to_save)
     with pytest.raises(Exception) as ex:
-        get_shared_library_file(directory=TEMP_FOLDER, lib_name="lib1")
+        get_shared_library_file(directory=TEMP_FOLDER, shared_library_name="lib1")
     pattern = fr"{len(expected_matched_files)} shared library files for library lib1 with extension in \['so', 'pyd', 'dll'\] have been found: {', '.join(expected_matched_files)} \(directory: .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}\)$"
     assert re.match(pattern, str(ex.value))

@@ -6,24 +6,22 @@ from typing import Literal
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
-from tradeflow.constants import SHARED_LIBRARY_EXTENSIONS
 from tradeflow.definitions import ROOT_DIR
 
 logger = logger_utils.get_logger(__name__)
 
-lib_to_function_to_argtypes_and_restype = {
-    "simulate": {
-        "my_simulate": {
-            # size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
-            "argtypes": (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int),
-                         ct.POINTER(ct.c_int)),
-            "restype": ct.c_void_p
-        }
+function_to_argtypes_and_restype = {
+    "my_simulate": {
+        # size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
+        "argtypes": (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int),
+                     ct.POINTER(ct.c_int)),
+        "restype": ct.c_void_p
     }
 }
 
-ARGSTYPES = "argtypes"
-RESTYPE = "restype"
+ARGUMENT_TYPES = "argtypes"
+RESULT_TYPES = "restype"
+SHARED_LIBRARY_EXTENSIONS = ["so", "pyd", "dll"]
 
 
 class CArray:
@@ -86,48 +84,63 @@ class CArrayEmpty:
         return (c_type * size)()
 
 
-def load_shared_library(shared_lib_name: str) -> ct.CDLL:
+def load_shared_library() -> ct.CDLL:
     """
-    Return the shared library used to simulate signs.
-
-    The simulation of signs is performed with the `simulate(...)` function.
-
-    This function is written in C++ for efficiency reasons.
+    Return the shared library of the project.
 
     Returns
     -------
     ct.CDLL
         The loaded shared library.
     """
-    lib_file = get_shared_library_file(directory=ROOT_DIR, lib_name=shared_lib_name)
+    lib_file = get_shared_library_file(directory=ROOT_DIR, shared_library_name="simulate")
     cpp_lib = ct.CDLL(lib_file, winmode=0)
-    set_function_argtypes_and_restype(cpp_lib=cpp_lib, shared_lib_name=shared_lib_name)
+    set_shared_library_functions(cpp_lib=cpp_lib)
 
     return cpp_lib
 
 
-def set_function_argtypes_and_restype(cpp_lib: ct.CDLL, shared_lib_name: str) -> None:
-    # TODO: doc
-    function_to_argtypes_and_restype = lib_to_function_to_argtypes_and_restype.get(shared_lib_name)
+def set_shared_library_functions(cpp_lib: ct.CDLL) -> None:
+    """
+    Set argument and result types of all function of the shared library.
+
+    Parameters
+    ----------
+    cpp_lib : ct.CDLL
+        The shared library for which to set argument and result types for all functions.
+    """
     for function in function_to_argtypes_and_restype.keys():
-        setattr(getattr(cpp_lib, function), ARGSTYPES, function_to_argtypes_and_restype.get(function).get(ARGSTYPES))
-        setattr(getattr(cpp_lib, function), RESTYPE, function_to_argtypes_and_restype.get(function).get(RESTYPE))
+        setattr(getattr(cpp_lib, function), ARGUMENT_TYPES, function_to_argtypes_and_restype.get(function).get(ARGUMENT_TYPES))
+        setattr(getattr(cpp_lib, function), RESULT_TYPES, function_to_argtypes_and_restype.get(function).get(RESULT_TYPES))
 
 
-def get_shared_library_file(directory: str, lib_name: str) -> str:
-    # TODO: doc
-    dir_ = directory
+def get_shared_library_file(directory: str, shared_library_name: str) -> str:
+    """
+    Return the file name of the shared library `shared_library_name`.
+
+    Parameters
+    ----------
+    directory : str
+        The directory in which to search the shared library.
+    shared_library_name : str
+        The name of the shared library (the name of the C++ file).
+
+    Returns
+    -------
+    str
+        The file name of the shared library, the extension of the file can be 'so', 'pyd', or 'dll'.
+    """
     directory = Path(directory)
     shared_library_files = []
     for potential_extension in SHARED_LIBRARY_EXTENSIONS:
-        shared_library_files.extend(glob.glob(f"{lib_name}.{potential_extension}", root_dir=directory))
-        shared_library_files.extend(glob.glob(f"{lib_name}.*.{potential_extension}", root_dir=directory))
+        shared_library_files.extend(glob.glob(f"{shared_library_name}.{potential_extension}", root_dir=directory))
+        shared_library_files.extend(glob.glob(f"{shared_library_name}.*.{potential_extension}", root_dir=directory))
 
     if len(shared_library_files) == 0:
         raise FileNotFoundError(
-            f"No shared libray file for library {lib_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {dir_}")
+            f"No shared libray file for library {shared_library_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {str(directory)}")
     if len(shared_library_files) >= 2:
         raise Exception(
-            f"{len(shared_library_files)} shared library files for library {lib_name} with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} (directory: {directory})")
+            f"{len(shared_library_files)} shared library files for library {shared_library_name} with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} (directory: {str(directory)})")
 
     return str(directory.joinpath(shared_library_files[0]))
