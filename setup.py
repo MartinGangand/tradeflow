@@ -4,6 +4,7 @@ from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 PROJECT = "tradeflow"
+SHARED_LIBRARY_NAME = "libcpp"
 CPP_MODULES = ["simulate"]
 
 
@@ -13,7 +14,7 @@ class CppExtension(Extension):
 
 class new_build_ext(build_ext):
     extra_compile_args = {
-        f"{PROJECT}.simulate": {
+        f"{PROJECT}.{SHARED_LIBRARY_NAME}": {
             "unix": ["-std=c++17"],
             "msvc": ["/std:c++17"]
         }
@@ -31,19 +32,16 @@ class new_build_ext(build_ext):
         return ext.export_symbols + list(map(lambda module: f"my_{module}", CPP_MODULES))
 
 
-def build_cpp_extensions() -> List[CppExtension]:
-    cpp_extensions = []
-    for cpp_module in CPP_MODULES:
-        cpp_extension = CppExtension(name=f"{PROJECT}.{cpp_module}",
-                                     sources=[f"{PROJECT}/{cpp_module}.cpp"],
-                                     language="c++"
-                                     )
-        cpp_extensions.append(cpp_extension)
-    return cpp_extensions
+def build_cpp_extension() -> List[CppExtension]:
+    cpp_extension = CppExtension(name=f"{PROJECT}.{SHARED_LIBRARY_NAME}",
+                                 sources=[f"{PROJECT}/{cpp_module}.cpp" for cpp_module in CPP_MODULES],
+                                 language="c++"
+                                 )
+    return [cpp_extension]
 
 
 setup(
     packages=[PROJECT],
-    ext_modules=build_cpp_extensions(),
+    ext_modules=build_cpp_extension(),
     cmdclass={'build_ext': new_build_ext}
 )

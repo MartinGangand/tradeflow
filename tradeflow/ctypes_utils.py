@@ -6,22 +6,22 @@ from typing import Literal
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
-from tradeflow.definitions import ROOT_DIR
+from tradeflow.definitions import ROOT_DIR, SHARED_LIBRARY_NAME
 
 logger = logger_utils.get_logger(__name__)
+
+ARGUMENT_TYPES = "argtypes"
+RESULT_TYPES = "restype"
+
+SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib", "pyd"]
 
 function_to_argtypes_and_restype = {
     "my_simulate": {
         # size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
-        "argtypes": (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int),
-                     ct.POINTER(ct.c_int)),
-        "restype": ct.c_void_p
+        ARGUMENT_TYPES: (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int)),
+        RESULT_TYPES: ct.c_void_p
     }
 }
-
-ARGUMENT_TYPES = "argtypes"
-RESULT_TYPES = "restype"
-SHARED_LIBRARY_EXTENSIONS = ["so", "pyd", "dll"]
 
 
 class CArray:
@@ -93,42 +93,42 @@ def load_shared_library() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
-    lib_file = get_shared_library_file(directory=ROOT_DIR, shared_library_name="simulate")
-    cpp_lib = ct.CDLL(lib_file, winmode=0)
-    set_shared_library_functions(cpp_lib=cpp_lib)
+    lib_file = get_shared_library_file(directory=ROOT_DIR, shared_library_name=SHARED_LIBRARY_NAME)
+    shared_lib = ct.CDLL(lib_file, winmode=0)
+    set_shared_library_functions(shared_lib=shared_lib)
 
-    return cpp_lib
+    return shared_lib
 
 
-def set_shared_library_functions(cpp_lib: ct.CDLL) -> None:
+def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
     """
-    Set argument and result types of all function of the shared library.
+    Set argument and result types of function in the shared library.
 
     Parameters
     ----------
-    cpp_lib : ct.CDLL
+    shared_lib : ct.CDLL
         The shared library for which to set argument and result types for all functions.
     """
-    for function in function_to_argtypes_and_restype.keys():
-        setattr(getattr(cpp_lib, function), ARGUMENT_TYPES, function_to_argtypes_and_restype.get(function).get(ARGUMENT_TYPES))
-        setattr(getattr(cpp_lib, function), RESULT_TYPES, function_to_argtypes_and_restype.get(function).get(RESULT_TYPES))
+    for function_name in function_to_argtypes_and_restype.keys():
+        setattr(getattr(shared_lib, function_name), ARGUMENT_TYPES, function_to_argtypes_and_restype.get(function_name).get(ARGUMENT_TYPES))
+        setattr(getattr(shared_lib, function_name), RESULT_TYPES, function_to_argtypes_and_restype.get(function_name).get(RESULT_TYPES))
 
 
 def get_shared_library_file(directory: str, shared_library_name: str) -> str:
     """
-    Return the file name of the shared library `shared_library_name`.
+    Return the path to the shared library `shared_library_name`.
 
     Parameters
     ----------
     directory : str
         The directory in which to search the shared library.
     shared_library_name : str
-        The name of the shared library (the name of the C++ file).
+        The name of the shared library.
 
     Returns
     -------
     str
-        The file name of the shared library, the extension of the file can be 'so', 'pyd', or 'dll'.
+        The path to the shared library, the extension of the file can be 'so' (Linux), 'dll' (Windows), 'dylib' (macOS), or 'pyd'.
     """
     directory = Path(directory)
     shared_library_files = []

@@ -50,18 +50,18 @@ def test_get_shared_library_file_should_raise_exception_when_no_shared_library(f
     with pytest.raises(FileNotFoundError) as ex:
         get_shared_library_file(directory=TEMP_FOLDER, shared_library_name="lib1")
 
-    pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'pyd', 'dll'\] in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}$"
-    # pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'pyd', 'dll'\] in directory .*[\\/]tradeflow[\\/]tests[\\/]temp"
+    pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'dll', 'dylib', 'pyd'\] in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}$"
+    # pattern = fr"No shared libray file for library lib1 with one of the extension in \['so', 'dll', 'dylib', 'pyd'\] in directory .*[\\/]tradeflow[\\/]tests[\\/]temp"
     assert re.match(pattern, str(ex.value))
 
 
 @pytest.mark.parametrize("files_to_save,lib_name,expected_matched_files", [
-    (["lib1.x-3-x.so", "lib1.x-3-x.pyd", "lib1.dll"], "lib1", ["lib1.x-3-x.so", "lib1.x-3-x.pyd", "lib1.dll"]),
-    (["lib1.x-3-x.so", "lib1.so", "lib1.dll", "lib1.py"], "lib1", ["lib1.so", "lib1.x-3-x.so", "lib1.dll"]),
+    (["lib1.x-3-x.so", "lib1.x-3-x.pyd", "lib1.dll"], "lib1", ["lib1.x-3-x.so", "lib1.dll", "lib1.x-3-x.pyd"]),
+    (["lib1.x-3-x.so", "lib1.so", "lib1.dll", "lib1.py"], "lib1", ["lib1.so", "lib1.x-3-x.so", "lib1.dll"])
 ])
 def test_get_shared_library_file_should_raise_exception_when_several_shared_libraries(files_to_save, lib_name, expected_matched_files):
     save_empty_files(file_names=files_to_save)
     with pytest.raises(Exception) as ex:
         get_shared_library_file(directory=TEMP_FOLDER, shared_library_name="lib1")
-    pattern = fr"{len(expected_matched_files)} shared library files for library lib1 with extension in \['so', 'pyd', 'dll'\] have been found: {', '.join(expected_matched_files)} \(directory: .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}\)$"
+    pattern = fr"{len(expected_matched_files)} shared library files for library lib1 with extension in \['so', 'dll', 'dylib', 'pyd'\] have been found: {', '.join(expected_matched_files)} \(directory: .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}\)$"
     assert re.match(pattern, str(ex.value))
