@@ -33,12 +33,12 @@ jobs:
 
       - name: Compile shared library on Linux or macOS
         if: runner.os != 'Windows'
-        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/simulate.${{ matrix.os == 'macos-latest' && 'dylib' || 'so' }} tradeflow/simulate.cpp -std=c++17
+        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/libcpp.${{ matrix.os == 'macos-latest' && 'dylib' || 'so' }} tradeflow/simulate.cpp -std=c++17
 
       - name: Compile shared library on Windows
         if: runner.os == 'Windows'
         run: |
-          g++ -Wall -Wextra -shared -o tradeflow/simulate.dll tradeflow/simulate.cpp -std=c++17
+          g++ -Wall -Wextra -shared -o tradeflow/libcpp.dll tradeflow/simulate.cpp -std=c++17
 
       - name: Run tests
         run: pytest -v -s --doctest-modules
