@@ -6,13 +6,14 @@ from typing import Literal
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
-from tradeflow.definitions import ROOT_DIR, SHARED_LIBRARY_NAME
+from tradeflow.definitions import ROOT_DIR
 
 logger = logger_utils.get_logger(__name__)
 
 ARGUMENT_TYPES = "argtypes"
 RESULT_TYPES = "restype"
 
+SHARED_LIBRARY_NAME = "libcpp"
 SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib", "pyd"]
 
 function_to_argtypes_and_restype = {
@@ -29,7 +30,7 @@ class CArray:
     @staticmethod
     def of(c_type: Literal["int", "double"], arr: ArrayLike1D) -> ct.Array:
         """
-        Create a ctypes array from a Python array.
+        Create a ctypes array from a Python list.
 
         Parameters
         ----------
@@ -102,7 +103,7 @@ def load_shared_library() -> ct.CDLL:
 
 def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
     """
-    Set argument and result types of function in the shared library.
+    Set argument and result types of functions in the shared library.
 
     Parameters
     ----------
