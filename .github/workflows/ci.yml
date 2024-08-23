@@ -4,14 +4,15 @@ on: [push, workflow_dispatch]
 
 jobs:
   run-tests:
+    name: Test
+
+    runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12']
-
-    name: Test
-    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -27,6 +28,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest
+
+      - name: Compile shared library on Linux or macOS
+        if: runner.os != 'Windows'
+        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/libcpp.${{ matrix.os == 'macos-latest' && 'dylib' || 'so' }} tradeflow/simulate.cpp -std=c++17
+
+      - name: Compile shared library on Windows
+        if: runner.os == 'Windows'
+        run: g++ -Wall -Wextra -shared -o tradeflow/libcpp.dll tradeflow/simulate.cpp -std=c++17
 
       - name: Run tests
         run: pytest -v -s --doctest-modules

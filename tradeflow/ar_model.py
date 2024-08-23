@@ -7,8 +7,10 @@ from statsmodels.regression import yule_walker
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import ar_select_order, AutoReg
 
+import tradeflow.ctypes_utils as ctypes_utils
 from tradeflow import logger_utils
 from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
+from tradeflow.ctypes_utils import CArray, CArrayEmpty
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
     NonStationaryTimeSeriesException
 from tradeflow.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
@@ -172,20 +174,10 @@ class AR(TimeSeries):
         check_condition(self._parameters is not None, ModelNotFittedException(
             "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
 
-        np.random.seed(seed=seed)
+        inverted_params = CArray.of(c_type="double", arr=self._parameters[::-1])
+        last_signs = CArray.of(c_type="int", arr=np.array(self._signs[-self._order:]).astype(int))
+        self._simulation = CArrayEmpty.of(c_type="int", size=size)
 
-        uniforms = np.random.uniform(low=0, high=1, size=size)
-        inverted_params = self._parameters[::-1]
-        last_signs = np.array(self._signs[-self._order:])
-        simulated_signs = []
-        for i in range(size):
-            next_sign_expected_value = self._constant_parameter + np.dot(a=inverted_params, b=last_signs)
-            next_sign_buy_proba = 0.5 * (1 + next_sign_expected_value)
-            next_sign = 1 if uniforms[i] <= next_sign_buy_proba else -1
-
-            simulated_signs.append(next_sign)
-            last_signs[:-1] = last_signs[1:]
-            last_signs[-1] = next_sign
-
-        self._simulation = np.array(simulated_signs)
-        return self._simulation
+        cpp_lib = ctypes_utils.load_shared_library()
+        cpp_lib.my_simulate(size, inverted_params, self._constant_parameter, len(inverted_params), last_signs, seed, self._simulation)
+        return self._simulation[:]
