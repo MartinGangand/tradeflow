@@ -26,3 +26,8 @@ class ModelNotSimulatedException(Exception):
 class NonStationaryTimeSeriesException(Exception):
     """Raised when the time series is not stationary"""
     pass
+
+
+class TooManySharedLibrariesException(Exception):
+    """Raised when several shared libraries are found when loading a given shared library"""
+    pass

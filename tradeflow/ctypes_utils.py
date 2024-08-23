@@ -7,6 +7,7 @@ from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
 from tradeflow.definitions import ROOT_DIR
+from tradeflow.exceptions import TooManySharedLibrariesException
 
 logger = logger_utils.get_logger(__name__)
 
@@ -18,8 +19,8 @@ SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib", "pyd"]
 
 function_to_argtypes_and_restype = {
     "my_simulate": {
-        # size (int), seed (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), simulation (int*)
-        ARGUMENT_TYPES: (ct.c_int, ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int)),
+        # size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), simulation (int*)
+        ARGUMENT_TYPES: (ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int)),
         RESULT_TYPES: ct.c_void_p
     }
 }
@@ -138,10 +139,8 @@ def get_shared_library_file(directory: str, shared_library_name: str) -> str:
         shared_library_files.extend(glob.glob(f"{shared_library_name}.*.{potential_extension}", root_dir=directory))
 
     if len(shared_library_files) == 0:
-        raise FileNotFoundError(
-            f"No shared libray file for library {shared_library_name} with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {str(directory)}")
+        raise FileNotFoundError(f"No shared library found for name '{shared_library_name}' with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {str(directory)}.")
     if len(shared_library_files) >= 2:
-        raise Exception(
-            f"{len(shared_library_files)} shared library files for library {shared_library_name} with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} (directory: {str(directory)})")
+        raise TooManySharedLibrariesException(f"{len(shared_library_files)} shared libraries found with name '{shared_library_name}' with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} in directory: {str(directory)}.")
 
     return str(directory.joinpath(shared_library_files[0]))
