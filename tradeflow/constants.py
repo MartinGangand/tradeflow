@@ -2,7 +2,7 @@ import logging
 from enum import Enum
 
 
-class OrderSelectionMethodAR(Enum):        
+class OrderSelectionMethodAR(Enum):
     INFORMATION_CRITERION = "information_criterion"
     PACF = "pacf"
 
@@ -35,11 +35,6 @@ class CorrelationFunction(Enum):
         return self._value_
 
 
-class OLSMethod(Enum):
-    PINV = "pinv"
-
-
 class Logger:
     FORMAT = "%(asctime)s [%(filename)s] [%(levelname)s] - %(message)s"
     LEVEL = logging.INFO
-    
