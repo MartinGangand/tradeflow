@@ -3,7 +3,7 @@ from statsmodels.datasets import utils as du
 
 def load():
     """
-    Load trade signs data and returns a numpy ndarray.
+    Load trade signs data and return a numpy ndarray.
 
     Returns
     -------
@@ -14,7 +14,7 @@ def load():
 
 def load_pandas():
     """
-    Load trade signs data and returns a numpy.ndarray.
+    Load trade signs data and return a numpy.ndarray.
 
     Returns
     -------
