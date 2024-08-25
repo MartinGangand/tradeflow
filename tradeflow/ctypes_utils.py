@@ -166,7 +166,7 @@ def find_files(pattern: str, directory: str) -> List[str]:
     pattern : str
         The file name pattern to search for.
     directory : str
-        The directory in which to search for files
+        The directory in which to search for files.
 
     Returns
     -------
