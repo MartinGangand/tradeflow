@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -140,7 +140,7 @@ class TestPlot:
     @staticmethod
     def check_axe_values_training_vs_simulation(axe: Axes, training_values: np.ndarray, simulation_values: np.ndarray,
                                                 order: int, title: str, y_scale: str, x_lim: Tuple[float, float],
-                                                y_lim: Tuple[float, float] | None = None):
+                                                y_lim: Optional[Tuple[float, float]] = None):
         assert_almost_equal(actual=axe.lines[0].get_xydata()[:, 1], desired=training_values, decimal=10)
         assert axe.lines[0].get_label() == "Training"
 

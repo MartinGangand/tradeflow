@@ -104,17 +104,16 @@ class AR(TimeSeries):
                                            is_none_valid=False)
         self._select_order()
 
-        match method:
-            case FitMethodAR.YULE_WALKER:
-                check_condition(self._is_time_series_stationary(regression="n"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
-                self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
-            case FitMethodAR.OLS_WITH_CST:
-                check_condition(self._is_time_series_stationary(regression="c"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
-                ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
-                self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
-            case _:
-                raise IllegalValueException(
-                    f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
+        if method == FitMethodAR.YULE_WALKER:
+            check_condition(self._is_time_series_stationary(regression="n"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
+            self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
+        elif method == FitMethodAR.OLS_WITH_CST:
+            check_condition(self._is_time_series_stationary(regression="c"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
+            ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
+            self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
+        else:
+            raise IllegalValueException(
+                f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
 
         logger.info(f"The AR({self._order}) model has been fitted with method '{method}'.")
         return self
@@ -124,30 +123,29 @@ class AR(TimeSeries):
             self._order = self._max_order
 
         else:
-            match self._order_selection_method:
-                case OrderSelectionMethodAR.INFORMATION_CRITERION:
-                    model = ar_select_order(endog=self._signs, maxlag=self._max_order,
-                                            ic=self._information_criterion.value, trend="n")
-                    self._order = len(model.ar_lags)
-                case OrderSelectionMethodAR.PACF:
-                    pacf_coeffs, confidence_interval = self.calculate_pacf(nb_lags=self._max_order, alpha=0.05)
+            if self._order_selection_method == OrderSelectionMethodAR.INFORMATION_CRITERION:
+                model = ar_select_order(endog=self._signs, maxlag=self._max_order,
+                                        ic=self._information_criterion.value, trend="n")
+                self._order = len(model.ar_lags)
+            elif self._order_selection_method == OrderSelectionMethodAR.PACF:
+                pacf_coeffs, confidence_interval = self.calculate_pacf(nb_lags=self._max_order, alpha=0.05)
 
-                    pacf_coeffs = pacf_coeffs[1:]
-                    confidence_interval = confidence_interval[1:]
+                pacf_coeffs = pacf_coeffs[1:]
+                confidence_interval = confidence_interval[1:]
 
-                    lower_band = confidence_interval[:, 0] - pacf_coeffs
-                    upper_band = confidence_interval[:, 1] - pacf_coeffs
+                lower_band = confidence_interval[:, 0] - pacf_coeffs
+                upper_band = confidence_interval[:, 1] - pacf_coeffs
 
-                    order = 0
-                    for acf_coeff, value_lower_band, value_upper_band in zip(pacf_coeffs, lower_band, upper_band):
-                        if is_value_within_interval_exclusive(value=acf_coeff, lower_bound=value_lower_band,
-                                                              upper_bound=value_upper_band):
-                            break
-                        order += 1
-                    self._order = order
-                case _:
-                    raise IllegalValueException(
-                        f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
+                order = 0
+                for acf_coeff, value_lower_band, value_upper_band in zip(pacf_coeffs, lower_band, upper_band):
+                    if is_value_within_interval_exclusive(value=acf_coeff, lower_bound=value_lower_band,
+                                                          upper_bound=value_upper_band):
+                        break
+                    order += 1
+                self._order = order
+            else:
+                raise IllegalValueException(
+                    f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
 
         logger.info(
             f"AR order selection: {self._order} lags (method: {self._order_selection_method}, information criterion: {self._information_criterion}, time series length: {len(self._signs)}).")
@@ -174,9 +172,9 @@ class AR(TimeSeries):
         check_condition(self._parameters is not None, ModelNotFittedException(
             "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
 
-        inverted_params = CArray.of(c_type="double", arr=self._parameters[::-1])
-        last_signs = CArray.of(c_type="int", arr=np.array(self._signs[-self._order:]).astype(int))
-        self._simulation = CArrayEmpty.of(c_type="int", size=size)
+        inverted_params = CArray.of(c_type_str="double", arr=self._parameters[::-1])
+        last_signs = CArray.of(c_type_str="int", arr=np.array(self._signs[-self._order:]).astype(int))
+        self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
         cpp_lib = ctypes_utils.load_shared_library()
         cpp_lib.my_simulate(size, inverted_params, self._constant_parameter, len(inverted_params), last_signs, seed, self._simulation)
