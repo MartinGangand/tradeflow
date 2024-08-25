@@ -41,7 +41,7 @@ def get_c_type(c_type_str: Literal["int", "double"]) -> ct._SimpleCData:
     ct._SimpleCData
         The corresponding ctypes type.
     """
-    type_str_to_c_type = {
+    c_type_str_to_c_type = {
         "int": ct.c_int,
         "double": ct.c_double
     }
@@ -49,7 +49,7 @@ def get_c_type(c_type_str: Literal["int", "double"]) -> ct._SimpleCData:
     if c_type_str not in type_str_to_c_type:
         raise Exception(f"Unknown type {c_type_str}")
 
-    return type_str_to_c_type[c_type_str]
+    return c_type_str_to_c_type[c_type_str]
 
 
 class CArray:
