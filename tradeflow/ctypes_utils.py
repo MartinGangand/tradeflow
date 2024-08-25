@@ -124,10 +124,8 @@ def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
         The shared library for which to set argument and result types for all functions.
     """
     for function_name in function_to_argtypes_and_restype.keys():
-        setattr(getattr(shared_lib, function_name), ARGUMENT_TYPES,
-                function_to_argtypes_and_restype.get(function_name).get(ARGUMENT_TYPES))
-        setattr(getattr(shared_lib, function_name), RESULT_TYPES,
-                function_to_argtypes_and_restype.get(function_name).get(RESULT_TYPES))
+        setattr(getattr(shared_lib, function_name), ARGUMENT_TYPES, function_to_argtypes_and_restype.get(function_name).get(ARGUMENT_TYPES))
+        setattr(getattr(shared_lib, function_name), RESULT_TYPES, function_to_argtypes_and_restype.get(function_name).get(RESULT_TYPES))
 
 
 def get_shared_library_file(directory: str, shared_library_name: str) -> str:
