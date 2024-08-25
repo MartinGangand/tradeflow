@@ -1,7 +1,8 @@
 import ctypes as ct
-import glob
+import fnmatch
+import os
 from pathlib import Path
-from typing import Literal
+from typing import Literal, List
 
 from statsmodels.tools.typing import ArrayLike1D
 
@@ -26,16 +27,41 @@ function_to_argtypes_and_restype = {
 }
 
 
+def get_c_type(c_type_str: Literal["int", "double"]) -> ct._SimpleCData:
+    """
+    Return a ctypes type corresponding to a given C data type (in a string).
+
+    Parameters:
+    -----------
+    c_type_str : Literal["int", "double"]
+        A string indicating the desired C data type.
+
+    Returns:
+    --------
+    ct._SimpleCData
+        The corresponding ctypes type.
+    """
+    c_type_str_to_c_type = {
+        "int": ct.c_int,
+        "double": ct.c_double
+    }
+
+    if c_type_str not in c_type_str_to_c_type:
+        raise Exception(f"Unknown type {c_type_str}")
+
+    return c_type_str_to_c_type[c_type_str]
+
+
 class CArray:
 
     @staticmethod
-    def of(c_type: Literal["int", "double"], arr: ArrayLike1D) -> ct.Array:
+    def of(c_type_str: Literal["int", "double"], arr: ArrayLike1D) -> ct.Array:
         """
         Create a ctypes array from a Python list.
 
         Parameters
         ----------
-        c_type : {'int', 'double'}
+        c_type_str : {'int', 'double'}
             The type of the array to be created.
         arr : array_like
             The array from which to create the ctypes array.
@@ -45,27 +71,20 @@ class CArray:
         ct.Array
             The ctypes array containing the elements of `arr`.
         """
-        match c_type:
-            case "int":
-                c_type = ct.c_int
-            case "double":
-                c_type = ct.c_double
-            case _:
-                raise Exception(f"Unknown type {c_type}")
-
+        c_type = get_c_type(c_type_str=c_type_str)
         return (c_type * len(arr))(*arr)
 
 
 class CArrayEmpty:
 
     @staticmethod
-    def of(c_type: Literal["int", "double"], size: int) -> ct.Array:
+    def of(c_type_str: Literal["int", "double"], size: int) -> ct.Array:
         """
         Create an empty ctypes array of a given size.
 
         Parameters
         ----------
-        c_type : {'int', 'double'}
+        c_type_str : {'int', 'double'}
             The type of the array to be created.
         size : int
             The size of the ctypes array to create.
@@ -75,15 +94,8 @@ class CArrayEmpty:
         ct.Array
             The empty ctypes array of size `size`.
         """
-        match c_type:
-            case "int":
-                c_type = ct.c_int
-            case "double":
-                c_type = ct.c_double
-            case _:
-                raise Exception(f"Unknown type {c_type}")
-
-        return (c_type * size)()
+        c_type_str = get_c_type(c_type_str=c_type_str)
+        return (c_type_str * size)()
 
 
 def load_shared_library() -> ct.CDLL:
@@ -123,7 +135,7 @@ def get_shared_library_file(directory: str, shared_library_name: str) -> str:
     Parameters
     ----------
     directory : str
-        The directory in which to search the shared library.
+        The directory in which to search for the shared library.
     shared_library_name : str
         The name of the shared library.
 
@@ -132,15 +144,39 @@ def get_shared_library_file(directory: str, shared_library_name: str) -> str:
     str
         The path to the shared library, the extension of the file can be 'so' (Linux), 'dll' (Windows), 'dylib' (macOS), or 'pyd'.
     """
-    directory = Path(directory)
     shared_library_files = []
     for potential_extension in SHARED_LIBRARY_EXTENSIONS:
-        shared_library_files.extend(glob.glob(f"{shared_library_name}.{potential_extension}", root_dir=directory))
-        shared_library_files.extend(glob.glob(f"{shared_library_name}.*.{potential_extension}", root_dir=directory))
+        shared_library_files.extend(find_files(pattern=f"{shared_library_name}.{potential_extension}", directory=directory))
+        shared_library_files.extend(find_files(pattern=f"{shared_library_name}.*.{potential_extension}", directory=directory))
 
     if len(shared_library_files) == 0:
-        raise FileNotFoundError(f"No shared library found for name '{shared_library_name}' with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {str(directory)}.")
+        raise FileNotFoundError(f"No shared library found for name '{shared_library_name}' with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {directory}.")
     if len(shared_library_files) >= 2:
-        raise TooManySharedLibrariesException(f"{len(shared_library_files)} shared libraries found with name '{shared_library_name}' with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} in directory: {str(directory)}.")
+        raise TooManySharedLibrariesException(f"{len(shared_library_files)} shared libraries found with name '{shared_library_name}' with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} in directory: {directory}.")
 
-    return str(directory.joinpath(shared_library_files[0]))
+    return str(Path(directory).joinpath(shared_library_files[0]))
+
+
+def find_files(pattern: str, directory: str) -> List[str]:
+    """
+    Return files matching a specified pattern within a directory.
+
+    Parameters
+    ----------
+    pattern : str
+        The file name pattern to search for.
+    directory : str
+        The directory in which to search for files.
+
+    Returns
+    -------
+    bool
+        The file names matching the pattern (only the file names, not their full paths).
+    """
+    matched_files = []
+    for root, dirs, files in os.walk(directory):
+        if root == directory:
+            for filename in fnmatch.filter(files, pattern):
+                matched_files.append(filename)
+
+    return matched_files
