@@ -150,11 +150,9 @@ def get_shared_library_file(directory: str, shared_library_name: str) -> str:
         shared_library_files.extend(find_files(pattern=f"{shared_library_name}.*.{potential_extension}", directory=directory))
 
     if len(shared_library_files) == 0:
-        raise FileNotFoundError(
-            f"No shared library found for name '{shared_library_name}' with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {directory}.")
+        raise FileNotFoundError(f"No shared library found for name '{shared_library_name}' with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {directory}.")
     if len(shared_library_files) >= 2:
-        raise TooManySharedLibrariesException(
-            f"{len(shared_library_files)} shared libraries found with name '{shared_library_name}' with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} in directory: {directory}.")
+        raise TooManySharedLibrariesException(f"{len(shared_library_files)} shared libraries found with name '{shared_library_name}' with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} in directory: {directory}.")
 
     return str(Path(directory).joinpath(shared_library_files[0]))
 
