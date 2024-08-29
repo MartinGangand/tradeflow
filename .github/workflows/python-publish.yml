@@ -1,6 +1,13 @@
 name: Upload Python Package
 
-on: [push]
+on:
+#  pull_request:
+  push:
+#    branches:
+#      - main
+#  release:
+#    types:
+#      - published
 
 permissions:
   contents: read
@@ -20,16 +27,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel==2.20.0 libpython
-
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir wheelhouse
+        uses: pypa/cibuildwheel@v2.20.0
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -65,7 +64,6 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -91,7 +89,6 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
