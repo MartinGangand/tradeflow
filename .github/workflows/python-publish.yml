@@ -1,8 +1,6 @@
 name: Upload Python Package
 
-on:
-  release:
-    types: [published]
+on: [push]
 
 permissions:
   contents: read
@@ -67,6 +65,7 @@ jobs:
     permissions:
       id-token: write
 
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -92,6 +91,7 @@ jobs:
     permissions:
       id-token: write
 
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
