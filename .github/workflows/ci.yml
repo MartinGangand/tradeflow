@@ -27,7 +27,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
+          pip install -r test-requirements.txt
 
       - name: Compile shared library on Linux or macOS
         if: runner.os != 'Windows'
@@ -38,4 +38,4 @@ jobs:
         run: g++ -Wall -Wextra -shared -o tradeflow/libcpp.dll tradeflow/simulate.cpp -std=c++17
 
       - name: Run tests
-        run: pytest -v -s --doctest-modules
+        run: pytest -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
