@@ -40,8 +40,19 @@ vector<int> simulate(const int size, const vector<double>& inverted_params, cons
     return simulation;
 }
 
+#pragma once
+
+#if defined(_MSC_VER)
+#define MATHLIBRARY_API __declspec(dllexport) // Microsoft
+#elif defined(__GNUC__)
+#define MATHLIBRARY_API __attribute__((visibility("default"))) // GCC
+#else
+#define MATHLIBRARY_API // Most compilers export all the symbols by default. We hope for the best here.
+#pragma warning Unknown dynamic link import/export semantics.
+#endif
+
 extern "C" {
-    void my_simulate(const int size, const double* inverted_params, const double constant_parameter, const int nb_params, int* last_signs, const int seed, int* res) {
+    MATHLIBRARY_API void my_simulate(const int size, const double* inverted_params, const double constant_parameter, const int nb_params, int* last_signs, const int seed, int* res) {
         vector<int> last_signs_vec = vector(last_signs, last_signs + nb_params);
         const vector<double> inverted_params_vect = vector(inverted_params, inverted_params + nb_params);
         vector<int> simulation = simulate(size, inverted_params_vect, constant_parameter, last_signs_vec, seed);
