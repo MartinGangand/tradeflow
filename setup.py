@@ -1,11 +1,13 @@
+import os.path
 from typing import List
 
-from setuptools import Extension, setup
+from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext
 
 PROJECT = "tradeflow"
+CPP_FOLDER = "lib/cpp"
 SHARED_LIBRARY_NAME = "libcpp"
-CPP_MODULES = ["simulate"]
+CPP_MODULES = ["simulation"]
 
 
 class CppExtension(Extension):
@@ -29,19 +31,20 @@ class new_build_ext(build_ext):
         build_ext.build_extension(self, ext)
 
     def get_export_symbols(self, ext):
-        return ext.export_symbols + list(map(lambda module: f"my_{module}", CPP_MODULES))
+        return ext.export_symbols
 
 
 def build_cpp_extension() -> List[CppExtension]:
     cpp_extension = CppExtension(name=f"{PROJECT}.{SHARED_LIBRARY_NAME}",
-                                 sources=[f"{PROJECT}/{cpp_module}.cpp" for cpp_module in CPP_MODULES],
+                                 sources=[os.path.join(CPP_FOLDER, f"{cpp_module}.cpp") for cpp_module in CPP_MODULES],
                                  language="c++"
                                  )
     return [cpp_extension]
 
 
 setup(
-    packages=[PROJECT],
+    packages=[PROJECT, CPP_FOLDER],
     ext_modules=build_cpp_extension(),
-    cmdclass={'build_ext': new_build_ext}
+    cmdclass={'build_ext': new_build_ext},
+    package_data={"": ["*.h"]}
 )

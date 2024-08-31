@@ -177,5 +177,5 @@ class AR(TimeSeries):
         self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
         cpp_lib = ctypes_utils.load_shared_library()
-        cpp_lib.my_simulate(size, inverted_params, self._constant_parameter, len(inverted_params), last_signs, seed, self._simulation)
+        cpp_lib.simulate(size, inverted_params, self._constant_parameter, len(inverted_params), last_signs, seed, self._simulation)
         return self._simulation[:]

@@ -19,7 +19,7 @@ SHARED_LIBRARY_NAME = "libcpp"
 SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib", "pyd"]
 
 function_to_argtypes_and_restype = {
-    "my_simulate": {
+    "simulate": {
         # size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), simulation (int*)
         ARGUMENT_TYPES: (ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int)),
         RESULT_TYPES: ct.c_void_p
