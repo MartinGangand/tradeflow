@@ -15,7 +15,7 @@ logger = logger_utils.get_logger(__name__)
 ARGUMENT_TYPES = "argtypes"
 RESULT_TYPES = "restype"
 
-SHARED_LIBRARY_NAME = "libcpp"
+SHARED_LIBRARY_NAME = "libtradeflow"
 SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib", "pyd"]
 
 function_to_argtypes_and_restype = {
@@ -174,7 +174,7 @@ def find_files(pattern: str, directory: str) -> List[str]:
         The file names matching the pattern (only the file names, not their full paths).
     """
     matched_files = []
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         if root == directory:
             for filename in fnmatch.filter(files, pattern):
                 matched_files.append(filename)
