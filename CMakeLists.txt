@@ -7,6 +7,9 @@ project(tradeflow VERSION 0.0.12.1 LANGUAGES CXX)
 # Set the C++ standard to be used
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+if(WIN32)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 # Add the source file
 add_library(tradeflow SHARED lib/cpp/tradeflow/simulation.cpp)

@@ -1,7 +1,3 @@
-//
-// Created by Martin Gangand on 01/09/2024.
-//
-
 #pragma once
 
 #if defined(_MSC_VER)
