@@ -17,7 +17,6 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-13, macos-14, windows-latest]
 
@@ -71,13 +70,13 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Publish release distributions to PyPI
+      - name: Publish release distributions to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
 
   upload-pypi:
-    needs: [build-wheels, build-sdist]
+    needs: [build-wheels, build-sdist, upload-testpypi]
 
     runs-on: ubuntu-latest
 

@@ -29,15 +29,8 @@ jobs:
           pip install -r requirements.txt
           pip install -r test-requirements.txt
 
-#      - name: Compile shared library on Linux or macOS
-#        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/libtradeflow.so lib/cpp/tradeflow/simulation.cpp -std=c++17
-
-      - name: make
-        run: |
-          mkdir build
-          cd build
-          cmake ..
-          cmake --build .
+      - name: Compile shared library
+        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/libtradeflow.${{ matrix.os == 'ubuntu-latest' && 'so' || matrix.os == 'windows-latest' && 'dll' || 'dylib' }} lib/cpp/tradeflow/simulation.cpp -std=c++17
 
       - name: Run tests
         run: pytest -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes

@@ -1,14 +1,14 @@
 import fnmatch
-import os.path
+import os
+import pathlib
 from typing import List
 
+import toml
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
-PROJECT = "tradeflow"
-CPP_FOLDER = os.path.join("lib", "cpp")
-SHARED_LIBRARY_NAME = "libtradeflow"
-CPP_MODULES = ["simulation"]
+PACKAGE_NAME = toml.load(pathlib.Path(__file__).parent.joinpath("pyproject.toml"))["project"]["name"]
+CPP_FOLDER_RELATIVE = os.path.join("lib", "cpp")
 
 
 class CppExtension(Extension):
@@ -17,45 +17,40 @@ class CppExtension(Extension):
 
 class new_build_ext(build_ext):
     extra_compile_args = {
-        f"{PROJECT}.{SHARED_LIBRARY_NAME}": {
-            "unix": ["-std=c++17"],
-            "msvc": ["/std:c++17"]
-        }
+        "unix": ["-std=c++17"],
+        "msvc": ["/std:c++17"]
     }
 
     def build_extension(self, ext):
-        extra_args = self.extra_compile_args.get(ext.name)
-        if extra_args is not None:
-            compiler_type = self.compiler.compiler_type
-            ext.extra_compile_args += extra_args.get(compiler_type, [])
+        extra_args = self.extra_compile_args.get(self.compiler.compiler_type, [])
+        ext.extra_compile_args += extra_args
 
-        build_ext.build_extension(self, ext)
+        super().build_extension(ext)
 
     def get_export_symbols(self, ext):
         return ext.export_symbols
 
 
-def build_tradeflow_cpp_extension(module: str) -> CppExtension:
-    cpp_extension = CppExtension(name=f"{PROJECT}.lib{module}",
-                                 sources=find_cpp_files(directory=os.path.join(CPP_FOLDER, module)),
-                                 language="c++"
-                                 )
-    return cpp_extension
+def build_cpp_module(folder_name: str) -> CppExtension:
+    cpp_module = CppExtension(name=f"{PACKAGE_NAME}.lib{folder_name}",
+                              sources=find_cpp_files(directory=os.path.join(CPP_FOLDER_RELATIVE, folder_name)),
+                              language="c++"
+                              )
+    return cpp_module
 
 
-def find_cpp_files(directory: str):
-    matched_files = []
+def find_cpp_files(directory: str) -> List[str]:
+    cpp_files = []
     for root, _, files in os.walk(directory):
         if root == directory:
             for filename in fnmatch.filter(files, "*.cpp"):
-                matched_files.append(os.path.join(directory, filename))
+                cpp_files.append(os.path.join(directory, filename))
 
-    return matched_files
+    return cpp_files
 
 
 setup(
-    packages=[PROJECT, os.path.join(CPP_FOLDER, "tradeflow")],
-    ext_modules=[build_tradeflow_cpp_extension(module="tradeflow")],
-    cmdclass={'build_ext': new_build_ext},
-    package_data={"": ["*.h"]}
+    packages=[PACKAGE_NAME],
+    ext_modules=[build_cpp_module(folder_name="tradeflow")],
+    cmdclass={'build_ext': new_build_ext}
 )

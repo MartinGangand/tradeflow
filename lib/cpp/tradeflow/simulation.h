@@ -1,16 +1,12 @@
-//
-// Created by Martin Gangand on 01/09/2024.
-//
-
 #pragma once
 
 #if defined(_MSC_VER)
-    #define EXPORT __declspec(dllexport) // Microsoft
+    #define EXPORT __declspec(dllexport)
 #elif defined(__GNUC__)
-    #define EXPORT __attribute__((visibility("default"))) // GCC
+    #define EXPORT __attribute__((visibility("default")))
 #else
-    #define EXPORT // Most compilers export all the symbols by default.
-    #pragma warning Unknown dynamic link import/export semantics.
+    #define EXPORT
+    #pragma warning Unknown dynamic link export semantics.
 #endif
 
 extern "C" {
