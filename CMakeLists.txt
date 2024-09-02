@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the source file
-add_library(tradeflow SHARED lib/cpp/tradeflow/simulation.cppp)
+add_library(tradeflow SHARED lib/cpp/tradeflow/simulation.cpp)
 
 # Specify the output directory for the shared library
 set_target_properties(tradeflow PROPERTIES
