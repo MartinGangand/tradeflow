@@ -12,15 +12,18 @@ if(WIN32)
 endif()
 
 # Add the source file
-add_library(tradeflow SHARED lib/cpp/tradeflow/simulation.cpp)
+add_library(tradeflow SHARED simulation.cpp)
 
-# Specify the output directory for the shared library
+# Specify the output directory for the shared library (${CMAKE_SOURCE_DIR}/../../../tradeflow)
 set_target_properties(tradeflow PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/tradeflow
-        RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/tradeflow
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${RUNTIME_OUTPUT_DIRECTORY_DEBUG}"
+        PREFIX ""
+        OUTPUT_NAME "libtradeflow"
 )
 
-set_target_properties(tradeflow PROPERTIES PREFIX "")
+message("111111111___CMAKE: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+message("22222222: ${RUNTIME_OUTPUT_DIRECTORY_DEBUG}")
+message("=====LIBRARY_OUTPUT_DIRECTORY=====: ${CMAKE_BUILD_TYPE} => ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ..... ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} ..... ${LIBRARY_OUTPUT_DIRECTORY}")
 
 # Set the appropriate compiler flags
 if(MSVC)
@@ -30,7 +33,3 @@ else()
     # Unix (Linux, macOS) specific flags
     target_compile_options(tradeflow PRIVATE -Wall -Wextra -fPIC)
 endif()
-
-set_target_properties(tradeflow PROPERTIES
-        OUTPUT_NAME "libtradeflow"
-)

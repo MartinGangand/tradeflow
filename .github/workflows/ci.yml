@@ -13,6 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-13, macos-14, windows-latest]
         python-version: ['3.12']
+    #        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
 
     steps:
       - name: Checkout code
@@ -29,15 +30,12 @@ jobs:
           pip install -r requirements.txt
           pip install -r test-requirements.txt
 
-#      - name: Compile shared library on Linux or macOS
-#        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/libtradeflow.so lib/cpp/tradeflow/simulation.cpp -std=c++17
-
       - name: make
         run: |
           mkdir build
           cd build
-          cmake ..
-          cmake --build .
+          cmake ../lib/cpp/tradeflow -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="../tradeflow" -DRUNTIME_OUTPUT_DIRECTORY_DEBUG="../tradeflow" -DCMAKE_BUILD_TYPE="Debug"
+          cmake --build . --config Debug
 
       - name: Run tests
         run: pytest -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
