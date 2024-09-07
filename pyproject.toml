@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0, <=72.1.0"]
+requires = ["setuptools>=61.0, <=72.1.0", "toml"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "tradeflow"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
     "matplotlib>=3.0.0",
     "numpy>=1.21.0",

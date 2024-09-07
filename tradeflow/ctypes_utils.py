@@ -15,19 +15,19 @@ logger = logger_utils.get_logger(__name__)
 ARGUMENT_TYPES = "argtypes"
 RESULT_TYPES = "restype"
 
-SHARED_LIBRARY_NAME = "libcpp"
+SHARED_LIBRARY_NAME = "libtradeflow"
 SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib", "pyd"]
 
 function_to_argtypes_and_restype = {
-    "my_simulate": {
-        # size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), simulation (int*)
+    "simulate": {
+        # size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), res (int*)
         ARGUMENT_TYPES: (ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int)),
         RESULT_TYPES: ct.c_void_p
     }
 }
 
 
-def get_c_type(c_type_str: Literal["int", "double"]) -> ct._SimpleCData:
+def get_c_type_from_string(c_type_str: Literal["int", "double"]) -> ct._SimpleCData:
     """
     Return a ctypes type corresponding to a given C data type (in a string).
 
@@ -71,7 +71,7 @@ class CArray:
         ct.Array
             The ctypes array containing the elements of `arr`.
         """
-        c_type = get_c_type(c_type_str=c_type_str)
+        c_type = get_c_type_from_string(c_type_str=c_type_str)
         return (c_type * len(arr))(*arr)
 
 
@@ -94,7 +94,7 @@ class CArrayEmpty:
         ct.Array
             The empty ctypes array of size `size`.
         """
-        c_type_str = get_c_type(c_type_str=c_type_str)
+        c_type_str = get_c_type_from_string(c_type_str=c_type_str)
         return (c_type_str * size)()
 
 
@@ -174,7 +174,7 @@ def find_files(pattern: str, directory: str) -> List[str]:
         The file names matching the pattern (only the file names, not their full paths).
     """
     matched_files = []
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         if root == directory:
             for filename in fnmatch.filter(files, pattern):
                 matched_files.append(filename)
