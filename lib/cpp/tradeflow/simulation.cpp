@@ -1,3 +1,5 @@
+#include "simulation.h"
+
 #include <algorithm>
 #include <numeric>
 #include <random>
@@ -21,7 +23,10 @@ void rotate_left_by_1(vector<T>& vect, const T new_far_right_value) {
     vect.at(vect.size() - 1) = new_far_right_value;
 }
 
-vector<int> simulate(const int size, const vector<double>& inverted_params, const double constant_parameter, vector<int>& last_signs, const int seed) {
+void simulate(const int size, const double* inverted_params_ptr, const double constant_parameter, const int nb_params, int* last_signs_ptr, const int seed, int* res) {
+    vector<int> last_signs = vector(last_signs_ptr, last_signs_ptr + nb_params);
+    const vector<double> inverted_params = vector(inverted_params_ptr, inverted_params_ptr + nb_params);
+
     const vector<double> uniforms = generate_uniforms(size, seed);
     vector<int> simulation;
     simulation.reserve(size);
@@ -37,14 +42,6 @@ vector<int> simulate(const int size, const vector<double>& inverted_params, cons
         simulation.push_back(next_sign);
         rotate_left_by_1(last_signs, next_sign);
     }
-    return simulation;
-}
 
-extern "C" {
-    void my_simulate(const int size, const double* inverted_params, const double constant_parameter, const int nb_params, int* last_signs, const int seed, int* res) {
-        vector<int> last_signs_vec = vector(last_signs, last_signs + nb_params);
-        const vector<double> inverted_params_vect = vector(inverted_params, inverted_params + nb_params);
-        vector<int> simulation = simulate(size, inverted_params_vect, constant_parameter, last_signs_vec, seed);
-        copy(simulation.begin(), simulation.end(), res);
-    }
+    copy(simulation.begin(), simulation.end(), res);
 }
