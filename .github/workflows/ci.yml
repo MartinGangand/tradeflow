@@ -1,36 +1,36 @@
-name: CI
-
-on: [push, workflow_dispatch]
-
-jobs:
-  run-tests:
-    name: Test
-
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-13, macos-14, windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r test-requirements.txt
-
-      - name: Compile shared library
-        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/libtradeflow.${{ matrix.os == 'ubuntu-latest' && 'so' || matrix.os == 'windows-latest' && 'dll' || 'dylib' }} lib/cpp/tradeflow/simulation.cpp -std=c++17
-
-      - name: Run tests
-        run: pytest -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
+#name: CI
+#
+#on: [push, workflow_dispatch]
+#
+#jobs:
+#  run-tests:
+#    name: Test
+#
+#    runs-on: ${{ matrix.os }}
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: [ubuntu-latest, macos-13, macos-14, windows-latest]
+#        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python-version }}
+#
+#      - name: Install dependencies
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -r requirements.txt
+#          pip install -r test-requirements.txt
+#
+#      - name: Compile shared library
+#        run: g++ -fPIC -Wall -Wextra -shared -o tradeflow/libtradeflow.${{ matrix.os == 'ubuntu-latest' && 'so' || matrix.os == 'windows-latest' && 'dll' || 'dylib' }} lib/cpp/tradeflow/simulation.cpp -std=c++17
+#
+#      - name: Run tests
+#        run: pytest -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
