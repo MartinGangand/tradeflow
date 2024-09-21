@@ -36,4 +36,4 @@ jobs:
         run: cmake --build build --config Debug
 
       - name: Run tests
-        run: pytest -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
+        run: pytest tradeflow -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
