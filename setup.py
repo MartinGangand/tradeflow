@@ -52,5 +52,5 @@ class CMakeBuild(build_ext):
 setup(
     packages=[PACKAGE_NAME],
     ext_modules=[CMakeExtension(name=PACKAGE_NAME)],
-    cmdclass={'build_ext': CMakeBuild},
+    cmdclass={'build_ext': CMakeBuild}
 )
