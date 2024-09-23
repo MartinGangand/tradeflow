@@ -37,3 +37,6 @@ jobs:
 
       - name: Run tests
         run: pytest tradeflow -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
+
+      - name: Run tests scripts
+        run: pytest scripts -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes

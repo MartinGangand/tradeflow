@@ -18,7 +18,7 @@ ROOT = pathlib.Path(__file__).parent.parent
 PACKAGE_NAME = toml.load(ROOT.joinpath("pyproject.toml"))["project"]["name"]
 VERSION = toml.load(ROOT.joinpath("pyproject.toml"))["project"]["version"]
 
-SHARED_LIBRARY_NAME = "libtradeflow"
+ANY_VALID_STRING = r"[^'\"\s]+"
 
 WHEEL_EXTENSION = "whl"
 SOURCE_EXTENSION = "tar.gz"
@@ -33,56 +33,47 @@ DYLIB_EXTENSION = "dylib"
 
 PASSED = "PASSED"
 
+EXPECTED_SHARED_LIBRARIES = ["tradeflow/libtradeflow"]
 EXPECTED_NB_WHEELS = 55
 
 
-def verify_source(source_url: str) -> None:
-    validate_source_url_name(source_url=source_url)
+def verify_source(source_url: str, package_name: str, version: str) -> None:
+    verify_source_url(source_url=source_url, package_name=package_name, version=version)
 
 
-def validate_source_url_name(source_url: str) -> None:
-    package_name_and_version = f"{PACKAGE_NAME}-{VERSION}"
-    if package_name_and_version not in source_url:
-        raise Exception(f"expected package name and version ('{package_name_and_version}') to be in the source url: {source_url}")
+def verify_source_url(source_url: str, package_name: str, version: str) -> None:
+    expected_source_name = f"{package_name}-{version}.{SOURCE_EXTENSION}"
+    actual_source_name = source_url.split("/")[-1]
+    if actual_source_name != expected_source_name:
+        # TODO: improve message: quotes for but was + mention url
+        raise Exception(f"expected source distribution url to contain '{expected_source_name}', but was '{actual_source_name}'")
 
 
-def verify_wheel(wheel_url: str) -> None:
-    validate_wheel_url(wheel_url=wheel_url)
+def verify_wheel(wheel_url: str, package_name: str, version: str, expected_shared_libraries: List[str]) -> None:
+    verify_wheel_url(wheel_url=wheel_url, package_name=package_name, version=version)
+    expected_shared_lib_ext = expected_wheel_shared_libraries_extension(wheel_url=wheel_url)
     file_names = fetch_file_names_from_zip(url=wheel_url)
-    validate_shared_library(wheel_url=wheel_url, file_names=file_names)
+    verify_wheel_shared_libraries(file_names=file_names, expected_shared_libraries=[f"{expected_shared_lib}.{expected_shared_lib_ext}" for expected_shared_lib in expected_shared_libraries])
 
 
-def display_name(url: str):
-    name = re.findall(pattern=rf'{PACKAGE_NAME}-{VERSION}[^"\s]+', string=url)
-    assert len(name) == 1
-    return name[0]
+def display_name(url: str, package_name: str, version: str):
+    name = re.findall(pattern=rf"{package_name}-{version}{ANY_VALID_STRING}", string=url)
+    if len(name) == 1:
+        return name[0]
+    elif len(name) == 0:
+        return url
+    else:
+        raise Exception("Verify url")
 
 
-def validate_wheel_url(wheel_url: str) -> None:
-    package_name_and_version = f"{PACKAGE_NAME}-{VERSION}"
-    if package_name_and_version not in wheel_url:
-        raise Exception(f"expected package name and version ('{package_name_and_version}') to be in the wheel url: {wheel_url}")
+def verify_wheel_url(wheel_url: str, package_name: str, version: str) -> None:
+    wheel_pattern = rf"{package_name}-{version}-{ANY_VALID_STRING}\.{WHEEL_EXTENSION}\b"
+    match = re.search(pattern=wheel_pattern, string=wheel_url)
+    if match is None:
+        raise Exception(f"expected wheel url '{wheel_url}' to match the pattern '{wheel_pattern}'")
 
 
-def validate_shared_library(wheel_url: str, file_names: List[str]) -> None:
-    matched_shared_libraries = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[SO_EXTENSION, DLL_EXTENSION, DYLIB_EXTENSION])
-
-    if len(matched_shared_libraries) != 1:
-        raise Exception(f"expected 1 shared library in the wheel, but found {len(matched_shared_libraries)} ({matched_shared_libraries if len(matched_shared_libraries) > 1 else ''})")
-
-    shared_library_name = matched_shared_libraries[0]
-    validate_shared_library_extension(wheel_url=wheel_url, shared_library_name=shared_library_name)
-
-
-def validate_shared_library_extension(wheel_url: str, shared_library_name: str) -> None:
-    expected_shared_library_extension = wheel_expected_shared_library_extension(wheel_url=wheel_url)
-
-    is_valid = shared_library_name.endswith(f".{expected_shared_library_extension}")
-    if not is_valid:
-        raise Exception(f"expected shared library extension to be {expected_shared_library_extension}, but was {shared_library_name.split('.')[-1]}\n")
-
-
-def wheel_expected_shared_library_extension(wheel_url: str) -> str:
+def expected_wheel_shared_libraries_extension(wheel_url: str) -> str:
     if LINUX in wheel_url:
         return SO_EXTENSION
     elif MACOS in wheel_url:
@@ -90,13 +81,20 @@ def wheel_expected_shared_library_extension(wheel_url: str) -> str:
     elif WINDOWS in wheel_url:
         return DLL_EXTENSION
     else:
-        raise Exception(f"The wheel does not contain '{LINUX}', '{MACOS}' nor '{WINDOWS}'")
+        raise Exception(f"The wheel name does not contain '{LINUX}', '{MACOS}' nor '{WINDOWS}'")
+
+
+def verify_wheel_shared_libraries(file_names: List[str], expected_shared_libraries: List[str]) -> None:
+    all_shared_libraries = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[SO_EXTENSION, DLL_EXTENSION, DYLIB_EXTENSION])
+    if sorted(all_shared_libraries) != sorted(expected_shared_libraries):
+        raise Exception(f"expected wheel to contain shared librar{'ies' if len(expected_shared_libraries) > 1 else 'y'} {expected_shared_libraries}, but found {all_shared_libraries} instead")
+
 
 # =================================================
 
 
-def get_request(url: str) -> Response:
-    response = requests.get(url, stream=True)
+def get_response(url: str) -> Response:
+    response = requests.get(url=url)
     if not response.ok:
         raise Exception(f"Request for url {url} was unsuccessful")
 
@@ -104,19 +102,19 @@ def get_request(url: str) -> Response:
 
 
 def html_page_as_string(url: str) -> str:
-    response = get_request(url=url)
+    response = get_response(url=url)
     html_page = response.content.decode(encoding=response.encoding, errors="strict")
     return html_page
 
 
 def fetch_file_names_from_zip(url: str) -> List[str]:
-    response = get_request(url=url)
+    response = get_response(url=url)
     with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
         return zip_file.namelist()
 
 
 def find_urls_in_html_page(html_page: str, target_url_extension: str) -> List[str]:
-    urls = re.findall(pattern=rf'https:[^"\s]+\.{target_url_extension}', string=html_page)
+    urls = re.findall(pattern=rf"https:{ANY_VALID_STRING}\.{target_url_extension}\b", string=html_page)
     return urls
 
 
@@ -124,43 +122,46 @@ def find_file_names_with_given_extensions(file_names: List[str], potential_exten
     joined_extensions = "|".join(potential_extensions)
     matched_shared_libraries = []
     for file_name in file_names:
-        if re.search(pattern=rf"[^'\"\s]+\.(?:{joined_extensions})$", string=file_name) is not None:
+        if re.search(pattern=rf"{ANY_VALID_STRING}\.(?:{joined_extensions})$", string=file_name) is not None:
             matched_shared_libraries.append(file_name)
     return matched_shared_libraries
 
 
-def main(index: str):
-    package_url = f"https://{index}.org/project/{PACKAGE_NAME}/{VERSION}/#files"
+def main(index: str, package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str]) -> int:
+    package_url = f"https://{index}.org/project/{package_name}/{version}/#files"
     sys.stdout.write(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n\n")
 
     pypi_html_page = html_page_as_string(url=package_url)
-    wheel_urls = find_urls_in_html_page(html_page=pypi_html_page, target_url_extension=WHEEL_EXTENSION)
     source_urls = find_urls_in_html_page(html_page=pypi_html_page, target_url_extension=SOURCE_EXTENSION)
-
-    if len(wheel_urls) != EXPECTED_NB_WHEELS:
-        raise Exception(f"Expected {EXPECTED_NB_WHEELS} wheel url{'s' if EXPECTED_NB_WHEELS > 1 else ''} in the html page, but found {len(wheel_urls)}")
+    wheel_urls = find_urls_in_html_page(html_page=pypi_html_page, target_url_extension=WHEEL_EXTENSION)
 
     if len(source_urls) != 1:
-        raise Exception(f"Expected 1 source url in the html page, but found {len(source_urls)}")
+        raise Exception(f"Expected 1 source url in the html page, but found {len(source_urls)} instead")
+
+    if len(wheel_urls) != expected_nb_wheels:
+        raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
     exit_status = 0
-    for wheel_url in wheel_urls:
-        try:
-            verify_wheel(wheel_url=wheel_url)
-        except Exception as wheel_exception:
-            exit_status += 1
-            sys.stdout.write(f"{display_name(url=wheel_url)}: {wheel_exception}\n")
-        else:
-            sys.stdout.write(f"{display_name(url=wheel_url)}: {PASSED}\n")
 
     source_url = source_urls[0]
+    source_name = display_name(url=source_url, package_name=package_name, version=version)
     try:
-        verify_source(source_url=source_url)
+        verify_source(source_url=source_url, package_name=package_name, version=version)
     except Exception as source_exception:
         exit_status += 1
-        sys.stdout.write(f"{display_name(url=source_url)}: {source_exception}\n")
+        sys.stdout.write(f"{source_name}: {source_exception}\n")
     else:
-        sys.stdout.write(f"{display_name(url=source_url)}: {PASSED}\n")
+        sys.stdout.write(f"{source_name}: {PASSED}\n")
+
+    for wheel_url in wheel_urls:
+        wheel_name = display_name(url=wheel_url, package_name=package_name, version=version)
+        try:
+            verify_wheel(wheel_url=wheel_url, package_name=package_name, version=version, expected_shared_libraries=expected_shared_libraries)
+        except Exception as wheel_exception:
+            exit_status += 1
+            sys.stdout.write(f"{wheel_name}: {wheel_exception}\n")
+        else:
+            sys.stdout.write(f"{wheel_name}: {PASSED}\n")
 
     return exit_status
 
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        sys.exit(main(index=args.index))
+        sys.exit(main(index=args.index, package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=EXPECTED_NB_WHEELS, expected_shared_libraries=EXPECTED_SHARED_LIBRARIES))
     except Exception as e:
         print(e)
         sys.exit(1)
