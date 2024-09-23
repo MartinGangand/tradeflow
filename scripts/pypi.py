@@ -129,7 +129,7 @@ def find_file_names_with_given_extensions(file_names: List[str], potential_exten
 
 def main(index: str, package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str]) -> int:
     package_url = f"https://{index}.org/project/{package_name}/{version}/#files"
-    sys.stdout.write(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n\n")
+    print(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n")
 
     pypi_html_page = html_page_as_string(url=package_url)
     source_urls = find_urls_in_html_page(html_page=pypi_html_page, target_url_extension=SOURCE_EXTENSION)
@@ -142,16 +142,15 @@ def main(index: str, package_name: str, version: str, expected_nb_wheels: int, e
         raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
     exit_status = 0
-
     source_url = source_urls[0]
     source_name = display_name(url=source_url, package_name=package_name, version=version)
     try:
         verify_source(source_url=source_url, package_name=package_name, version=version)
     except Exception as source_exception:
         exit_status += 1
-        sys.stdout.write(f"{source_name}: {source_exception}\n")
+        print(f"{source_name}: {source_exception}")
     else:
-        sys.stdout.write(f"{source_name}: {PASSED}\n")
+        print(f"{source_name}: {PASSED}")
 
     for wheel_url in wheel_urls:
         wheel_name = display_name(url=wheel_url, package_name=package_name, version=version)
@@ -159,9 +158,9 @@ def main(index: str, package_name: str, version: str, expected_nb_wheels: int, e
             verify_wheel(wheel_url=wheel_url, package_name=package_name, version=version, expected_shared_libraries=expected_shared_libraries)
         except Exception as wheel_exception:
             exit_status += 1
-            sys.stdout.write(f"{wheel_name}: {wheel_exception}\n")
+            print(f"{wheel_name}: {wheel_exception}")
         else:
-            sys.stdout.write(f"{wheel_name}: {PASSED}\n")
+            print(f"{wheel_name}: {PASSED}")
 
     return exit_status
 
@@ -177,18 +176,12 @@ if __name__ == "__main__":
         print(e)
         sys.exit(1)
 
-    # TODO: Check the source?
-    # TODO: Better log message (ex: print shared lib if several)
-    # TODO: check extension name (ex: .so) given wheel name
-    # TODO: Add a github action? or look at how pandas is doing
-    # TODO: Add arguments for pypi and pypi test with ArgumentParser
-    # TODO: Retrieve version/project name from toml?
-    # TODO: Use urllib instead of requests? (maybe urllib is part of python directly?)
-    # TODO: Log with logger or sys.std?
-    # TODO: Should the argument parsing be in the main or in if __name__ == "__main__"
-
-    # Remove validate_wheels() and validate_source() and instead create object directly?
-    # Create a parent class with common methods like for error logging and return status...
+    # TODO: Log with logger or print?
+    # TODO: common function for the main because same behavior for wheel and source with exception etc (function with args: function, etc (what takes verify_source() and verify_wheel()))
+    # TODO: add verification for the source: check that there are python files? + cpp files?
+    # TODO: add verification for the wheel: check that there are python files?
+    # TODO: add doc?
+    # TODO: in get_shared_library_file(), with cmake the shared lib name is libtradeflow.?, do no longer need to search for pattern. Directly search for the file with exact name?
 
 # def find_cpp_files(directory: str) -> List[str]:
 #     cpp_files = []
@@ -198,45 +191,3 @@ if __name__ == "__main__":
 #                 cpp_files.append(os.path.join(directory, filename))
 #
 #     return cpp_files
-
-# run-python-script:
-# name: Run Python Script After Completion
-# needs: [upload-testpypi]  # Make this dependent on all other jobs
-# runs-on: ubuntu-latest  # Or any other runner you'd like to use
-#
-# steps:
-# - name: Checkout code
-# uses: actions/checkout@v4
-#
-# - name: Set up Python
-# uses: actions/setup-python@v5
-# with:
-#     python-version: '3.12'
-#
-# - name: Install dependencies
-# run: |
-# python -m pip install --upgrade pip
-# pip install -r requirements.txt
-# pip install -r test-requirements.txt
-#
-# - name: Run script
-# run: python scripts/pypi-verify.py
-
-
-    # # 1. Download wheel and retrieve file names
-    # # 2. Find all shared libraries
-    # # 3. Assure only 1 shared lib
-    # # 4. Assure shared library has the good extension
-    #
-    # def _display_name(self, url: str) -> str:
-    #     wheel_name = re.findall(pattern=rf'{PACKAGE_NAME}-{re.escape(VERSION)}[^"\s]+\.{WHEEL_EXTENSION}', string=url)
-    #     assert len(wheel_name) == 1
-    #     return wheel_name[0]
-
-# class SourceChecker(Checker):
-#
-#     def _display_name(self, url: str) -> str:
-#         source_name = re.findall(pattern=rf'{PACKAGE_NAME}-{VERSION}\.{SOURCE_EXTENSION}', string=url)
-#         assert len(source_name) == 1
-#         return source_name[0]
-#
