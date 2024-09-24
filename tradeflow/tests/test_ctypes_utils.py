@@ -55,12 +55,12 @@ def test_get_shared_library_file_should_raise_exception_when_no_shared_library(f
     with pytest.raises(FileNotFoundError) as ex:
         get_shared_library_file(directory=TEMP_DIR, shared_library_name="lib1")
 
-    pattern = fr"No shared library found for name 'lib1' with one of the extension in \['so', 'dll', 'dylib', 'pyd'\] in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}.$"
+    pattern = fr"No shared library found for name 'lib1' with one of the extension in \['so', 'dll', 'dylib'\] in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}.$"
     assert re.match(pattern, str(ex.value))
 
 
 @pytest.mark.parametrize("files_to_save,expected_found_shared_libraries", [
-    (["lib1.x-3-x.so", "lib1.dll", "lib1.x-3-x.pyd"], ["lib1.x-3-x.so", "lib1.dll", "lib1.x-3-x.pyd"]),
+    (["lib1.x-3-x.so", "lib1.dll", "lib1.x-3-x.dylib"], ["lib1.x-3-x.so", "lib1.dll", "lib1.x-3-x.dylib"]),
     (["lib1.so", "lib1.x-3-x.so", "lib1.dll", "lib1.py"], ["lib1.so", "lib1.x-3-x.so", "lib1.dll"])
 ])
 def test_get_shared_library_file_should_raise_exception_when_several_shared_libraries(files_to_save, expected_found_shared_libraries):
@@ -69,7 +69,7 @@ def test_get_shared_library_file_should_raise_exception_when_several_shared_libr
     with pytest.raises(TooManySharedLibrariesException) as ex:
         get_shared_library_file(directory=TEMP_DIR, shared_library_name="lib1")
 
-    pattern = fr"{len(expected_found_shared_libraries)} shared libraries found with name 'lib1' with extension in \['so', 'dll', 'dylib', 'pyd'\] have been found: {', '.join(expected_found_shared_libraries)} in directory: .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}.$"
+    pattern = fr"{len(expected_found_shared_libraries)} shared libraries found with name 'lib1' with extension in \['so', 'dll', 'dylib'\] have been found: {', '.join(expected_found_shared_libraries)} in directory: .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}.$"
     assert re.match(pattern, str(ex.value))
 
 
