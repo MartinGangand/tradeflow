@@ -1,0 +1,41 @@
+Starting pypi_verify.py script for index 'test.pypi' (url: https://test.pypi.org/project/package/0.0.1/#files)
+
+Starting to verify source https://test-files.pythonhosted.org/packages/source-invalid-missing-cpp-files/package-0.0.1.tar.gz
+    Source url: OK
+    Fetched source file names (['package-0.0.1/LICENCE', 'package-0.0.1/setup.py', 'package-0.0.1/package/time_series.py', 'package-0.0.1/package/ar_model.py', 'package-0.0.1/lib/cpp/package/simulation.h'])
+    Verify source python files: OK
+package-0.0.1.tar.gz: expected source to contain 2 cpp or header file(s) (['package-0.0.1/lib/cpp/package/simulation.cpp', 'package-0.0.1/lib/cpp/package/simulation.h']), but found 1 (['package-0.0.1/lib/cpp/package/simulation.h']) instead
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl
+https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl: expected wheel url 'https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl' to match the pattern 'package-0.0.1-[^'\"\s]+\.whl\b'
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-no_os_1_2_x86_64.whl
+    Wheel url: OK
+package-0.0.1-cp312-cp312-no_os_1_2_x86_64.whl: The wheel name does not contain 'linux', 'macosx' nor 'win'
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-manylinux-too-many-shared-libraries.whl
+    Wheel url: OK
+    Wheel shared library extension: so
+    Fetched wheel file names (['package/time_series.py', 'package/ar_model.py', 'package/lib1.so', 'package/lib2.so', 'package/lib3.soo'])
+package-0.0.1-manylinux-too-many-shared-libraries.whl: expected wheel to contain 1 shared library file(s) (['package/lib1.so']), but found 2 (['package/lib1.so', 'package/lib2.so']) instead
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-macosx-no-shared-libraries.whl
+    Wheel url: OK
+    Wheel shared library extension: dylib
+    Fetched wheel file names (['package/time_series.py', 'package/ar_model.py'])
+package-0.0.1-macosx-no-shared-libraries.whl: expected wheel to contain 1 shared library file(s) (['package/lib1.dylib']), but found 0 ([]) instead
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-win-missing-python-files.whl
+    Wheel url: OK
+    Wheel shared library extension: dll
+    Fetched wheel file names (['package/time_series.py', 'package/lib1.dll'])
+    Verify wheel shared library files: OK
+package-0.0.1-win-missing-python-files.whl: expected wheel to contain 2 python file(s) (['package/ar_model.py', 'package/time_series.py']), but found 1 (['package/time_series.py']) instead
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-musllinux-too-many-python-files.whl
+    Wheel url: OK
+    Wheel shared library extension: so
+    Fetched wheel file names (['package/time_series.py', 'package/ar_model.py', 'package/ar_model2.py', 'package/lib1.so'])
+    Verify wheel shared library files: OK
+package-0.0.1-musllinux-too-many-python-files.whl: expected wheel to contain 2 python file(s) (['package/ar_model.py', 'package/time_series.py']), but found 3 (['package/time_series.py', 'package/ar_model.py', 'package/ar_model2.py']) instead
+

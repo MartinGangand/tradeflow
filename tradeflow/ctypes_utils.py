@@ -170,7 +170,7 @@ def find_files(pattern: str, directory: str) -> List[str]:
 
     Returns
     -------
-    bool
+    list of str
         The file names matching the pattern (only the file names, not their full paths).
     """
     matched_files = []

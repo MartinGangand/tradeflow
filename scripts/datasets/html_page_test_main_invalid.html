@@ -52,24 +52,24 @@
 <button type="button" class="button button--primary button--switch-to-mobile hidden" data-viewport-toggle-target="switchToMobile" data-action="viewport-toggle#switchToMobile">
   Switch to mobile version    </button>
 
+<div class="notification-bar notification-bar--warning" role="status">
+        <span class="notification-bar__icon">
+          <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+          <span class="sr-only">Warning</span>
+        </span>
+  <span class="notification-bar__message">You are using TestPyPI – a separate instance of the Python Package Index that allows you to try distribution tools and processes without affecting the real index.</span>
+</div>
+<noscript>
   <div class="notification-bar notification-bar--warning" role="status">
         <span class="notification-bar__icon">
           <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
           <span class="sr-only">Warning</span>
         </span>
-    <span class="notification-bar__message">You are using TestPyPI – a separate instance of the Python Package Index that allows you to try distribution tools and processes without affecting the real index.</span>
+    <span class="notification-bar__message">Some features may not work without JavaScript. Please try enabling it if you encounter problems.</span>
   </div>
-  <noscript>
-    <div class="notification-bar notification-bar--warning" role="status">
-        <span class="notification-bar__icon">
-          <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-          <span class="sr-only">Warning</span>
-        </span>
-      <span class="notification-bar__message">Some features may not work without JavaScript. Please try enabling it if you encounter problems.</span>
-    </div>
-  </noscript>
+</noscript>
 
-  <div data-html-include="/_includes/notification-banners/"></div>    </div>
+<div data-html-include="/_includes/notification-banners/"></div>    </div>
 
 <header class="site-header site-header--test-pypi">
   <div class="site-container">
@@ -132,7 +132,7 @@
               </div>
 
               <div class="card file__card">
-                <a href="https://test-files.pythonhosted.org/packages/56/67/532132463e1969baf3ff2bc4fec5489a951185663322709ddb2f66c3f284/package-0.0.1-source.tar.gz">
+                <a href="https://test-files.pythonhosted.org/packages/source-invalid-missing-cpp-files/package-0.0.1.tar.gz">
                   package-0.0.1-source.tar.gz
                 </a>
                 (13.3 kB
@@ -208,8 +208,8 @@
               </div>
 
               <div class="card file__card">
-                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl">
-                  package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-manylinux-too-many-shared-libraries.whl">
+                  package-0.0.1-manylinux-too-many-shared-libraries.whl
                 </a>
                 (46.6 kB
                 <a href="#copy-hash-modal-2f1d956c-9b7f-42ca-ae7c-f2ad0cd281e0">view hashes</a>)
@@ -234,8 +234,8 @@
               </div>
 
               <div class="card file__card">
-                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl">
-                  package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-macosx-no-shared-libraries.whl">
+                  package-0.0.1-macosx-no-shared-libraries.whl
                 </a>
                 (17.5 kB
                 <a href="#copy-hash-modal-c6772cc2-b5cc-412d-9750-948ac3be4c85">view hashes</a>)
@@ -254,13 +254,64 @@
               </div>
 
             </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
 
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-win-missing-python-files.whl">
+                  package-0.0.1-win-missing-python-files.whl
+                </a>
+                (17.5 kB
+                <a href="#copy-hash-modal-c6772cc2-b5cc-412d-9750-948ac3be4c85">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:38+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>CPython 3.12</code>
+                  <code>macOS 11.0+ ARM64</code>
+                </p>
+              </div>
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-musllinux-too-many-python-files.whl">
+                  package-0.0.1-musllinux-too-many-python-files.whl
+                </a>
+                (17.5 kB
+                <a href="#copy-hash-modal-c6772cc2-b5cc-412d-9750-948ac3be4c85">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:38+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>CPython 3.12</code>
+                  <code>macOS 11.0+ ARM64</code>
+                </p>
+              </div>
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+            </div>
           </div>
 
         </div>
-        </div>
       </div>
     </div>
+  </div>
 </main>
 
 

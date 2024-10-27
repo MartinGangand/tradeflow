@@ -1,7 +1,0 @@
-Starting pypi.py script for index 'test.pypi' (url: https://test.pypi.org/project/package/0.0.1/#files)
-
-package-0.0.1-source.tar.gz: expected source distribution url to contain 'package-0.0.1.tar.gz', but was 'package-0.0.1-source.tar.gz'
-https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl: expected wheel url 'https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl' to match the pattern 'package-0.0.1-[^'\"\s]+\.whl\b'
-package-0.0.1-cp312-cp312-no_os_1_2_x86_64.whl: The wheel name does not contain 'linux', 'macosx' nor 'win'
-package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl: expected wheel to contain shared library ['lib1.so'], but found ['lib1.so', 'lib2.so'] instead
-package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl: expected wheel to contain shared library ['lib1.dylib'], but found [] instead

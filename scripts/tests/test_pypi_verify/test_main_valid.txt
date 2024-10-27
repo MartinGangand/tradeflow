@@ -1,0 +1,41 @@
+Starting pypi_verify.py script for index 'test.pypi' (url: https://test.pypi.org/project/package/0.0.1/#files)
+
+Starting to verify source https://test-files.pythonhosted.org/packages/package-0.0.1.tar.gz
+    Source url: OK
+    Fetched source file names (['package-0.0.1/LICENCE', 'package-0.0.1/setup.py', 'package-0.0.1/package/time_series.py', 'package-0.0.1/package/ar_model.py', 'package-0.0.1/lib/cpp/package/simulation.cpp', 'package-0.0.1/lib/cpp/package/simulation.h'])
+    Verify source python files: OK
+    Verify source cpp or header files: OK
+package-0.0.1.tar.gz: PASSED
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-win_amd64.whl
+    Wheel url: OK
+    Wheel shared library extension: dll
+    Fetched wheel file names (['package/time_series.py', 'package/ar_model.py', 'package/lib1.dll'])
+    Verify wheel shared library files: OK
+    Verify wheel python files: OK
+package-0.0.1-cp312-cp312-win_amd64.whl: PASSED
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-musllinux_1_2_x86_64.whl
+    Wheel url: OK
+    Wheel shared library extension: so
+    Fetched wheel file names (['package/time_series.py', 'package/ar_model.py', 'package/lib1.so'])
+    Verify wheel shared library files: OK
+    Verify wheel python files: OK
+package-0.0.1-cp312-cp312-musllinux_1_2_x86_64.whl: PASSED
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+    Wheel url: OK
+    Wheel shared library extension: so
+    Fetched wheel file names (['package/time_series.py', 'package/ar_model.py', 'package/lib1.so'])
+    Verify wheel shared library files: OK
+    Verify wheel python files: OK
+package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl: PASSED
+
+Starting to verify wheel https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl
+    Wheel url: OK
+    Wheel shared library extension: dylib
+    Fetched wheel file names (['package/time_series.py', 'package/ar_model.py', 'package/lib1.dylib'])
+    Verify wheel shared library files: OK
+    Verify wheel python files: OK
+package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl: PASSED
+

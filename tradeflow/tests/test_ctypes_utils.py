@@ -14,7 +14,7 @@ TEMP_DIR = str(pathlib.Path(__file__).parent.joinpath("temp").resolve())
 
 
 @pytest.fixture(autouse=True)
-def my_setup_and_tear_down():
+def setup_and_tear_down():
     # Create the temporary directory before running a test
     if not os.path.exists(TEMP_DIR):
         os.makedirs(name=TEMP_DIR, exist_ok=False)
