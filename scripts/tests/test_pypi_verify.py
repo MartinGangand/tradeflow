@@ -306,22 +306,24 @@ class TestDisplayName:
 
 class TestMain:
 
-    REPOSITORY_ROOT = TEMP_DIR.joinpath("Users", "dev", PACKAGE_NAME)
-
-    PACKAGE_DIR = REPOSITORY_ROOT.joinpath(PACKAGE_NAME)
-    PACKAGE_CPP_DIR = REPOSITORY_ROOT.joinpath("lib", "cpp", PACKAGE_NAME)
+    ROOT_REPOSITORY = TEMP_DIR.joinpath("Users", "dev", PACKAGE_NAME)
+    LIBRARIES_DIRECTORY_NAME = "lib"
 
     EXPECTED_SHARED_LIBRARIES = [os.path.join(PACKAGE_NAME, "lib1")]
 
     @pytest.fixture(scope="function", autouse=True)
     def main_setup_and_tear_down(self):
-        self.REPOSITORY_ROOT.mkdir(parents=True, exist_ok=False)
-        prepare_directory_with_files(directory_path=self.PACKAGE_DIR, file_names=["time_series.py", "ar_model.py"])
-        prepare_directory_with_files(directory_path=self.PACKAGE_CPP_DIR, file_names=["simulation.cpp", "simulation.h"])
+        self.ROOT_REPOSITORY.mkdir(parents=True, exist_ok=False)
+
+        package_dir = self.ROOT_REPOSITORY.joinpath(PACKAGE_NAME)
+        prepare_directory_with_files(directory_path=package_dir, file_names=["time_series.py", "ar_model.py"])
+
+        package_cpp_dir = self.ROOT_REPOSITORY.joinpath(self.LIBRARIES_DIRECTORY_NAME, "cpp", PACKAGE_NAME)
+        prepare_directory_with_files(directory_path=package_cpp_dir, file_names=["simulation.cpp", "simulation.h"])
 
         yield
 
-        shutil.rmtree(path=self.REPOSITORY_ROOT)
+        shutil.rmtree(path=self.ROOT_REPOSITORY)
 
     @staticmethod
     def mock_request_get_valid(mocker: MockerFixture, url: str) -> MagicMock:
@@ -341,7 +343,6 @@ class TestMain:
             return mock_response_with_wheel(mocker=mocker, file_names=file_names_with_prefixes(["time_series.py", "ar_model.py", "lib1.so"], PACKAGE_NAME))
         elif url == f"{WHEEL_URL_START}/{WHEEL_CP312_MACOSX}":
             return mock_response_with_wheel(mocker=mocker, file_names=file_names_with_prefixes(["time_series.py", "ar_model.py", "lib1.dylib"], PACKAGE_NAME))
-        # TODO: create function file_names_with_prefix() for [os.path.join(PACKAGE_NAME, file_name) for file_name in file_names]
 
     @staticmethod
     def mock_request_get_invalid(mocker: MockerFixture, url: str) -> MagicMock:
@@ -371,9 +372,9 @@ class TestMain:
     def test_main_valid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_valid(mocker=mocker, url=url))
 
-        exit_status = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, repository=self.REPOSITORY_ROOT)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
-        assert exit_status == 0
+        assert nb_errors == 0
         file_regression.check(capsys.readouterr().out)
 
     def test_main_should_raise_exception_when_2_sources_instead_of_1(self, mocker, capsys):
@@ -381,7 +382,7 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, repository=self.REPOSITORY_ROOT)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert str(ex.value) == "Expected 1 source url in the html page, but found 2 instead"
 
@@ -390,14 +391,14 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, repository=self.REPOSITORY_ROOT)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert str(ex.value) == "Expected 4 wheel urls in the html page, but found 3 instead"
 
     def test_main_invalid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_invalid(mocker=mocker, url=url))
 
-        exit_status = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, repository=self.REPOSITORY_ROOT)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
-        assert exit_status == 7
+        assert nb_errors == 7
         file_regression.check(capsys.readouterr().out)

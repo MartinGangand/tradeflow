@@ -10,14 +10,13 @@ import pytest
 from tradeflow.ctypes_utils import get_shared_library_file, find_files
 from tradeflow.exceptions import TooManySharedLibrariesException
 
-TEMP_DIR = str(pathlib.Path(__file__).parent.joinpath("temp").resolve())
+TEMP_DIR = pathlib.Path(__file__).parent.joinpath("temp").resolve()
 
 
 @pytest.fixture(autouse=True)
 def setup_and_tear_down():
     # Create the temporary directory before running a test
-    if not os.path.exists(TEMP_DIR):
-        os.makedirs(name=TEMP_DIR, exist_ok=False)
+    os.makedirs(name=TEMP_DIR, exist_ok=False)
 
     yield
 

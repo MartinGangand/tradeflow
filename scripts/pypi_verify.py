@@ -7,18 +7,10 @@ import sys
 from pathlib import Path
 from typing import List
 
-import toml
-
 from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
     find_urls_in_html_page, find_files_in_directory, file_names_with_prefixes, fetch_file_names_from_zip, \
     ANY_VALID_STRING
-
-REPOSITORY_ROOT = Path(__file__).parent.parent
-LIB_DIRECTORY_NAME = "lib"
-
-PACKAGE_NAME = toml.load(REPOSITORY_ROOT.joinpath("pyproject.toml"))["project"]["name"]
-VERSION = toml.load(REPOSITORY_ROOT.joinpath("pyproject.toml"))["project"]["version"]
-PACKAGE_DIR = REPOSITORY_ROOT.joinpath(PACKAGE_NAME)
+from scripts import config
 
 PYTHON_EXTENSION = "py"
 CPP_EXTENSION = "cpp"
@@ -36,9 +28,6 @@ DLL_EXTENSION = "dll"
 DYLIB_EXTENSION = "dylib"
 
 PASSED = "PASSED"
-
-EXPECTED_SHARED_LIBRARIES = ["tradeflow/libtradeflow"]
-EXPECTED_NB_WHEELS = 55
 
 
 def verify_source(source_url: str, package_name: str, version: str, expected_python_files: List[str], expected_cpp_files: List[str]) -> None:
@@ -63,11 +52,11 @@ def verify_source(source_url: str, package_name: str, version: str, expected_pyt
     Exception
         If the source url is incorrect or the files contained in the source differ from the expected ones.
     """
-    print(f"Starting to verify source {source_url}")
+    log_message("Starting to verify source distribution")
     verify_source_url(source_url=source_url, package_name=package_name, version=version)
 
     file_names = fetch_file_names_from_tar_gz(url=source_url)
-    print(f"    Fetched source file names ({file_names})")
+    log_indented_message(f"Fetched {len(file_names)} source file names")
 
     actual_python_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[PYTHON_EXTENSION])
     actual_python_files.remove(os.path.join(f"{package_name}-{version}", "setup.py"))
@@ -101,7 +90,7 @@ def verify_source_url(source_url: str, package_name: str, version: str) -> None:
         # TODO: improve message: quotes for but was + mention url
         raise Exception(f"expected source distribution url to contain '{expected_source_name}', but was '{actual_source_name}'")
 
-    log_valid(message="Source url")
+    log_indented_message(message=f"Source url: OK")
 
 
 def verify_wheel(wheel_url: str, package_name: str, version: str, expected_shared_libraries: List[str], expected_python_files: List[str]) -> None:
@@ -126,12 +115,12 @@ def verify_wheel(wheel_url: str, package_name: str, version: str, expected_share
     Exception
         If the wheel url is incorrect or the files contained in the wheel differ from the expected ones.
     """
-    print(f"Starting to verify wheel {wheel_url}")
+    log_message(f"Starting to verify wheel {display_name(url=wheel_url, package_name=package_name, version=version)}")
     verify_wheel_url(wheel_url=wheel_url, package_name=package_name, version=version)
 
     expected_shared_lib_ext = expected_wheel_shared_libraries_extension(wheel_url=wheel_url)
     file_names = fetch_file_names_from_zip(url=wheel_url)
-    print(f"    Fetched wheel file names ({file_names})")
+    log_indented_message(f"Fetched {len(file_names)} wheel file names")
 
     expected_shared_libs = [f"{shared_lib}.{expected_shared_lib_ext}" for shared_lib in expected_shared_libraries]
 
@@ -165,7 +154,7 @@ def verify_wheel_url(wheel_url: str, package_name: str, version: str) -> None:
     if match is None:
         raise Exception(f"expected wheel url '{wheel_url}' to match the pattern '{wheel_pattern}'")
 
-    log_valid(message="Wheel url")
+    log_indented_message(message="Wheel url: OK")
 
 
 def expected_wheel_shared_libraries_extension(wheel_url: str) -> str:
@@ -198,7 +187,7 @@ def expected_wheel_shared_libraries_extension(wheel_url: str) -> str:
     elif WINDOWS in wheel_url:
         extension = DLL_EXTENSION
 
-    print(f"    Wheel shared library extension: {extension}")
+    log_indented_message(f"Wheel shared library extension: {extension}")
     return extension
 
 
@@ -225,7 +214,7 @@ def verify_files(expected_files: List[str], actual_files: List[str], object_name
     if sorted(actual_files) != sorted(expected_files):
         raise Exception(f"expected {object_name} to contain {len(expected_files)} {file_type} file(s) ({expected_files}), but found {len(actual_files)} ({actual_files}) instead")
 
-    log_valid(message=f"Verify {object_name} {file_type} files")
+    log_indented_message(message=f"Verify {object_name} {file_type} files: OK")
 
 
 def display_name(url: str, package_name: str, version: str) -> str:
@@ -253,17 +242,22 @@ def display_name(url: str, package_name: str, version: str) -> str:
     return name[0]
 
 
-def log_valid(message: str) -> None:
-    print(f"    {message}: OK")
+def log_message(message: str) -> None:
+    print(f"{message}")
 
 
-def main(index: str, package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], repository: Path) -> int:
-    package_dir = repository.joinpath(package_name)
-    lib_dir = repository.joinpath(LIB_DIRECTORY_NAME)
+def log_indented_message(message: str) -> None:
+    log_message(f"    {message}")
+
+
+def main(index: str, package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, package_directory_name: str, libraries_directory_name: str) -> int:
+    package_directory = root_repository.joinpath(package_directory_name)
+    libraries_directory = root_repository.joinpath(libraries_directory_name)
+
     package_and_version = f"{package_name}-{version}"
 
     package_url = f"https://{index}.org/project/{package_name}/{version}/#files"
-    print(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n")
+    log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n")
 
     pypi_html_page = html_page_as_string(url=package_url)
     source_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=SOURCE_EXTENSION)
@@ -275,45 +269,53 @@ def main(index: str, package_name: str, version: str, expected_nb_wheels: int, e
     if len(wheel_urls) != expected_nb_wheels:
         raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
-    exit_status = 0
+    nb_errors = 0
     source_url = source_urls[0]
     source_name = display_name(url=source_url, package_name=package_name, version=version)
 
-    expected_source_python_files = find_files_in_directory(directory=package_dir, extensions=[PYTHON_EXTENSION], recursive=False, absolute_path=False)
+    expected_source_python_files = find_files_in_directory(directory=package_directory, extensions=[PYTHON_EXTENSION], recursive=False, absolute_path=False)
     expected_source_python_files_with_prefixes = file_names_with_prefixes(expected_source_python_files, os.path.join(package_and_version, package_name))
 
-    expected_source_cpp_files = find_files_in_directory(directory=lib_dir, extensions=[CPP_EXTENSION, HEADER_EXTENSION], recursive=True, absolute_path=False)
-    expected_source_cpp_files_with_prefixes = file_names_with_prefixes(expected_source_cpp_files, os.path.join(package_and_version, LIB_DIRECTORY_NAME))
+    expected_source_cpp_files = find_files_in_directory(directory=libraries_directory, extensions=[CPP_EXTENSION, HEADER_EXTENSION], recursive=True, absolute_path=False)
+    expected_source_cpp_files_with_prefixes = file_names_with_prefixes(expected_source_cpp_files, os.path.join(package_and_version, libraries_directory_name))
     try:
         verify_source(source_url=source_url, package_name=package_name, version=version, expected_python_files=expected_source_python_files_with_prefixes, expected_cpp_files=expected_source_cpp_files_with_prefixes)
     except Exception as source_exception:
-        exit_status += 1
-        print(f"{source_name}: {source_exception}\n")
+        nb_errors += 1
+        log_message(f"{source_name}: {source_exception}\n")
     else:
-        print(f"{source_name}: {PASSED}\n")
+        log_message(f"{source_name}: {PASSED}\n")
 
-    expected_wheel_python_files = find_files_in_directory(directory=package_dir, extensions=[PYTHON_EXTENSION], recursive=False, absolute_path=False)
+    expected_wheel_python_files = find_files_in_directory(directory=package_directory, extensions=[PYTHON_EXTENSION], recursive=False, absolute_path=False)
     expected_wheel_python_files_with_prefix = file_names_with_prefixes(expected_wheel_python_files, package_name)
     for wheel_url in wheel_urls:
         wheel_name = display_name(url=wheel_url, package_name=package_name, version=version)
         try:
             verify_wheel(wheel_url=wheel_url, package_name=package_name, version=version, expected_shared_libraries=expected_shared_libraries, expected_python_files=expected_wheel_python_files_with_prefix)
         except Exception as wheel_exception:
-            exit_status += 1
-            print(f"{wheel_name}: {wheel_exception}\n")
+            nb_errors += 1
+            log_message(f"{wheel_name}: {wheel_exception}\n")
         else:
-            print(f"{wheel_name}: {PASSED}\n")
+            log_message(f"{wheel_name}: {PASSED}\n")
 
-    return exit_status
+    return nb_errors
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Verify the content of uploaded package to PyPi or Test PyPi")
+    parser = argparse.ArgumentParser(description="Verify the content of the uploaded package to PyPi or Test PyPi")
     parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Whether to use the PyPi or Test PyPi package index")
     args = parser.parse_args()
 
     try:
-        sys.exit(main(index=args.index, package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=EXPECTED_NB_WHEELS, expected_shared_libraries=EXPECTED_SHARED_LIBRARIES, repository=REPOSITORY_ROOT))
+        exit_status = main(index=args.index,
+                           package_name=config.PACKAGE_NAME,
+                           version=config.VERSION,
+                           expected_nb_wheels=config.EXPECTED_NB_WHEELS,
+                           expected_shared_libraries=config.EXPECTED_SHARED_LIBRARIES,
+                           root_repository=config.REPOSITORY_ROOT,
+                           package_directory_name=config.PACKAGE_NAME,
+                           libraries_directory_name=config.LIBRARIES_DIRECTORY_NAME)
+        sys.exit(exit_status)
     except Exception as e:
         print(e)
         sys.exit(1)
@@ -323,6 +325,7 @@ if __name__ == "__main__":
     # TODO: add verification for the source: check that there are python files? + cpp files?
     # TODO: add verification for the wheel: check that there are python files?
     # TODO: add doc?
-    # TODO: in get_shared_library_file(), with cmake the shared lib name is libtradeflow.?, do no longer need to search for pattern. Directly search for the file with exact name?
 
-
+    # TODO: in get_shared_library_file(), with cmake the shared lib name is libtradeflow.?, do no longer need to search for pattern. Directly search for the file with the exact name?
+    # TODO: find_files() and find_files_in_directory() have the same functionality. Use only one? (maybe create a common repo?)
+    # TODO: In tests save_empty_files_in_temp_dir() and prepare_directory_with_files() have the same functionality. Use only 1? (it is in tests so maybe duplicating the function is ok)
