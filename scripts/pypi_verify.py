@@ -5,27 +5,17 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Literal
 
 from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
     find_urls_in_html_page, find_files_in_directory, file_names_with_prefixes, fetch_file_names_from_zip, \
     ANY_VALID_STRING
 from scripts import config
-
-PYTHON_EXTENSION = "py"
-CPP_EXTENSION = "cpp"
-HEADER_EXTENSION = "h"
-
-WHEEL_EXTENSION = "whl"
-SOURCE_EXTENSION = "tar.gz"
+from scripts.file_extensions import FileExtension
 
 LINUX = "linux"
 MACOS = "macosx"
 WINDOWS = "win"
-
-SO_EXTENSION = "so"
-DLL_EXTENSION = "dll"
-DYLIB_EXTENSION = "dylib"
 
 PASSED = "PASSED"
 
@@ -56,14 +46,14 @@ def verify_source(source_url: str, package_name: str, version: str, expected_pyt
     verify_source_url(source_url=source_url, package_name=package_name, version=version)
 
     file_names = fetch_file_names_from_tar_gz(url=source_url)
-    log_indented_message(f"Fetched {len(file_names)} source file names")
+    log_indented_message(f"Fetched {len(file_names)} file names from the source")
 
-    actual_python_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[PYTHON_EXTENSION])
+    actual_python_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.PYTHON_EXTENSION])
     actual_python_files.remove(os.path.join(f"{package_name}-{version}", "setup.py"))
-    verify_files(expected_files=expected_python_files, actual_files=actual_python_files, object_name="source", file_type="python")
+    compare_expected_vs_actual_files(expected_files=expected_python_files, actual_files=actual_python_files, object_name="source", file_type="python")
 
-    actual_cpp_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[CPP_EXTENSION, HEADER_EXTENSION])
-    verify_files(expected_files=expected_cpp_files, actual_files=actual_cpp_files, object_name="source", file_type="cpp or header")
+    actual_cpp_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION])
+    compare_expected_vs_actual_files(expected_files=expected_cpp_files, actual_files=actual_cpp_files, object_name="source", file_type="cpp or header")
 
 
 def verify_source_url(source_url: str, package_name: str, version: str) -> None:
@@ -84,11 +74,10 @@ def verify_source_url(source_url: str, package_name: str, version: str) -> None:
     Exception
         If the source url is incorrect.
     """
-    expected_source_name = f"{package_name}-{version}.{SOURCE_EXTENSION}"
+    expected_source_name = f"{package_name}-{version}.{FileExtension.SOURCE_EXTENSION}"
     actual_source_name = source_url.split("/")[-1]
     if actual_source_name != expected_source_name:
-        # TODO: improve message: quotes for but was + mention url
-        raise Exception(f"expected source distribution url to contain '{expected_source_name}', but was '{actual_source_name}'")
+        raise Exception(f"expected source distribution url to end with '{expected_source_name}', but was '{source_url}'")
 
     log_indented_message(message=f"Source url: OK")
 
@@ -118,17 +107,16 @@ def verify_wheel(wheel_url: str, package_name: str, version: str, expected_share
     log_message(f"Starting to verify wheel {display_name(url=wheel_url, package_name=package_name, version=version)}")
     verify_wheel_url(wheel_url=wheel_url, package_name=package_name, version=version)
 
-    expected_shared_lib_ext = expected_wheel_shared_libraries_extension(wheel_url=wheel_url)
+    expected_shared_library_extension = expected_wheel_shared_libraries_extension(wheel_url=wheel_url)
     file_names = fetch_file_names_from_zip(url=wheel_url)
-    log_indented_message(f"Fetched {len(file_names)} wheel file names")
+    log_indented_message(f"Fetched {len(file_names)} file names from the wheel")
 
-    expected_shared_libs = [f"{shared_lib}.{expected_shared_lib_ext}" for shared_lib in expected_shared_libraries]
+    expected_shared_libraries_with_extension = [f"{expected_shared_library}.{expected_shared_library_extension}" for expected_shared_library in expected_shared_libraries]
+    actual_shared_libraries = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.SO_EXTENSION, FileExtension.DLL_EXTENSION, FileExtension.DYLIB_EXTENSION])
+    compare_expected_vs_actual_files(expected_files=expected_shared_libraries_with_extension, actual_files=actual_shared_libraries, object_name="wheel", file_type="shared library")
 
-    actual_shared_libraries = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[SO_EXTENSION, DLL_EXTENSION, DYLIB_EXTENSION])
-    verify_files(expected_files=expected_shared_libs, actual_files=actual_shared_libraries, object_name="wheel", file_type="shared library")
-
-    actual_python_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[PYTHON_EXTENSION])
-    verify_files(expected_files=expected_python_files, actual_files=actual_python_files, object_name="wheel", file_type="python")
+    actual_python_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.PYTHON_EXTENSION])
+    compare_expected_vs_actual_files(expected_files=expected_python_files, actual_files=actual_python_files, object_name="wheel", file_type="python")
 
 
 def verify_wheel_url(wheel_url: str, package_name: str, version: str) -> None:
@@ -149,7 +137,7 @@ def verify_wheel_url(wheel_url: str, package_name: str, version: str) -> None:
     Exception
         If the wheel url is incorrect.
     """
-    wheel_pattern = rf"{package_name}-{version}-{ANY_VALID_STRING}\.{WHEEL_EXTENSION}\b"
+    wheel_pattern = rf"{package_name}-{version}-{ANY_VALID_STRING}\.{FileExtension.WHEEL_EXTENSION}\b"
     match = re.search(pattern=wheel_pattern, string=wheel_url)
     if match is None:
         raise Exception(f"expected wheel url '{wheel_url}' to match the pattern '{wheel_pattern}'")
@@ -169,31 +157,30 @@ def expected_wheel_shared_libraries_extension(wheel_url: str) -> str:
     Returns
     -------
     str
-        The expected extension for shared libraries in a wheel.
+        The expected extension for shared libraries in the wheel.
 
     Raises
     ------
     Exception
         If the expected shared library extension can't be inferred from the wheel url.
     """
-    if not (LINUX in wheel_url or MACOS in wheel_url or WINDOWS in wheel_url):
-        raise Exception(f"The wheel name does not contain '{LINUX}', '{MACOS}' nor '{WINDOWS}'")
-
-    extension = ""
+    ""
     if LINUX in wheel_url:
-        extension = SO_EXTENSION
+        extension = FileExtension.SO_EXTENSION
     elif MACOS in wheel_url:
-        extension = DYLIB_EXTENSION
+        extension = FileExtension.DYLIB_EXTENSION
     elif WINDOWS in wheel_url:
-        extension = DLL_EXTENSION
+        extension = FileExtension.DLL_EXTENSION
+    else:
+        raise Exception(f"The wheel name does not contain '{LINUX}', '{MACOS}' nor '{WINDOWS}'")
 
     log_indented_message(f"Wheel shared library extension: {extension}")
     return extension
 
 
-def verify_files(expected_files: List[str], actual_files: List[str], object_name: str, file_type: str) -> None:
+def compare_expected_vs_actual_files(expected_files: List[str], actual_files: List[str], object_name: str, file_type: str) -> None:
     """
-    Verify if `expected_files` and `actual_files` have the same content, otherwise raise an exception.
+    Verify if `expected_files` and `actual_files` have contain the same file names, otherwise raise an exception.
 
     Parameters
     ----------
@@ -246,22 +233,62 @@ def log_message(message: str) -> None:
     print(f"{message}")
 
 
+def log_valid(name: str):
+    log_message(f"{name}: {PASSED}\n")
+
+
+def log_error(name: str, exception: Exception):
+    log_message(f"{name}: {exception}\n")
+
+
 def log_indented_message(message: str) -> None:
     log_message(f"    {message}")
 
 
-def main(index: str, package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, package_directory_name: str, libraries_directory_name: str) -> int:
-    package_directory = root_repository.joinpath(package_directory_name)
-    libraries_directory = root_repository.joinpath(libraries_directory_name)
+def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, package_directory_name: str, libraries_directory_name: str) -> int:
+    """
+    Main function to validate package files against expected specifications on a given index.
 
+    Parameters
+    ----------
+    index : {"pypi", "test.pypi"}
+        The name of the package index to check for package availability. Must be either "pypi" or "test.pypi".
+    package_name : str
+        The name of the package to validate.
+    version : str
+        The version of the package to validate.
+    expected_nb_wheels : int
+        The expected number of wheel files for this package version on the index.
+    expected_shared_libraries : list of str
+        A list of shared library file names expected within the wheel.
+    root_repository : Path
+        The root directory of the repository containing the package and libraries.
+    package_directory_name : str
+        Name of the directory where the package files are located.
+    libraries_directory_name : str
+        Name of the directory where the library files are stored.
+
+    Returns
+    -------
+    int
+        The number of errors encountered during the validation process.
+
+    Raises
+    ------
+    Exception
+        If the number of source URLs or wheel URLs found does not match the expected counts.
+    """
+    nb_errors = 0
     package_and_version = f"{package_name}-{version}"
-
     package_url = f"https://{index}.org/project/{package_name}/{version}/#files"
     log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n")
 
+    package_directory = root_repository.joinpath(package_directory_name)
+    libraries_directory = root_repository.joinpath(libraries_directory_name)
+
     pypi_html_page = html_page_as_string(url=package_url)
-    source_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=SOURCE_EXTENSION)
-    wheel_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=WHEEL_EXTENSION)
+    source_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=FileExtension.SOURCE_EXTENSION)
+    wheel_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=FileExtension.WHEEL_EXTENSION)
 
     if len(source_urls) != 1:
         raise Exception(f"Expected 1 source url in the html page, but found {len(source_urls)} instead")
@@ -269,24 +296,23 @@ def main(index: str, package_name: str, version: str, expected_nb_wheels: int, e
     if len(wheel_urls) != expected_nb_wheels:
         raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
-    nb_errors = 0
+    expected_source_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=False)
+    expected_source_python_files_with_prefixes = file_names_with_prefixes(expected_source_python_files, package_and_version, package_name)
+
+    expected_source_cpp_files = find_files_in_directory(directory=libraries_directory, extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION], recursive=True, absolute_path=False)
+    expected_source_cpp_files_with_prefixes = file_names_with_prefixes(expected_source_cpp_files, package_and_version, libraries_directory_name)
+
     source_url = source_urls[0]
     source_name = display_name(url=source_url, package_name=package_name, version=version)
-
-    expected_source_python_files = find_files_in_directory(directory=package_directory, extensions=[PYTHON_EXTENSION], recursive=False, absolute_path=False)
-    expected_source_python_files_with_prefixes = file_names_with_prefixes(expected_source_python_files, os.path.join(package_and_version, package_name))
-
-    expected_source_cpp_files = find_files_in_directory(directory=libraries_directory, extensions=[CPP_EXTENSION, HEADER_EXTENSION], recursive=True, absolute_path=False)
-    expected_source_cpp_files_with_prefixes = file_names_with_prefixes(expected_source_cpp_files, os.path.join(package_and_version, libraries_directory_name))
     try:
         verify_source(source_url=source_url, package_name=package_name, version=version, expected_python_files=expected_source_python_files_with_prefixes, expected_cpp_files=expected_source_cpp_files_with_prefixes)
     except Exception as source_exception:
         nb_errors += 1
-        log_message(f"{source_name}: {source_exception}\n")
+        log_error(name=source_name, exception=source_exception)
     else:
-        log_message(f"{source_name}: {PASSED}\n")
+        log_valid(name=source_name)
 
-    expected_wheel_python_files = find_files_in_directory(directory=package_directory, extensions=[PYTHON_EXTENSION], recursive=False, absolute_path=False)
+    expected_wheel_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=False)
     expected_wheel_python_files_with_prefix = file_names_with_prefixes(expected_wheel_python_files, package_name)
     for wheel_url in wheel_urls:
         wheel_name = display_name(url=wheel_url, package_name=package_name, version=version)
@@ -294,16 +320,16 @@ def main(index: str, package_name: str, version: str, expected_nb_wheels: int, e
             verify_wheel(wheel_url=wheel_url, package_name=package_name, version=version, expected_shared_libraries=expected_shared_libraries, expected_python_files=expected_wheel_python_files_with_prefix)
         except Exception as wheel_exception:
             nb_errors += 1
-            log_message(f"{wheel_name}: {wheel_exception}\n")
+            log_error(name=wheel_name, exception=wheel_exception)
         else:
-            log_message(f"{wheel_name}: {PASSED}\n")
+            log_valid(name=wheel_name)
 
     return nb_errors
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Verify the content of the uploaded package to PyPi or Test PyPi")
-    parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Whether to use the PyPi or Test PyPi package index")
+    parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index on which to validate the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance")
     args = parser.parse_args()
 
     try:
@@ -319,13 +345,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(e)
         sys.exit(1)
-
-    # TODO: Log with logger or print?
-    # TODO: common function for the main because same behavior for wheel and source with exception etc (function with args: function, etc (what takes verify_source() and verify_wheel()))
-    # TODO: add verification for the source: check that there are python files? + cpp files?
-    # TODO: add verification for the wheel: check that there are python files?
-    # TODO: add doc?
-
-    # TODO: in get_shared_library_file(), with cmake the shared lib name is libtradeflow.?, do no longer need to search for pattern. Directly search for the file with the exact name?
-    # TODO: find_files() and find_files_in_directory() have the same functionality. Use only one? (maybe create a common repo?)
-    # TODO: In tests save_empty_files_in_temp_dir() and prepare_directory_with_files() have the same functionality. Use only 1? (it is in tests so maybe duplicating the function is ok)

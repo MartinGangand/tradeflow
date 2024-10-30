@@ -20,10 +20,10 @@ TEMP_DIR = Path(__file__).parent.joinpath("temp")
 UTF_8 = "utf-8"
 
 
-@pytest.fixture(scope="class", autouse=False)
+@pytest.fixture(scope="class", autouse=True)
 def class_setup_and_tear_down():
     # Create the temporary directory before running tests
-    TEMP_DIR.mkdir(parents=False, exist_ok=True)
+    TEMP_DIR.mkdir(parents=False, exist_ok=False)
 
     yield
 
@@ -87,7 +87,7 @@ def read_html_page_from_datasets(file_name: str) -> str:
 
 
 def prepare_directory_with_files(directory_path: Path, file_names: List[str]) -> None:
-    directory_path.mkdir(parents=True, exist_ok=True)
+    directory_path.mkdir(parents=True, exist_ok=False)
     for file_name in file_names:
         directory_path.joinpath(file_name).open(mode="w").close()
 

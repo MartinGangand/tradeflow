@@ -2,7 +2,7 @@ Starting pypi_verify.py script for index 'test.pypi' (url: https://test.pypi.org
 
 Starting to verify source distribution
     Source url: OK
-    Fetched 6 source file names
+    Fetched 6 file names from the source
     Verify source python files: OK
     Verify source cpp or header files: OK
 package-0.0.1.tar.gz: PASSED
@@ -10,7 +10,7 @@ package-0.0.1.tar.gz: PASSED
 Starting to verify wheel package-0.0.1-cp312-cp312-win_amd64.whl
     Wheel url: OK
     Wheel shared library extension: dll
-    Fetched 3 wheel file names
+    Fetched 3 file names from the wheel
     Verify wheel shared library files: OK
     Verify wheel python files: OK
 package-0.0.1-cp312-cp312-win_amd64.whl: PASSED
@@ -18,7 +18,7 @@ package-0.0.1-cp312-cp312-win_amd64.whl: PASSED
 Starting to verify wheel package-0.0.1-cp312-cp312-musllinux_1_2_x86_64.whl
     Wheel url: OK
     Wheel shared library extension: so
-    Fetched 3 wheel file names
+    Fetched 3 file names from the wheel
     Verify wheel shared library files: OK
     Verify wheel python files: OK
 package-0.0.1-cp312-cp312-musllinux_1_2_x86_64.whl: PASSED
@@ -26,7 +26,7 @@ package-0.0.1-cp312-cp312-musllinux_1_2_x86_64.whl: PASSED
 Starting to verify wheel package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
     Wheel url: OK
     Wheel shared library extension: so
-    Fetched 3 wheel file names
+    Fetched 3 file names from the wheel
     Verify wheel shared library files: OK
     Verify wheel python files: OK
 package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl: PASSED
@@ -34,7 +34,7 @@ package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl: PASSED
 Starting to verify wheel package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl
     Wheel url: OK
     Wheel shared library extension: dylib
-    Fetched 3 wheel file names
+    Fetched 3 file names from the wheel
     Verify wheel shared library files: OK
     Verify wheel python files: OK
 package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl: PASSED
