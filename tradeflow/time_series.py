@@ -89,8 +89,8 @@ class TimeSeries(ABC):
         log_scale : bool, default true
             If True, use a log scale for plotting graphs, otherwise use a linear scale.
             It has no effect if `plot` is False.
-        percentiles: tuple of float
-            The percentiles to use .
+        percentiles : tuple of float
+            The percentiles to use.
 
         Returns
         -------

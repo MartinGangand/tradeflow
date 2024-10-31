@@ -1,3 +1,3 @@
 import pathlib
 
-ROOT_DIR = str(pathlib.Path(__file__).parent)
+PACKAGE_DIR = pathlib.Path(__file__).parent

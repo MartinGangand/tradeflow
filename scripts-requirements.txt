@@ -1,0 +1,7 @@
+numpy
+pytest
+pytest-mock
+pytest-regressions
+pytest-cov
+toml
+requests

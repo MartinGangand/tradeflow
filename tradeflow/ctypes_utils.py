@@ -7,7 +7,7 @@ from typing import Literal, List
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
-from tradeflow.definitions import ROOT_DIR
+from tradeflow.definitions import PACKAGE_DIR
 from tradeflow.exceptions import TooManySharedLibrariesException
 
 logger = logger_utils.get_logger(__name__)
@@ -16,7 +16,7 @@ ARGUMENT_TYPES = "argtypes"
 RESULT_TYPES = "restype"
 
 SHARED_LIBRARY_NAME = "libtradeflow"
-SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib", "pyd"]
+SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib"]
 
 function_to_argtypes_and_restype = {
     "simulate": {
@@ -107,7 +107,7 @@ def load_shared_library() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
-    lib_file = get_shared_library_file(directory=ROOT_DIR, shared_library_name=SHARED_LIBRARY_NAME)
+    lib_file = get_shared_library_file(directory=PACKAGE_DIR, shared_library_name=SHARED_LIBRARY_NAME)
     shared_lib = ct.CDLL(lib_file, winmode=0)
     set_shared_library_functions(shared_lib=shared_lib)
 
@@ -128,13 +128,13 @@ def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
         setattr(getattr(shared_lib, function_name), RESULT_TYPES, function_to_argtypes_and_restype.get(function_name).get(RESULT_TYPES))
 
 
-def get_shared_library_file(directory: str, shared_library_name: str) -> str:
+def get_shared_library_file(directory: Path, shared_library_name: str) -> str:
     """
     Return the path to the shared library `shared_library_name`.
 
     Parameters
     ----------
-    directory : str
+    directory : Path
         The directory in which to search for the shared library.
     shared_library_name : str
         The name of the shared library.
@@ -154,10 +154,10 @@ def get_shared_library_file(directory: str, shared_library_name: str) -> str:
     if len(shared_library_files) >= 2:
         raise TooManySharedLibrariesException(f"{len(shared_library_files)} shared libraries found with name '{shared_library_name}' with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} in directory: {directory}.")
 
-    return str(Path(directory).joinpath(shared_library_files[0]))
+    return str(directory.joinpath(shared_library_files[0]))
 
 
-def find_files(pattern: str, directory: str) -> List[str]:
+def find_files(pattern: str, directory: Path) -> List[str]:
     """
     Return files matching a specified pattern within a directory.
 
@@ -165,18 +165,17 @@ def find_files(pattern: str, directory: str) -> List[str]:
     ----------
     pattern : str
         The file name pattern to search for.
-    directory : str
+    directory : Path
         The directory in which to search for files.
 
     Returns
     -------
-    bool
+    list of str
         The file names matching the pattern (only the file names, not their full paths).
     """
     matched_files = []
-    for root, _, files in os.walk(directory):
-        if root == directory:
-            for filename in fnmatch.filter(files, pattern):
-                matched_files.append(filename)
+    for root, _, files in os.walk(str(directory)):
+        if root == str(directory):
+            matched_files.extend(fnmatch.filter(files, pattern))
 
     return matched_files
