@@ -16,19 +16,7 @@ from scripts.utils import get_response, html_page_as_string, fetch_file_names_fr
     find_files_in_directory, file_names_with_prefixes
 
 DATASETS_DIRECTORY = Path(__file__).parent.parent.joinpath("datasets").resolve()
-TEMP_DIR = Path(__file__).parent.joinpath("temp")
 UTF_8 = "utf-8"
-
-
-@pytest.fixture(scope="class", autouse=True)
-def class_setup_and_tear_down():
-    # Create the temporary directory before running tests
-    TEMP_DIR.mkdir(parents=False, exist_ok=False)
-
-    yield
-
-    # Delete the temporary directory after running tests
-    shutil.rmtree(path=TEMP_DIR)
 
 
 def mock_response(mocker: MockerFixture, content: Any, ok: bool) -> MagicMock:
@@ -185,17 +173,21 @@ class TestFindUrlsInHtmlPage:
 
 class TestFindFilesInDirectory:
 
+    TEMP_DIR = Path(__file__).parent.joinpath("temp")
+
     FOLDER_A = TEMP_DIR.joinpath("folder_a")
     FOLDER_B = FOLDER_A.joinpath("folder_b")
 
-    @pytest.fixture(scope="class", autouse=True)
+    @pytest.fixture(scope="function", autouse=True)
     def find_files_in_directory_setup_and_tear_down(self):
+        self.TEMP_DIR.mkdir(parents=False, exist_ok=False)
+
         prepare_directory_with_files(directory_path=self.FOLDER_A, file_names=["file_a1.py", "file_a2.py", "file_a3.cpp", "file_a4.h"])
         prepare_directory_with_files(directory_path=self.FOLDER_B, file_names=["file_b1.py", "file_b2.cpp", "file_b3.h"])
 
         yield
 
-        shutil.rmtree(path=self.FOLDER_A)
+        shutil.rmtree(path=self.TEMP_DIR)
 
     @pytest.mark.parametrize("directory,extensions,absolute_path,expected_files", [
         (TEMP_DIR, ["py"], True, []),

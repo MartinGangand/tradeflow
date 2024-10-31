@@ -14,13 +14,11 @@ from scripts.utils import file_names_with_prefixes
 from scripts.tests.test_utils import mock_response_with_source, mock_response_with_wheel, \
     prepare_directory_with_files, mock_response_with_html_page, read_html_page_from_datasets
 
-TEMP_DIR = Path(__file__).parent.joinpath("temp")
-
 PACKAGE_NAME = "package"
 VERSION = "0.0.1"
 PACKAGE_AND_VERSION = f"{PACKAGE_NAME}-{VERSION}"
 
-HTML_PAGE_PYPI_URL_START = "https://test.pypi.org/project"
+PYPI_HTML_PAGE_URL_START = "https://test.pypi.org/project"
 SOURCE_URL_START = "https://test-files.pythonhosted.org"
 WHEEL_URL_START = "https://test-files.pythonhosted.org/packages"
 
@@ -28,17 +26,6 @@ WHEEL_CP312_WIN = f"{PACKAGE_NAME}-{VERSION}-cp312-cp312-win_amd64.whl"
 WHEEL_CP312_MUSLLINUX = f"{PACKAGE_NAME}-{VERSION}-cp312-cp312-musllinux_1_2_x86_64.whl"
 WHEEL_CP312_MANYLINUX = f"{PACKAGE_NAME}-{VERSION}-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
 WHEEL_CP312_MACOSX = f"{PACKAGE_NAME}-{VERSION}-cp312-cp312-macosx_11_0_arm64.whl"
-
-
-@pytest.fixture(scope="class", autouse=True)
-def class_setup_and_tear_down():
-    # Create the temporary directory before running tests
-    TEMP_DIR.mkdir(parents=False, exist_ok=False)
-
-    yield
-
-    # Delete the temporary directory after running tests
-    shutil.rmtree(path=TEMP_DIR)
 
 
 class TestVerifySource:
@@ -300,28 +287,31 @@ class TestDisplayName:
 
 class TestMain:
 
+    TEMP_DIR = Path(__file__).parent.joinpath("temp")
+
     ROOT_REPOSITORY = TEMP_DIR.joinpath("Users", "dev", PACKAGE_NAME)
+    PACKAGE_DIRECTORY_NAME = "package"
     LIBRARIES_DIRECTORY_NAME = "lib"
 
     EXPECTED_SHARED_LIBRARIES = [os.path.join(PACKAGE_NAME, "lib1")]
 
-    @pytest.fixture(scope="class", autouse=True)
+    @pytest.fixture(scope="function", autouse=True)
     def main_setup_and_tear_down(self):
-        self.ROOT_REPOSITORY.mkdir(parents=True, exist_ok=False)
+        self.TEMP_DIR.mkdir(parents=False, exist_ok=False)
 
-        package_dir = self.ROOT_REPOSITORY.joinpath(PACKAGE_NAME)
-        prepare_directory_with_files(directory_path=package_dir, file_names=["time_series.py", "ar_model.py"])
+        package_directory = self.ROOT_REPOSITORY.joinpath(self.PACKAGE_DIRECTORY_NAME)
+        prepare_directory_with_files(directory_path=package_directory, file_names=["time_series.py", "ar_model.py"])
 
-        package_cpp_dir = self.ROOT_REPOSITORY.joinpath(self.LIBRARIES_DIRECTORY_NAME, "cpp", PACKAGE_NAME)
-        prepare_directory_with_files(directory_path=package_cpp_dir, file_names=["simulation.cpp", "simulation.h"])
+        package_cpp_directory = self.ROOT_REPOSITORY.joinpath(self.LIBRARIES_DIRECTORY_NAME, "cpp", PACKAGE_NAME)
+        prepare_directory_with_files(directory_path=package_cpp_directory, file_names=["simulation.cpp", "simulation.h"])
 
         yield
 
-        shutil.rmtree(path=self.ROOT_REPOSITORY)
+        shutil.rmtree(path=self.TEMP_DIR)
 
     @staticmethod
     def mock_request_get_valid(mocker: MockerFixture, url: str) -> MagicMock:
-        if url == f"{HTML_PAGE_PYPI_URL_START}/{PACKAGE_NAME}/{VERSION}/#files":
+        if url == f"{PYPI_HTML_PAGE_URL_START}/{PACKAGE_NAME}/{VERSION}/#files":
             return mock_response_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_valid.html"))
         elif url == f"{SOURCE_URL_START}/packages/{PACKAGE_NAME}-{VERSION}.tar.gz":
             root_file_names = file_names_with_prefixes(["LICENCE", "setup.py"], PACKAGE_AND_VERSION)
@@ -339,7 +329,7 @@ class TestMain:
 
     @staticmethod
     def mock_request_get_invalid(mocker: MockerFixture, url: str) -> MagicMock:
-        if url == f"{HTML_PAGE_PYPI_URL_START}/{PACKAGE_NAME}/{VERSION}/#files":
+        if url == f"{PYPI_HTML_PAGE_URL_START}/{PACKAGE_NAME}/{VERSION}/#files":
             return mock_response_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_invalid.html"))
         elif url == f"{SOURCE_URL_START}/packages/source-invalid-missing-cpp-files/{PACKAGE_NAME}-{VERSION}.tar.gz":
             root_file_names = file_names_with_prefixes(["LICENCE", "setup.py"], PACKAGE_AND_VERSION)
@@ -363,7 +353,7 @@ class TestMain:
     def test_main_valid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_valid(mocker=mocker, url=url))
 
-        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert nb_errors == 0
         file_regression.check(capsys.readouterr().out)
@@ -373,7 +363,7 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert str(ex.value) == "Expected 1 source url in the html page, but found 2 instead"
         file_regression.check(capsys.readouterr().out)
@@ -383,7 +373,7 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert str(ex.value) == "Expected 4 wheel urls in the html page, but found 3 instead"
         file_regression.check(capsys.readouterr().out)
@@ -391,7 +381,7 @@ class TestMain:
     def test_main_invalid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_invalid(mocker=mocker, url=url))
 
-        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=PACKAGE_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert nb_errors == 7
         file_regression.check(capsys.readouterr().out)

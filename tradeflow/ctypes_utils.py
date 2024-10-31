@@ -7,7 +7,7 @@ from typing import Literal, List
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
-from tradeflow.definitions import PACKAGE_ROOT_DIR
+from tradeflow.definitions import PACKAGE_DIR
 from tradeflow.exceptions import TooManySharedLibrariesException
 
 logger = logger_utils.get_logger(__name__)
@@ -16,7 +16,7 @@ ARGUMENT_TYPES = "argtypes"
 RESULT_TYPES = "restype"
 
 SHARED_LIBRARY_NAME = "libtradeflow"
-SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib",]
+SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib"]
 
 function_to_argtypes_and_restype = {
     "simulate": {
@@ -107,7 +107,7 @@ def load_shared_library() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
-    lib_file = get_shared_library_file(directory=PACKAGE_ROOT_DIR, shared_library_name=SHARED_LIBRARY_NAME)
+    lib_file = get_shared_library_file(directory=PACKAGE_DIR, shared_library_name=SHARED_LIBRARY_NAME)
     shared_lib = ct.CDLL(lib_file, winmode=0)
     set_shared_library_functions(shared_lib=shared_lib)
 
@@ -165,7 +165,7 @@ def find_files(pattern: str, directory: Path) -> List[str]:
     ----------
     pattern : str
         The file name pattern to search for.
-    directory : str
+    directory : Path
         The directory in which to search for files.
 
     Returns

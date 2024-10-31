@@ -13,7 +13,7 @@ from tradeflow.exceptions import TooManySharedLibrariesException
 TEMP_DIR = pathlib.Path(__file__).parent.joinpath("temp").resolve()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def setup_and_tear_down():
     # Create the temporary directory before running a test
     os.makedirs(name=TEMP_DIR, exist_ok=False)
@@ -24,7 +24,7 @@ def setup_and_tear_down():
     shutil.rmtree(path=TEMP_DIR)
 
 
-def prepare_temp_dir_with_files(file_names: List[str]) -> None:
+def prepare_temporary_directory_with_files(file_names: List[str]) -> None:
     for file_name in file_names:
         TEMP_DIR.joinpath(file_name).open(mode="w").close()
 
@@ -35,7 +35,7 @@ def prepare_temp_dir_with_files(file_names: List[str]) -> None:
     (["lib1.x-3-x.so", "lib.so", "lib12.so", "lib.x-3-x.so", "lib12.x-3-x.so"], "lib1.x-3-x.so")
 ])
 def test_get_shared_library_file(files_to_save, expected_shared_library_rel):
-    prepare_temp_dir_with_files(file_names=files_to_save)
+    prepare_temporary_directory_with_files(file_names=files_to_save)
 
     shared_library_abs = get_shared_library_file(directory=TEMP_DIR, shared_library_name="lib1")
     shared_library_rel = Path(shared_library_abs).relative_to(TEMP_DIR)
@@ -48,7 +48,7 @@ def test_get_shared_library_file(files_to_save, expected_shared_library_rel):
     ["lib1.dl", "lib1.dlll"],
     ["lib1.oso"]])
 def test_get_shared_library_file_should_raise_exception_when_no_shared_library(files_to_save):
-    prepare_temp_dir_with_files(file_names=files_to_save)
+    prepare_temporary_directory_with_files(file_names=files_to_save)
 
     with pytest.raises(FileNotFoundError) as ex:
         get_shared_library_file(directory=TEMP_DIR, shared_library_name="lib1")
@@ -62,7 +62,7 @@ def test_get_shared_library_file_should_raise_exception_when_no_shared_library(f
     (["lib1.so", "lib1.x-3-x.so", "lib1.dll", "lib1.py"], ["lib1.so", "lib1.x-3-x.so", "lib1.dll"])
 ])
 def test_get_shared_library_file_should_raise_exception_when_several_shared_libraries(files_to_save, expected_found_shared_libraries):
-    prepare_temp_dir_with_files(file_names=files_to_save)
+    prepare_temporary_directory_with_files(file_names=files_to_save)
 
     with pytest.raises(TooManySharedLibrariesException) as ex:
         get_shared_library_file(directory=TEMP_DIR, shared_library_name="lib1")
@@ -85,7 +85,7 @@ def test_get_shared_library_file_should_raise_exception_when_several_shared_libr
 ])
 def test_find_files(pattern, expected_matched_files):
     files_to_save = ["file1.txt", "file2.py", "file3.so", "file3.dll", "file3.dylib", "file3.pyd", "file4.x-3.x.so", "file5.so"]
-    prepare_temp_dir_with_files(file_names=files_to_save)
+    prepare_temporary_directory_with_files(file_names=files_to_save)
 
     matched_files = find_files(pattern=pattern, directory=TEMP_DIR)
     assert set(matched_files) == set(expected_matched_files)
