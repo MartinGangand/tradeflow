@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta name="defaultLanguage" content="en">
+  <meta name="availableLanguages" content="en, es, fr, ja, pt_BR, uk, el, de, zh_Hans, zh_Hant, ru, he, eo">
+
+
+  <title>tradeflow · TestPyPI</title>
+  <meta name="description" content="A package to simulate autocorrelated time series of signs">
+
+  <link rel="stylesheet" href="/static/css/warehouse-ltr.5715db28.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+3:400,400italic,600,600italic,700,700italic%7CSource+Code+Pro:500">
+  <noscript>
+    <link rel="stylesheet" href="/static/css/noscript.0673c9ea.css">
+  </noscript>
+
+
+  <link rel="icon" href="/static/images/favicon.35549fe8.ico" type="image/x-icon">
+
+  <link rel="alternate" type="application/rss+xml" title="RSS: 40 latest updates" href="/rss/updates.xml">
+  <link rel="alternate" type="application/rss+xml" title="RSS: 40 newest packages" href="/rss/packages.xml">
+  <link rel="alternate" type="application/rss+xml" title="RSS: latest releases for tradeflow" href="/rss/project/tradeflow/releases.xml">    <link rel="canonical" href="https://test.pypi.org/project/tradeflow/">
+
+  <meta property="og:url" content="https://test.pypi.org/project/tradeflow/0.0.15.4/">
+
+  <link rel="search" type="application/opensearchdescription+xml" title="PyPI" href="/opensearch.xml">
+
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+    };
+  </script>
+  <script async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"
+          integrity="sha256-1CldwzdEg2k1wTmf7s5RWVd7NMXI/7nxxjJM2C4DqII="
+          crossorigin="anonymous"
+  ></script>
+  <script defer src="https://www.fastly-insights.com/insights.js?k=6a52360a-f306-421e-8ed5-7417d0d4a4e9&dnt=true"></script>
+
+</head>
+
+<body data-controller="viewport-toggle">
+
+<a href="#content" class="skip-to-content">Skip to main content</a>
+
+<button type="button" class="button button--primary button--switch-to-mobile hidden" data-viewport-toggle-target="switchToMobile" data-action="viewport-toggle#switchToMobile">
+  Switch to mobile version    </button>
+
+  <div class="notification-bar notification-bar--warning" role="status">
+        <span class="notification-bar__icon">
+          <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+          <span class="sr-only">Warning</span>
+        </span>
+    <span class="notification-bar__message">You are using TestPyPI – a separate instance of the Python Package Index that allows you to try distribution tools and processes without affecting the real index.</span>
+  </div>
+  <noscript>
+    <div class="notification-bar notification-bar--warning" role="status">
+        <span class="notification-bar__icon">
+          <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+          <span class="sr-only">Warning</span>
+        </span>
+      <span class="notification-bar__message">Some features may not work without JavaScript. Please try enabling it if you encounter problems.</span>
+    </div>
+  </noscript>
+
+  <div data-html-include="/_includes/notification-banners/"></div>    </div>
+
+<header class="site-header site-header--test-pypi">
+  <div class="site-container">
+    <div class="split-layout">
+      <div class="split-layout">
+        <div>
+          <a class="site-header__logo" href="/">
+            <img alt="TestPyPI" src="/static/images/logo-small.8998e9d1.svg">
+          </a>
+        </div>
+
+        <form class="search-form search-form--primary" action="/search/" role="search">
+          <label for="search" class="sr-only">Search PyPI</label>
+          <input id="search" class="search-form__search" type="text" name="q" placeholder="Search projects" value="" autocomplete="off" autocapitalize="off" spellcheck="false" data-controller="search-focus" data-action="keydown@window->search-focus#focusSearchField" data-search-focus-target="searchField">
+          <button type="submit" class="search-form__button">
+            <i class="fa fa-search" aria-hidden="true"></i>
+            <span class="sr-only">Search</span>
+          </button>
+        </form>
+      </div>
+
+      <div data-html-include="/_includes/current-user-indicator/">            <div id="user-indicator" class="horizontal-menu horizontal-menu--light horizontal-menu--tall">
+        <nav class="horizontal-menu horizontal-menu--light horizontal-menu--tall hide-on-tablet" aria-label="Main navigation">
+          <ul>
+            <li class="horizontal-menu__item"><a href="/help/" class="horizontal-menu__link">Help</a></li>
+          </ul>
+        </nav>
+        <nav class="dropdown dropdown--on-menu hidden show-on-tablet" aria-label="Main navigation">
+          <button type="button" class="horizontal-menu__link dropdown__trigger" aria-haspopup="true" aria-expanded="false" aria-label="View menu">
+            Menu      <span class="dropdown__trigger-caret">
+        <i class="fa fa-caret-down" aria-hidden="true"></i>
+      </span>
+          </button>
+          <ul class="dropdown__content" aria-hidden="true" aria-label="Main menu">
+            <li><a class="dropdown__link" href="/help/">Help</a></li>
+          </ul>
+        </nav>
+      </div>
+      </div>        </div>
+  </div>
+</header>
+
+<main id="content">
+
+  <div data-controller="project-tabs">
+    <div class="tabs-container">
+      <div class="vertical-tabs">
+        <div class="vertical-tabs__tabs">
+
+
+          <div id="files" data-project-tabs-target="content" class="vertical-tabs__content" role="tabpanel" aria-labelledby="files-tab mobile-files-tab" tabindex="-1">
+            <h2 class="page-title">Download files</h2>
+            <p>Download the file for your platform. If you're not sure which to choose, learn more about <a href="https://packaging.python.org/tutorials/installing-packages/" title="External link" target="_blank" rel="noopener">installing packages</a>.</p>
+            <h3>
+              Source Distribution            </h3>
+
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1.tar.gz">
+                  package-0.0.1.tar.gz
+                </a>
+                (13.3 kB
+                <a href="#copy-hash-modal-b9df51da-20e1-45f9-b750-3c8c94b4d673">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:47+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>Source</code>
+                </p>
+              </div>
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package2-0.0.1.tar.gz">
+                  package2-0.0.1.tar.gz
+                </a>
+                (13.3 kB
+                <a href="#copy-hash-modal-b9df51da-20e1-45f9-b750-3c8c94b4d673">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:47+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>Source</code>
+                </p>
+              </div>
+            </div>
+
+
+            <h3>
+              Built Distributions            </h3>
+
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-win_amd64.whl">
+                  package-0.0.1-cp312-cp312-win_amd64.whl
+                </a>
+                (23.4 kB
+                <a href="#copy-hash-modal-703f053b-59c9-415b-841d-18a520a1f5b0">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:46+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>CPython 3.12</code>
+                  <code>Windows x86-64</code>
+                </p>
+              </div>
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-musllinux_1_2_x86_64.whl">
+                  package-0.0.1-cp312-cp312-musllinux_1_2_x86_64.whl
+                </a>
+                (1.0 MB
+                <a href="#copy-hash-modal-75c3507e-d5aa-4b10-9bdd-e51399cc3a4d">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:43+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>CPython 3.12</code>
+                  <code>musllinux: musl 1.2+ x86-64</code>
+                </p>
+              </div>
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl">
+                  package-0.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+                </a>
+                (46.6 kB
+                <a href="#copy-hash-modal-2f1d956c-9b7f-42ca-ae7c-f2ad0cd281e0">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:39+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>CPython 3.12</code>
+                  <code>manylinux: glibc 2.17+ x86-64</code>
+                </p>
+              </div>
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+              <div class="card file__card">
+                <a href="https://test-files.pythonhosted.org/packages/package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl">
+                  package-0.0.1-cp312-cp312-macosx_11_0_arm64.whl
+                </a>
+                (17.5 kB
+                <a href="#copy-hash-modal-c6772cc2-b5cc-412d-9750-948ac3be4c85">view hashes</a>)
+                <p class="file__meta">
+                  Uploaded <time datetime="2024-09-22T15:05:38+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false">
+                  Sep 22, 2024
+                </time>
+                  <code>CPython 3.12</code>
+                  <code>macOS 11.0+ ARM64</code>
+                </p>
+              </div>
+            </div>
+            <div class="file">
+              <div class="file__graphic">
+                <i class="far fa-file" aria-hidden="true"></i>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+        </div>
+      </div>
+    </div>
+</main>
+
+
+</body>
+
+</html>
