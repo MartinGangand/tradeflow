@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tradeflow.ar_model &mdash; tradeflow 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=bbaf98b3"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            tradeflow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">tradeflow</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">tradeflow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">tradeflow.ar_model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for tradeflow.ar_model</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">statsmodels.regression</span> <span class="kn">import</span> <span class="n">yule_walker</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tools.typing</span> <span class="kn">import</span> <span class="n">ArrayLike1D</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tsa.ar_model</span> <span class="kn">import</span> <span class="n">ar_select_order</span><span class="p">,</span> <span class="n">AutoReg</span>
+
+<span class="kn">import</span> <span class="nn">tradeflow.ctypes_utils</span> <span class="k">as</span> <span class="nn">ctypes_utils</span>
+<span class="kn">from</span> <span class="nn">tradeflow</span> <span class="kn">import</span> <span class="n">logger_utils</span>
+<span class="kn">from</span> <span class="nn">tradeflow.constants</span> <span class="kn">import</span> <span class="n">OrderSelectionMethodAR</span><span class="p">,</span> <span class="n">FitMethodAR</span><span class="p">,</span> <span class="n">InformationCriterion</span>
+<span class="kn">from</span> <span class="nn">tradeflow.ctypes_utils</span> <span class="kn">import</span> <span class="n">CArray</span><span class="p">,</span> <span class="n">CArrayEmpty</span>
+<span class="kn">from</span> <span class="nn">tradeflow.exceptions</span> <span class="kn">import</span> <span class="n">IllegalValueException</span><span class="p">,</span> <span class="n">ModelNotFittedException</span><span class="p">,</span> <span class="n">IllegalNbLagsException</span><span class="p">,</span> \
+    <span class="n">NonStationaryTimeSeriesException</span>
+<span class="kn">from</span> <span class="nn">tradeflow.general_utils</span> <span class="kn">import</span> <span class="n">check_condition</span><span class="p">,</span> <span class="n">check_enum_value_is_valid</span><span class="p">,</span> <span class="n">get_enum_values</span><span class="p">,</span> \
+    <span class="n">is_value_within_interval_exclusive</span>
+<span class="kn">from</span> <span class="nn">tradeflow.time_series</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logger_utils</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="AR">
+<a class="viewcode-back" href="../../tradeflow.html#tradeflow.ar_model.AR">[docs]</a>
+<span class="k">class</span> <span class="nc">AR</span><span class="p">(</span><span class="n">TimeSeries</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Autoregressive model for trade/order signs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    signs : array_like</span>
+<span class="sd">        An array of signs where each element is either 1 (representing a buy) or -1 (representing a sell).</span>
+<span class="sd">    max_order : int, default None</span>
+<span class="sd">        The maximum order of the autoregressive model.</span>
+<span class="sd">        If None, the maximum order is set to 12*(nobs/100)^{1/4} as outlined in Schwert (1989).</span>
+<span class="sd">    order_selection_method : {&#39;information_criterion&#39;, &#39;pacf&#39;}, default None</span>
+<span class="sd">        The method for selecting the order of the model. If None, the order of the model will be `max_order`.</span>
+
+<span class="sd">        * &#39;information_criterion&#39; - Choose the model that minimizes a given information criterion.</span>
+<span class="sd">        * &#39;pacf&#39; - Choose the model using the number of significant lags in the partial autocorrelation function of the time series of signs.</span>
+
+<span class="sd">    information_criterion : {&#39;aic&#39;, &#39;bic&#39;, &#39;hqic&#39;}, optional</span>
+<span class="sd">        The information criterion to use in the order selection.</span>
+<span class="sd">        It has no effect if `order_selection_method` is not &#39;information_criterion&#39;.</span>
+<span class="sd">        * &#39;aic&#39; - Akaike information criterion.</span>
+<span class="sd">        * &#39;bic&#39; - Bayesian information criterion.</span>
+<span class="sd">        * &#39;hqic&#39; - Hannan–Quinn information criterion.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signs</span><span class="p">:</span> <span class="n">ArrayLike1D</span><span class="p">,</span> <span class="n">max_order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">order_selection_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;information_criterion&quot;</span><span class="p">,</span> <span class="s2">&quot;pacf&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">information_criterion</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;aic&quot;</span><span class="p">,</span> <span class="s2">&quot;bic&quot;</span><span class="p">,</span> <span class="s2">&quot;hqic&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">signs</span><span class="o">=</span><span class="n">signs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_max_order</span><span class="p">(</span><span class="n">max_order</span><span class="o">=</span><span class="n">max_order</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="o">=</span> <span class="n">check_enum_value_is_valid</span><span class="p">(</span><span class="n">enum_obj</span><span class="o">=</span><span class="n">OrderSelectionMethodAR</span><span class="p">,</span>
+                                                                 <span class="n">value</span><span class="o">=</span><span class="n">order_selection_method</span><span class="p">,</span>
+                                                                 <span class="n">parameter_name</span><span class="o">=</span><span class="s2">&quot;order_selection_method&quot;</span><span class="p">,</span>
+                                                                 <span class="n">is_none_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_information_criterion</span> <span class="o">=</span> <span class="n">check_enum_value_is_valid</span><span class="p">(</span><span class="n">enum_obj</span><span class="o">=</span><span class="n">InformationCriterion</span><span class="p">,</span>
+                                                                <span class="n">value</span><span class="o">=</span><span class="n">information_criterion</span><span class="p">,</span>
+                                                                <span class="n">parameter_name</span><span class="o">=</span><span class="s2">&quot;information_criterion&quot;</span><span class="p">,</span>
+                                                                <span class="n">is_none_valid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="o">==</span> <span class="n">OrderSelectionMethodAR</span><span class="o">.</span><span class="n">PACF</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_information_criterion</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="o">==</span> <span class="n">OrderSelectionMethodAR</span><span class="o">.</span><span class="n">PACF</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The information criterion &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_information_criterion</span><span class="si">}</span><span class="s2">&#39; will have no effect as the order selection method &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span><span class="si">}</span><span class="s2">&#39; doesn&#39;t use it.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Will be set during fit()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constant_parameter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_init_max_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">max_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Schwert (1989)</span>
+            <span class="n">max_order</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="mf">12.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">)))</span>
+
+        <span class="n">check_condition</span><span class="p">(</span><span class="n">condition</span><span class="o">=</span><span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">max_order</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+                        <span class="n">exception</span><span class="o">=</span><span class="n">IllegalNbLagsException</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">max_order</span><span class="si">}</span><span class="s2"> is not valid for &#39;max_order&#39;, it must be positive and lower than 50% of the time series length (&lt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">)</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The maximum order has been set to </span><span class="si">{</span><span class="n">max_order</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">max_order</span>
+
+<div class="viewcode-block" id="AR.fit">
+<a class="viewcode-back" href="../../tradeflow.html#tradeflow.ar_model.AR.fit">[docs]</a>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;yule_walker&quot;</span><span class="p">,</span> <span class="s2">&quot;ols_with_cst&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">AR</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Estimate the model parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        method : {&#39;yule_walker&#39;, &#39;ols_with_cst&#39;}</span>
+<span class="sd">            The method to use for estimating parameters.</span>
+
+<span class="sd">            * &#39;yule_walker&#39; - Use the Yule Walker equations to estimate model parameters.</span>
+<span class="sd">              There will be no constant term, thus the percentage of buy signs</span>
+<span class="sd">              in the time series generated with these parameters will be close to 50%.</span>
+
+<span class="sd">            * &#39;ols_with_cst&#39; - Use OLS to estimate model parameters.</span>
+<span class="sd">              There will be a constant term, thus the percentage of buy signs in the time series</span>
+<span class="sd">              generated with these parameters will be close to the one from the training time series.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AR</span>
+<span class="sd">            The AR instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">check_enum_value_is_valid</span><span class="p">(</span><span class="n">enum_obj</span><span class="o">=</span><span class="n">FitMethodAR</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">parameter_name</span><span class="o">=</span><span class="s2">&quot;method&quot;</span><span class="p">,</span>
+                                           <span class="n">is_none_valid</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_select_order</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="n">FitMethodAR</span><span class="o">.</span><span class="n">YULE_WALKER</span><span class="p">:</span>
+            <span class="n">check_condition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series_stationary</span><span class="p">(</span><span class="n">regression</span><span class="o">=</span><span class="s2">&quot;n&quot;</span><span class="p">),</span> <span class="n">NonStationaryTimeSeriesException</span><span class="p">(</span><span class="s2">&quot;The time series must be stationary to be fitted.&quot;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">yule_walker</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mle&quot;</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">demean</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="n">FitMethodAR</span><span class="o">.</span><span class="n">OLS_WITH_CST</span><span class="p">:</span>
+            <span class="n">check_condition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_time_series_stationary</span><span class="p">(</span><span class="n">regression</span><span class="o">=</span><span class="s2">&quot;c&quot;</span><span class="p">),</span> <span class="n">NonStationaryTimeSeriesException</span><span class="p">(</span><span class="s2">&quot;The time series must be stationary to be fitted.&quot;</span><span class="p">))</span>
+            <span class="n">ar_model</span> <span class="o">=</span> <span class="n">AutoReg</span><span class="p">(</span><span class="n">endog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s2">&quot;c&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_constant_parameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">ar_model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ar_model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IllegalValueException</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The method &#39;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&#39; for the parameters estimation is not valid, it must be among </span><span class="si">{</span><span class="n">get_enum_values</span><span class="p">(</span><span class="n">enum_obj</span><span class="o">=</span><span class="n">FitMethodAR</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The AR(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="si">}</span><span class="s2">) model has been fitted with method &#39;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_select_order</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_order</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="o">==</span> <span class="n">OrderSelectionMethodAR</span><span class="o">.</span><span class="n">INFORMATION_CRITERION</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">ar_select_order</span><span class="p">(</span><span class="n">endog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">,</span> <span class="n">maxlag</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_order</span><span class="p">,</span>
+                                        <span class="n">ic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_information_criterion</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s2">&quot;n&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">ar_lags</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span> <span class="o">==</span> <span class="n">OrderSelectionMethodAR</span><span class="o">.</span><span class="n">PACF</span><span class="p">:</span>
+                <span class="n">pacf_coeffs</span><span class="p">,</span> <span class="n">confidence_interval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_pacf</span><span class="p">(</span><span class="n">nb_lags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_order</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+
+                <span class="n">pacf_coeffs</span> <span class="o">=</span> <span class="n">pacf_coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="n">confidence_interval</span> <span class="o">=</span> <span class="n">confidence_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+                <span class="n">lower_band</span> <span class="o">=</span> <span class="n">confidence_interval</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">pacf_coeffs</span>
+                <span class="n">upper_band</span> <span class="o">=</span> <span class="n">confidence_interval</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">pacf_coeffs</span>
+
+                <span class="n">order</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">acf_coeff</span><span class="p">,</span> <span class="n">value_lower_band</span><span class="p">,</span> <span class="n">value_upper_band</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pacf_coeffs</span><span class="p">,</span> <span class="n">lower_band</span><span class="p">,</span> <span class="n">upper_band</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">is_value_within_interval_exclusive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">acf_coeff</span><span class="p">,</span> <span class="n">lower_bound</span><span class="o">=</span><span class="n">value_lower_band</span><span class="p">,</span>
+                                                          <span class="n">upper_bound</span><span class="o">=</span><span class="n">value_upper_band</span><span class="p">):</span>
+                        <span class="k">break</span>
+                    <span class="n">order</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">=</span> <span class="n">order</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">IllegalValueException</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The method &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span><span class="si">}</span><span class="s2">&#39; for the order selection is not valid, it must be among </span><span class="si">{</span><span class="n">get_enum_values</span><span class="p">(</span><span class="n">enum_obj</span><span class="o">=</span><span class="n">OrderSelectionMethodAR</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;AR order selection: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="si">}</span><span class="s2"> lags (method: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_order_selection_method</span><span class="si">}</span><span class="s2">, information criterion: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_information_criterion</span><span class="si">}</span><span class="s2">, time series length: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">)</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AR.simulate">
+<a class="viewcode-back" href="../../tradeflow.html#tradeflow.ar_model.AR.simulate">[docs]</a>
+    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Simulate a time series of signs after the model has been fitted.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        size : int</span>
+<span class="sd">            The number of signs to simulate.</span>
+<span class="sd">        seed : int, default None</span>
+<span class="sd">            Seed used to initialize the pseudo-random number generator.</span>
+<span class="sd">            If `seed` is ``None``, then a random seed is used.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            The simulated signs (+1 for buy, -1 for sell).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_condition</span><span class="p">(</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">IllegalValueException</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The size &#39;</span><span class="si">{</span><span class="n">size</span><span class="si">}</span><span class="s2">&#39; for the time series to be simulated is not valid, it must be greater than 0.&quot;</span><span class="p">))</span>
+        <span class="n">check_condition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ModelNotFittedException</span><span class="p">(</span>
+            <span class="s2">&quot;The model has not yet been fitted. Fit the model first by calling &#39;fit()&#39;.&quot;</span><span class="p">))</span>
+
+        <span class="n">inverted_params</span> <span class="o">=</span> <span class="n">CArray</span><span class="o">.</span><span class="n">of</span><span class="p">(</span><span class="n">c_type_str</span><span class="o">=</span><span class="s2">&quot;double&quot;</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">last_signs</span> <span class="o">=</span> <span class="n">CArray</span><span class="o">.</span><span class="n">of</span><span class="p">(</span><span class="n">c_type_str</span><span class="o">=</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_signs</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_simulation</span> <span class="o">=</span> <span class="n">CArrayEmpty</span><span class="o">.</span><span class="n">of</span><span class="p">(</span><span class="n">c_type_str</span><span class="o">=</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="n">cpp_lib</span> <span class="o">=</span> <span class="n">ctypes_utils</span><span class="o">.</span><span class="n">load_shared_library</span><span class="p">()</span>
+        <span class="n">cpp_lib</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">inverted_params</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constant_parameter</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inverted_params</span><span class="p">),</span> <span class="n">last_signs</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simulation</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simulation</span><span class="p">[:]</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Martin Gangand.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
