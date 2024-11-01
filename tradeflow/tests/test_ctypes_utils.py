@@ -7,50 +7,75 @@ from typing import List
 
 import pytest
 
-from tradeflow.ctypes_utils import get_shared_library_file
-
-TEMP_DIR = pathlib.Path(__file__).parent.joinpath("temp").resolve()
-
-
-@pytest.fixture(scope="function", autouse=True)
-def setup_and_tear_down():
-    # Create the temporary directory before running a test
-    os.makedirs(name=TEMP_DIR, exist_ok=False)
-
-    yield
-
-    # Delete the temporary directory after running a test
-    shutil.rmtree(path=TEMP_DIR)
+from tradeflow.ctypes_utils import get_shared_library_file, get_shared_library_extension
+from tradeflow.exceptions import UnsupportedOsException
 
 
-def prepare_temporary_directory_with_files(file_names: List[str]) -> None:
-    for file_name in file_names:
-        TEMP_DIR.joinpath(file_name).open(mode="w").close()
+class TestGetSharedLibraryExtension:
+
+    @pytest.mark.parametrize("os_name,expected_shared_library_extension", [
+        ("Linux", "so"),
+        ("linux", "so"),
+        ("Darwin", "dylib"),
+        ("darwin", "dylib"),
+        ("Windows", "dll"),
+        ("windows", "dll")
+    ])
+    def test_get_shared_library_extension(self, mocker, os_name, expected_shared_library_extension):
+        mocker.patch("platform.system", return_value=os_name)
+
+        assert get_shared_library_extension() == expected_shared_library_extension
+
+    def test_get_shared_library_extension_should_raise_exception_when_unsupported_os(self, mocker):
+        mocker.patch("platform.system", return_value="unsupported_os")
+
+        with pytest.raises(UnsupportedOsException) as ex:
+            get_shared_library_extension()
+
+        assert str(ex.value) == "Unsupported OS 'unsupported_os'. Supported OS values are Linux, Darwin, and Windows."
 
 
-@pytest.mark.parametrize("files_to_save,shared_library_extension", [
-    (["lib1.so"], "so"),
-    (["lib1.dylib", "lib1.so", "lib1.py"], "dylib"),
-    (["lib1.dll", "lib2.dll", "lib12.dll"], "dll")
-])
-def test_get_shared_library_file(files_to_save, shared_library_extension):
-    prepare_temporary_directory_with_files(file_names=files_to_save)
+class TestGetSharedLibraryFile:
 
-    shared_library_abs = get_shared_library_file(directory=TEMP_DIR, shared_library_name="lib1", shared_library_extension=shared_library_extension)
-    shared_library_rel = Path(shared_library_abs).relative_to(TEMP_DIR)
-    assert str(shared_library_rel) == f"lib1.{shared_library_extension}"
+    TEMP_DIR = pathlib.Path(__file__).parent.joinpath("temp").resolve()
 
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_and_tear_down(self):
+        # Create the temporary directory before running a test
+        os.makedirs(name=self.TEMP_DIR, exist_ok=False)
 
-@pytest.mark.parametrize("files_to_save,shared_library_extension", [
-    (["lib1.py", "lib1.dll"], "so"),
-    (["lib.so", "lib11.dll", "lib111.dylib", "lib1111.pyd"], "dylib"),
-    (["lib1.dl", "lib1.dlll"], "dll")
-])
-def test_get_shared_library_file_should_raise_exception_when_no_shared_library(files_to_save, shared_library_extension):
-    prepare_temporary_directory_with_files(file_names=files_to_save)
+        yield
 
-    with pytest.raises(FileNotFoundError) as ex:
-        get_shared_library_file(directory=TEMP_DIR, shared_library_name="lib1", shared_library_extension=shared_library_extension)
+        # Delete the temporary directory after running a test
+        shutil.rmtree(path=self.TEMP_DIR)
 
-    pattern = fr"No shared library found for name 'lib1' with extension '{shared_library_extension}' in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}.$"
-    assert re.match(pattern, str(ex.value))
+    @classmethod
+    def prepare_temporary_directory_with_files(cls, file_names: List[str]) -> None:
+        for file_name in file_names:
+            cls.TEMP_DIR.joinpath(file_name).open(mode="w").close()
+
+    @pytest.mark.parametrize("files_to_save,shared_library_extension", [
+        (["lib1.so"], "so"),
+        (["lib1.dylib", "lib1.so", "lib1.py"], "dylib"),
+        (["lib1.dll", "lib2.dll", "lib12.dll"], "dll")
+    ])
+    def test_get_shared_library_file(self, files_to_save, shared_library_extension):
+        self.prepare_temporary_directory_with_files(file_names=files_to_save)
+
+        shared_library_abs = get_shared_library_file(directory=self.TEMP_DIR, shared_library_name="lib1", shared_library_extension=shared_library_extension)
+        shared_library_rel = Path(shared_library_abs).relative_to(self.TEMP_DIR)
+        assert str(shared_library_rel) == f"lib1.{shared_library_extension}"
+
+    @pytest.mark.parametrize("files_to_save,shared_library_extension", [
+        (["lib1.py", "lib1.dll"], "so"),
+        (["lib.so", "lib11.dll", "lib111.dylib", "lib1111.pyd"], "dylib"),
+        (["lib1.dl", "lib1.dlll"], "dll")
+    ])
+    def test_get_shared_library_file_should_raise_exception_when_no_shared_library(self, files_to_save, shared_library_extension):
+        self.prepare_temporary_directory_with_files(file_names=files_to_save)
+
+        with pytest.raises(FileNotFoundError) as ex:
+            get_shared_library_file(directory=self.TEMP_DIR, shared_library_name="lib1", shared_library_extension=shared_library_extension)
+
+        pattern = fr"No shared library found for name 'lib1' with extension '{shared_library_extension}' in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}.$"
+        assert re.match(pattern, str(ex.value))

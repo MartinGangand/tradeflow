@@ -1,24 +1,19 @@
 import ctypes as ct
-import fnmatch
-import os
 import platform
 from pathlib import Path
-from typing import Literal, List
+from typing import Literal
 
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
 from tradeflow.constants import Os, SharedLibraryExtension
-from tradeflow.definitions import PACKAGE_DIR
+from tradeflow.definitions import PACKAGE_DIR, SHARED_LIBRARY_NAME
 from tradeflow.exceptions import UnsupportedOsException
 
 logger = logger_utils.get_logger(__name__)
 
 ARGUMENT_TYPES = "argtypes"
 RESULT_TYPES = "restype"
-
-SHARED_LIBRARY_NAME = "libtradeflow"
-SHARED_LIBRARY_EXTENSIONS = ["so", "dll", "dylib"]
 
 function_to_argtypes_and_restype = {
     "simulate": {
@@ -118,17 +113,32 @@ def load_shared_library() -> ct.CDLL:
 
 
 def get_shared_library_extension() -> str:
-    # TODO: test
-    os_to_shared_library_extension = {
+    """
+    Determine the shared library file extension based on the operating system.
+
+    Returns
+    -------
+    str
+        The file extension for shared libraries, specific to the current operating system.
+
+    Raises
+    ------
+    UnsupportedOsException
+        If the operating system is not Linux, Darwin (macOS), or Windows.
+    """
+    os_name_to_shared_library_extension = {
         Os.LINUX: SharedLibraryExtension.SO,
         Os.DARWIN: SharedLibraryExtension.DYLIB,
         Os.WINDOWS: SharedLibraryExtension.DLL,
     }
-    os = platform.system()
-    if os not in os_to_shared_library_extension:
-        raise UnsupportedOsException(f"OS '{os}' is not supported, it must be either Linux, Darwin or Windows.")
 
-    return os_to_shared_library_extension[os]
+    os_name = platform.system().lower()
+    extension = os_name_to_shared_library_extension.get(os_name)
+
+    if extension is None:
+        raise UnsupportedOsException(f"Unsupported OS '{os_name}'. Supported OS values are Linux, Darwin, and Windows.")
+
+    return extension
 
 
 def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
