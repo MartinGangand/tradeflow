@@ -28,9 +28,9 @@ class InformationCriterion(Enum):
 
 
 class Os:
-    LINUX = "Linux"
-    DARWIN = "Darwin"
-    WINDOWS = "Windows"
+    LINUX = "linux"
+    DARWIN = "darwin"
+    WINDOWS = "windows"
 
 
 class SharedLibraryExtension:
