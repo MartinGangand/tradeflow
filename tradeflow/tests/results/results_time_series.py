@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-current_directory = os.path.abspath(os.path.dirname(__file__))
+CURRENT_DIRECTORY = Path(__file__).parent.absolute()
 
 
 class Namespace:
@@ -24,8 +24,8 @@ class ResultsTimeSeries:
     @staticmethod
     def correlation():
         obj = Namespace()
-        obj.acf = np.loadtxt(fname=os.path.join(current_directory, 'acf.csv'), dtype=float, delimiter=",")
-        obj.pacf = np.loadtxt(fname=os.path.join(current_directory, 'pacf.csv'), dtype=float, delimiter=",")
+        obj.acf = np.loadtxt(fname=CURRENT_DIRECTORY.joinpath("acf.csv"), dtype=float, delimiter=",")
+        obj.pacf = np.loadtxt(fname=CURRENT_DIRECTORY.joinpath("pacf.csv"), dtype=float, delimiter=",")
         return obj
 
     @staticmethod

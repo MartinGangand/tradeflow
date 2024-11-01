@@ -28,6 +28,6 @@ class NonStationaryTimeSeriesException(Exception):
     pass
 
 
-class TooManySharedLibrariesException(Exception):
-    """Raised when several shared libraries are found when loading a given shared library"""
+class UnsupportedOsException(Exception):
+    """Raised when the OS is not supported to load the shared library"""
     pass
