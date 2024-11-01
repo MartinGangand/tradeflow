@@ -1,14 +1,16 @@
 import ctypes as ct
 import fnmatch
 import os
+import platform
 from pathlib import Path
 from typing import Literal, List
 
 from statsmodels.tools.typing import ArrayLike1D
 
 from tradeflow import logger_utils
+from tradeflow.constants import Os, SharedLibraryExtension
 from tradeflow.definitions import PACKAGE_DIR
-from tradeflow.exceptions import TooManySharedLibrariesException
+from tradeflow.exceptions import UnsupportedOsException
 
 logger = logger_utils.get_logger(__name__)
 
@@ -107,11 +109,26 @@ def load_shared_library() -> ct.CDLL:
     ct.CDLL
         The loaded shared library.
     """
-    lib_file = get_shared_library_file(directory=PACKAGE_DIR, shared_library_name=SHARED_LIBRARY_NAME)
+    shared_library_extension = get_shared_library_extension()
+    lib_file = get_shared_library_file(directory=PACKAGE_DIR, shared_library_name=SHARED_LIBRARY_NAME, shared_library_extension=shared_library_extension)
     shared_lib = ct.CDLL(lib_file, winmode=0)
     set_shared_library_functions(shared_lib=shared_lib)
 
     return shared_lib
+
+
+def get_shared_library_extension() -> str:
+    # TODO: test
+    os_to_shared_library_extension = {
+        Os.LINUX: SharedLibraryExtension.SO,
+        Os.DARWIN: SharedLibraryExtension.DYLIB,
+        Os.WINDOWS: SharedLibraryExtension.DLL,
+    }
+    os = platform.system()
+    if os not in os_to_shared_library_extension:
+        raise UnsupportedOsException(f"OS '{os}' is not supported, it must be either Linux, Darwin or Windows.")
+
+    return os_to_shared_library_extension[os]
 
 
 def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
@@ -128,7 +145,7 @@ def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
         setattr(getattr(shared_lib, function_name), RESULT_TYPES, function_to_argtypes_and_restype.get(function_name).get(RESULT_TYPES))
 
 
-def get_shared_library_file(directory: Path, shared_library_name: str) -> str:
+def get_shared_library_file(directory: Path, shared_library_name: str, shared_library_extension: str) -> str:
     """
     Return the path to the shared library `shared_library_name`.
 
@@ -138,44 +155,16 @@ def get_shared_library_file(directory: Path, shared_library_name: str) -> str:
         The directory in which to search for the shared library.
     shared_library_name : str
         The name of the shared library.
+    shared_library_extension : str
+        The extension of the shared library (so, dylib or dll).
 
     Returns
     -------
     str
         The path to the shared library, the extension of the file can be 'so' (Linux), 'dll' (Windows), 'dylib' (macOS), or 'pyd'.
     """
-    shared_library_files = []
-    for potential_extension in SHARED_LIBRARY_EXTENSIONS:
-        shared_library_files.extend(find_files(pattern=f"{shared_library_name}.{potential_extension}", directory=directory))
-        shared_library_files.extend(find_files(pattern=f"{shared_library_name}.*.{potential_extension}", directory=directory))
+    shared_library = directory.joinpath(f"{shared_library_name}.{shared_library_extension}")
+    if not (shared_library.exists() and shared_library.is_file()):
+        raise FileNotFoundError(f"No shared library found for name '{shared_library_name}' with extension '{shared_library_extension}' in directory {directory}.")
 
-    if len(shared_library_files) == 0:
-        raise FileNotFoundError(f"No shared library found for name '{shared_library_name}' with one of the extension in {SHARED_LIBRARY_EXTENSIONS} in directory {directory}.")
-    if len(shared_library_files) >= 2:
-        raise TooManySharedLibrariesException(f"{len(shared_library_files)} shared libraries found with name '{shared_library_name}' with extension in {SHARED_LIBRARY_EXTENSIONS} have been found: {', '.join(shared_library_files)} in directory: {directory}.")
-
-    return str(directory.joinpath(shared_library_files[0]))
-
-
-def find_files(pattern: str, directory: Path) -> List[str]:
-    """
-    Return files matching a specified pattern within a directory.
-
-    Parameters
-    ----------
-    pattern : str
-        The file name pattern to search for.
-    directory : Path
-        The directory in which to search for files.
-
-    Returns
-    -------
-    list of str
-        The file names matching the pattern (only the file names, not their full paths).
-    """
-    matched_files = []
-    for root, _, files in os.walk(str(directory)):
-        if root == str(directory):
-            matched_files.extend(fnmatch.filter(files, pattern))
-
-    return matched_files
+    return str(shared_library)
