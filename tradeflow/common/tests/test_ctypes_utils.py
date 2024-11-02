@@ -7,8 +7,8 @@ from typing import List
 
 import pytest
 
-from tradeflow.ctypes_utils import get_shared_library_file, get_shared_library_extension
-from tradeflow.exceptions import UnsupportedOsException
+from tradeflow.common.ctypes_utils import get_shared_library_extension, get_shared_library_file
+from tradeflow.common.shared_libraries_functions import UnsupportedOsException
 
 
 class TestGetSharedLibraryExtension:
@@ -77,5 +77,5 @@ class TestGetSharedLibraryFile:
         with pytest.raises(FileNotFoundError) as ex:
             get_shared_library_file(directory=self.TEMP_DIR, shared_library_name="lib1", shared_library_extension=shared_library_extension)
 
-        pattern = fr"No shared library found for name 'lib1' with extension '{shared_library_extension}' in directory .*{re.escape(os.path.join('tradeflow', 'tests', 'temp'))}.$"
+        pattern = fr"No shared library found for name 'lib1' with extension '{shared_library_extension}' in directory .*{re.escape(os.path.join('tests', 'temp'))}.$"
         assert re.match(pattern, str(ex.value))

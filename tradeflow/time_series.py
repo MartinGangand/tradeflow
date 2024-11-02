@@ -12,7 +12,7 @@ from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tools.validation import bool_like
 from statsmodels.tsa.stattools import acf, pacf
 
-from tradeflow import logger_utils
+from tradeflow.common import logger_utils
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, \
     ModelNotSimulatedException
 from tradeflow.general_utils import check_condition

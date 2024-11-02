@@ -1,27 +1,15 @@
 import ctypes as ct
 import platform
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Dict, Tuple
 
 from statsmodels.tools.typing import ArrayLike1D
 
-from tradeflow import logger_utils
-from tradeflow.constants import Os, SharedLibraryExtension
-from tradeflow.definitions import PACKAGE_DIR, SHARED_LIBRARY_NAME
-from tradeflow.exceptions import UnsupportedOsException
+from tradeflow.common.shared_libraries_functions import shared_library_to_function_to_argtypes_and_restype, ARGUMENT_TYPES, \
+    RESULT_TYPES, SHARED_LIBRARIES_DIRECTORY, Os, SharedLibraryExtension, UnsupportedOsException
+from tradeflow.common import logger_utils
 
 logger = logger_utils.get_logger(__name__)
-
-ARGUMENT_TYPES = "argtypes"
-RESULT_TYPES = "restype"
-
-function_to_argtypes_and_restype = {
-    "simulate": {
-        # size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), res (int*)
-        ARGUMENT_TYPES: (ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int)),
-        RESULT_TYPES: ct.c_void_p
-    }
-}
 
 
 def get_c_type_from_string(c_type_str: Literal["int", "double"]) -> ct._SimpleCData:
@@ -95,7 +83,7 @@ class CArrayEmpty:
         return (c_type_str * size)()
 
 
-def load_shared_library() -> ct.CDLL:
+def load_shared_library(shared_library_name: str) -> ct.CDLL:
     """
     Return the shared library of the project.
 
@@ -105,11 +93,11 @@ def load_shared_library() -> ct.CDLL:
         The loaded shared library.
     """
     shared_library_extension = get_shared_library_extension()
-    lib_file = get_shared_library_file(directory=PACKAGE_DIR, shared_library_name=SHARED_LIBRARY_NAME, shared_library_extension=shared_library_extension)
-    shared_lib = ct.CDLL(lib_file, winmode=0)
-    set_shared_library_functions(shared_lib=shared_lib)
+    shared_library_file = get_shared_library_file(directory=SHARED_LIBRARIES_DIRECTORY, shared_library_name=shared_library_name, shared_library_extension=shared_library_extension)
+    shared_library = ct.CDLL(shared_library_file, winmode=0)
+    set_shared_library_functions(shared_lib=shared_library, function_to_argtypes_and_restype=shared_library_to_function_to_argtypes_and_restype[shared_library_name])
 
-    return shared_lib
+    return shared_library
 
 
 def get_shared_library_extension() -> str:
@@ -141,13 +129,15 @@ def get_shared_library_extension() -> str:
     return extension
 
 
-def set_shared_library_functions(shared_lib: ct.CDLL) -> None:
+def set_shared_library_functions(shared_lib: ct.CDLL, function_to_argtypes_and_restype: Dict[str, Dict[str, Tuple[str]]]) -> None:
     """
     Set argument and result types of functions in the shared library.
 
     Parameters
     ----------
     shared_lib : ct.CDLL
+        The shared library for which to set argument and result types for all functions.
+    function_to_argtypes_and_restype : dict of
         The shared library for which to set argument and result types for all functions.
     """
     for function_name in function_to_argtypes_and_restype.keys():

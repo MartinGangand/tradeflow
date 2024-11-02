@@ -26,8 +26,3 @@ class ModelNotSimulatedException(Exception):
 class NonStationaryTimeSeriesException(Exception):
     """Raised when the time series is not stationary"""
     pass
-
-
-class UnsupportedOsException(Exception):
-    """Raised when the OS is not supported to load the shared library"""
-    pass

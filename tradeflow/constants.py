@@ -25,20 +25,3 @@ class InformationCriterion(Enum):
 
     def __str__(self) -> str:
         return self._value_
-
-
-class Os:
-    LINUX = "linux"
-    DARWIN = "darwin"
-    WINDOWS = "windows"
-
-
-class SharedLibraryExtension:
-    SO = "so"
-    DYLIB = "dylib"
-    DLL = "dll"
-
-
-class Logger:
-    FORMAT = "%(asctime)s [%(filename)s] [%(levelname)s] - %(message)s"
-    LEVEL = logging.INFO
