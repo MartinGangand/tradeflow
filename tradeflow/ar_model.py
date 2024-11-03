@@ -7,10 +7,10 @@ from statsmodels.regression import yule_walker
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import ar_select_order, AutoReg
 
-from tradeflow.common import ctypes_utils
+from tradeflow.common.config import registry
 from tradeflow.common.ctypes_utils import CArray, CArrayEmpty
 from tradeflow.common import logger_utils
-from tradeflow.config import SHARED_LIBRARY_NAME
+from tradeflow.config import LIB_TRADEFLOW
 from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
     NonStationaryTimeSeriesException
@@ -177,6 +177,6 @@ class AR(TimeSeries):
         last_signs = CArray.of(c_type_str="int", arr=np.array(self._signs[-self._order:]).astype(int))
         self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
-        cpp_lib = ctypes_utils.load_shared_library(SHARED_LIBRARY_NAME)
+        cpp_lib = registry.load_shared_library(name=LIB_TRADEFLOW)
         cpp_lib.simulate(size, inverted_params, self._constant_parameter, len(inverted_params), last_signs, seed, self._simulation)
         return self._simulation[:]

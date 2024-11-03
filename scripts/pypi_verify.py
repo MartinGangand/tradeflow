@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 import os
 import re
@@ -180,7 +178,7 @@ def expected_wheel_shared_libraries_extension(wheel_url: str) -> str:
 
 def compare_expected_vs_actual_files(expected_files: List[str], actual_files: List[str], object_name: str, file_type: str) -> None:
     """
-    Verify if `expected_files` and `actual_files` have contain the same file names, otherwise raise an exception.
+    Verify if `expected_files` and `actual_files` contain the same file names, otherwise raise an exception.
 
     Parameters
     ----------
