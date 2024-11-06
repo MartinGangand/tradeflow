@@ -294,7 +294,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     if len(wheel_urls) != expected_nb_wheels:
         raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
-    expected_source_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=False)
+    expected_source_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=True, absolute_path=False, excluded_directories=["tests", "datasets"])
     expected_source_python_files_with_prefixes = file_names_with_prefixes(expected_source_python_files, package_and_version, package_name)
 
     expected_source_cpp_files = find_files_in_directory(directory=libraries_directory, extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION], recursive=True, absolute_path=False)
@@ -310,7 +310,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     else:
         log_valid(name=source_name)
 
-    expected_wheel_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=False)
+    expected_wheel_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=True, absolute_path=False, excluded_directories=["tests", "datasets"]) # duplicated line
     expected_wheel_python_files_with_prefix = file_names_with_prefixes(expected_wheel_python_files, package_name)
     for wheel_url in wheel_urls:
         wheel_name = display_name(url=wheel_url, package_name=package_name, version=version)

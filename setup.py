@@ -50,7 +50,7 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    packages=[PACKAGE_NAME],
+    packages=[PACKAGE_NAME, str(Path(PACKAGE_NAME).joinpath("common"))],
     ext_modules=[CMakeExtension(name=PACKAGE_NAME)],
     cmdclass={'build_ext': CMakeBuild}
 )

@@ -132,7 +132,7 @@ def find_urls_in_html_page(html_page_content: str, target_url_extension: str) ->
     return urls
 
 
-def find_files_in_directory(directory: Path, extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
+def find_files_in_directory(directory: Path, extensions: List[str], recursive: bool, absolute_path: bool, excluded_directories: List[str] = []) -> List[str]:
     """
     Find files within a specified directory that match given file extensions.
 
@@ -163,12 +163,23 @@ def find_files_in_directory(directory: Path, extensions: List[str], recursive: b
         if not (file_path.is_file() and file_path.suffix in extensions):
             continue
 
+        if should_exclude_path(path=file_path, excluded_directories=excluded_directories):
+            continue
+
         if not absolute_path:
             file_path = file_path.relative_to(directory)
 
         files.append(str(file_path))
 
     return sorted(files)
+
+
+def should_exclude_path(path: Path, excluded_directories: List[str]) -> bool:
+    for excluded_directory in excluded_directories:
+        if excluded_directory in path.parts:
+            return True
+
+    return False
 
 
 def find_file_names_with_given_extensions(file_names: List[str], potential_extensions: List[str]) -> List[str]:
