@@ -7,7 +7,7 @@ from typing import List, Literal
 
 from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
     find_urls_in_html_page, find_files_in_directory, file_names_with_prefixes, fetch_file_names_from_zip, \
-    ANY_VALID_STRING
+    ANY_VALID_STRING, paths_relative_to
 from scripts import config
 from scripts.file_extensions import FileExtension
 
@@ -243,7 +243,7 @@ def log_indented_message(message: str) -> None:
     log_message(f"    {message}")
 
 
-def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, package_directory_name: str, libraries_directory_name: str) -> int:
+def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, main_package_directory: Path, subpackage_directories: List[Path], libraries_directory_name: str) -> int:
     """
     Main function to validate package files against expected specifications on a given index.
 
@@ -281,7 +281,6 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     package_url = f"https://{index}.org/project/{package_name}/{version}/#files"
     log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n")
 
-    package_directory = root_repository.joinpath(package_directory_name)
     libraries_directory = root_repository.joinpath(libraries_directory_name)
 
     pypi_html_page = html_page_as_string(url=package_url)
@@ -294,8 +293,12 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     if len(wheel_urls) != expected_nb_wheels:
         raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
-    expected_source_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=True, absolute_path=False, excluded_directories=["tests", "datasets"])
-    expected_source_python_files_with_prefixes = file_names_with_prefixes(expected_source_python_files, package_and_version, package_name)
+    expected_python_files = find_files_in_directory(directory=main_package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=True)
+    for subpackage_directory in subpackage_directories:
+        expected_python_files += find_files_in_directory(directory=subpackage_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=True)
+    expected_python_files = paths_relative_to(paths=expected_python_files, relative_to=main_package_directory)
+
+    expected_source_python_files = file_names_with_prefixes(expected_python_files, package_and_version, package_name)
 
     expected_source_cpp_files = find_files_in_directory(directory=libraries_directory, extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION], recursive=True, absolute_path=False)
     expected_source_cpp_files_with_prefixes = file_names_with_prefixes(expected_source_cpp_files, package_and_version, libraries_directory_name)
@@ -303,19 +306,18 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     source_url = source_urls[0]
     source_name = display_name(url=source_url, package_name=package_name, version=version)
     try:
-        verify_source(source_url=source_url, package_name=package_name, version=version, expected_python_files=expected_source_python_files_with_prefixes, expected_cpp_files=expected_source_cpp_files_with_prefixes)
+        verify_source(source_url=source_url, package_name=package_name, version=version, expected_python_files=expected_source_python_files, expected_cpp_files=expected_source_cpp_files_with_prefixes)
     except Exception as source_exception:
         nb_errors += 1
         log_error(name=source_name, exception=source_exception)
     else:
         log_valid(name=source_name)
 
-    expected_wheel_python_files = find_files_in_directory(directory=package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=True, absolute_path=False, excluded_directories=["tests", "datasets"]) # duplicated line
-    expected_wheel_python_files_with_prefix = file_names_with_prefixes(expected_wheel_python_files, package_name)
+    expected_wheel_python_files = file_names_with_prefixes(expected_python_files, package_name)
     for wheel_url in wheel_urls:
         wheel_name = display_name(url=wheel_url, package_name=package_name, version=version)
         try:
-            verify_wheel(wheel_url=wheel_url, package_name=package_name, version=version, expected_shared_libraries=expected_shared_libraries, expected_python_files=expected_wheel_python_files_with_prefix)
+            verify_wheel(wheel_url=wheel_url, package_name=package_name, version=version, expected_shared_libraries=expected_shared_libraries, expected_python_files=expected_wheel_python_files)
         except Exception as wheel_exception:
             nb_errors += 1
             log_error(name=wheel_name, exception=wheel_exception)
@@ -337,7 +339,8 @@ if __name__ == "__main__":
                            expected_nb_wheels=config.EXPECTED_NB_WHEELS,
                            expected_shared_libraries=config.EXPECTED_SHARED_LIBRARIES,
                            root_repository=config.REPOSITORY_ROOT,
-                           package_directory_name=config.PACKAGE_NAME,
+                           main_package_directory=config.MAIN_PACKAGE_DIRECTORY,
+                           subpackage_directories=config.SUBPACKAGES_DIRECTORIES,
                            libraries_directory_name=config.LIBRARIES_DIRECTORY_NAME)
         sys.exit(exit_status)
     except Exception as e:

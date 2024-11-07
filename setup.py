@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import toml
-from setuptools import Extension, setup
+from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext
 
 PACKAGE_NAME = toml.load(Path(__file__).parent.joinpath("pyproject.toml"))["project"]["name"]
@@ -50,7 +50,7 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    packages=[PACKAGE_NAME, str(Path(PACKAGE_NAME).joinpath("common"))],
+    packages=find_packages(exclude=["scripts"]),
     ext_modules=[CMakeExtension(name=PACKAGE_NAME)],
     cmdclass={'build_ext': CMakeBuild}
 )

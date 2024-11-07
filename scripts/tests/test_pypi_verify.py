@@ -292,6 +292,9 @@ class TestMain:
     PACKAGE_DIRECTORY_NAME = "package"
     LIBRARIES_DIRECTORY_NAME = "lib"
 
+    MAIN_PACKAGE_DIRECTORY = ROOT_REPOSITORY.joinpath(PACKAGE_NAME)
+    SUBPACKAGES_DIRECTORIES = [MAIN_PACKAGE_DIRECTORY.joinpath("common")]
+
     EXPECTED_SHARED_LIBRARIES = [os.path.join(PACKAGE_NAME, "lib1")]
 
     @pytest.fixture(scope="function", autouse=True)
@@ -352,7 +355,7 @@ class TestMain:
     def test_main_valid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_valid(mocker=mocker, url=url))
 
-        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert nb_errors == 0
         file_regression.check(capsys.readouterr().out)
@@ -362,7 +365,7 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert str(ex.value) == "Expected 1 source url in the html page, but found 2 instead"
         file_regression.check(capsys.readouterr().out)
@@ -372,7 +375,7 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert str(ex.value) == "Expected 4 wheel urls in the html page, but found 3 instead"
         file_regression.check(capsys.readouterr().out)
@@ -380,7 +383,7 @@ class TestMain:
     def test_main_invalid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_invalid(mocker=mocker, url=url))
 
-        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, package_directory_name=self.PACKAGE_DIRECTORY_NAME, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
 
         assert nb_errors == 7
         file_regression.check(capsys.readouterr().out)
