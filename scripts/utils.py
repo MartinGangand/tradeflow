@@ -220,5 +220,6 @@ def file_names_with_prefixes(file_names: List[str], *prefixes) -> List[str]:
     return [os.path.join(prefix, file_name) for file_name in file_names]
 
 
-def paths_relative_to(paths: List[str], relative_to: Path):
-    return [Path(path).relative_to(relative_to) for path in paths]
+def paths_relative_to(paths: List[str], relative_to: Path) -> List[str]:
+    return [str(Path(path).relative_to(relative_to)) for path in paths]
+# TODO: test

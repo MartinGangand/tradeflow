@@ -30,11 +30,11 @@ WHEEL_CP312_MACOSX = f"{PACKAGE_NAME}-{VERSION}-cp312-cp312-macosx_11_0_arm64.wh
 class TestVerifySource:
 
     @pytest.mark.parametrize("file_names,expected_python_files,expected_cpp_files", [
-        (["time_series.py", "ar_model.py"], ["time_series.py", "ar_model.py"], []),
-        (["time_series.py", "simulation.cpp"], ["time_series.py"], ["simulation.cpp"]),
-        (["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py", "package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"],
-         ["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py"],
-         ["package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"])
+        (["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py"], ["package/time_series.py", "package/ar_model.py"], []),
+        (["package-0.0.1/package/time_series.py", "package-0.0.1/simulation.cpp"], ["package/time_series.py"], ["simulation.cpp"]),
+        (["package-0.0.1/time_series.py", "package-0.0.1/ar_model.py", "package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"],
+         ["time_series.py", "ar_model.py"],
+         ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"])
     ])
     def test_verify_source_should_not_raise_exception(self, mocker, file_names, expected_python_files, expected_cpp_files):
         file_names_with_setup = file_names + [os.path.join("package-0.0.1", "setup.py")]
@@ -59,16 +59,16 @@ class TestVerifySource:
         assert str(ex.value) == expected_error_message
 
     @pytest.mark.parametrize("file_names,expected_python_files,expected_cpp_files,expected_matched_python_files", [
-        (["ar_model.py"], [], [], ["ar_model.py"]),
+        (["package-0.0.1/package/ar_model.py"], [], [], ["package/ar_model.py"]),
         ([], ["ar_model.py"], [], []),
         ([], ["time_series.py", "ar_model.py"], [], []),
-        (["time_series.py"], ["time_series.py", "ar_model.py"], [], ["time_series.py"]),
-        (["time_series.py", "simulation.cpp", "simulation.h"], ["time_series.py", "ar_model.py"], ["simulation.cpp", "simulation.h"], ["time_series.py"]),
-        (["time_series.py", "ar_model.py", "model.py"], ["time_series.py", "ar_model.py"], [], ["time_series.py", "ar_model.py", "model.py"]),
+        (["package-0.0.1/package/time_series.py"], ["time_series.py", "ar_model.py"], [], ["package/time_series.py"]),
+        (["package-0.0.1/package/time_series.py", "package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"], ["package/time_series.py", "package/ar_model.py"], ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"], ["package/time_series.py"]),
+        (["package-0.0.1/time_series.py", "package-0.0.1/ar_model.py", "package-0.0.1/model.py"], ["time_series.py", "ar_model.py"], [], ["time_series.py", "ar_model.py", "model.py"]),
         (["package-0.0.1/package/time_series.py", "package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"],
-         ["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py"],
-         ["package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"],
-         ["package-0.0.1/package/time_series.py"]),
+         ["package/time_series.py", "package/ar_model.py"],
+         ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"],
+         ["package/time_series.py"])
     ])
     def test_verify_source_should_raise_exception_when_incorrect_python_files(self, mocker, file_names, expected_python_files, expected_cpp_files, expected_matched_python_files):
         file_names_with_setup = file_names + [os.path.join("package-0.0.1", "setup.py")]
@@ -83,16 +83,16 @@ class TestVerifySource:
         assert str(ex.value) == expected_error_message
 
     @pytest.mark.parametrize("file_names,expected_python_files,expected_cpp_files,expected_matched_cpp_files", [
-        (["simulation.cpp"], [], [], ["simulation.cpp"]),
+        (["package-0.0.1/simulation.cpp"], [], [], ["simulation.cpp"]),
         ([], [], ["simulation.cpp"], []),
         ([], [], ["simulation.cpp", "simulation.h"], []),
-        (["simulation.cpp"], [], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
-        (["time_series.py", "simulation.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
-        (["time_series.py", "simulation.cpp", "simulation.h", "simulation2.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp", "simulation.h", "simulation2.cpp"]),
+        (["package-0.0.1/simulation.cpp"], [], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
+        (["package-0.0.1/time_series.py", "package-0.0.1/simulation.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
+        (["package-0.0.1/time_series.py", "package-0.0.1/simulation.cpp", "package-0.0.1/simulation.h", "package-0.0.1/simulation2.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp", "simulation.h", "simulation2.cpp"]),
         (["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py", "package-0.0.1/lib/cpp/package/simulation.cpp"],
-         ["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py"],
-         ["package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"],
-         ['package-0.0.1/lib/cpp/package/simulation.cpp']),
+         ["package/time_series.py", "package/ar_model.py"],
+         ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"],
+         ['lib/cpp/package/simulation.cpp']),
     ])
     def test_verify_source_should_raise_exception_when_incorrect_cpp_files(self, mocker, file_names, expected_python_files, expected_cpp_files, expected_matched_cpp_files):
         file_names_with_setup = file_names + [os.path.join(f"package-0.0.1", "setup.py")]
@@ -355,7 +355,7 @@ class TestMain:
     def test_main_valid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_valid(mocker=mocker, url=url))
 
-        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
 
         assert nb_errors == 0
         file_regression.check(capsys.readouterr().out)
@@ -365,7 +365,7 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
 
         assert str(ex.value) == "Expected 1 source url in the html page, but found 2 instead"
         file_regression.check(capsys.readouterr().out)
@@ -375,7 +375,7 @@ class TestMain:
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+            main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
 
         assert str(ex.value) == "Expected 4 wheel urls in the html page, but found 3 instead"
         file_regression.check(capsys.readouterr().out)
@@ -383,7 +383,7 @@ class TestMain:
     def test_main_invalid(self, mocker, capsys, file_regression):
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_invalid(mocker=mocker, url=url))
 
-        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES, libraries_directory_name=self.LIBRARIES_DIRECTORY_NAME)
+        nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
 
         assert nb_errors == 7
         file_regression.check(capsys.readouterr().out)

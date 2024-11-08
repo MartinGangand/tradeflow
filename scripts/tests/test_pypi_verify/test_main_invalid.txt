@@ -4,7 +4,7 @@ Starting to verify source distribution
     Source url: OK
     Fetched 5 file names from the source
     Verify source python files: OK
-package-0.0.1.tar.gz: expected source to contain 2 cpp or header file(s) (['package-0.0.1/lib/cpp/package/simulation.cpp', 'package-0.0.1/lib/cpp/package/simulation.h']), but found 1 (['package-0.0.1/lib/cpp/package/simulation.h']) instead
+package-0.0.1.tar.gz: expected source to contain 2 cpp or header file(s) (['lib/cpp/package/simulation.cpp', 'lib/cpp/package/simulation.h']), but found 1 (['lib/cpp/package/simulation.h']) instead
 
 Starting to verify wheel https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl
 https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl: expected wheel url 'https://test-files.pythonhosted.org/packages/invalid_wheel_name-cp312-cp312-win_amd64.whl' to match the pattern 'package-0.0.1-[^'\"\s]+\.whl\b'
