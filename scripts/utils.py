@@ -132,14 +132,14 @@ def find_urls_in_html_page(html_page_content: str, target_url_extension: str) ->
     return urls
 
 
-def find_files_in_directory(directory: Path, extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
+def find_files_in_directories(directories: List[Path], extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
     """
     Find files within a specified directory that match given file extensions.
 
     Parameters
     ----------
-    directory : Path
-        The root directory to search for files.
+    directories : Path
+        The directories to search for files.
     extensions : list of str
         A list of file extensions to filter files by (without dots). Files with
         matching extensions will be included in the results.
@@ -157,16 +157,17 @@ def find_files_in_directory(directory: Path, extensions: List[str], recursive: b
         The paths are either absolute or relative depending on the `absolute_path` parameter.
     """
     extensions = {f".{ext}" for ext in extensions}
-    files = []
-    glob_function = directory.rglob if recursive else directory.glob
-    for file_path in glob_function(pattern="*"):
-        if not (file_path.is_file() and file_path.suffix in extensions):
-            continue
+    files = set()
+    for directory in directories:
+        glob_function = directory.rglob if recursive else directory.glob
+        for file_path in glob_function(pattern="*"):
+            if not (file_path.is_file() and file_path.suffix in extensions):
+                continue
 
-        if not absolute_path:
-            file_path = file_path.relative_to(directory)
+            if not absolute_path:
+                file_path = file_path.relative_to(directory)
 
-        files.append(str(file_path))
+            files.add(str(file_path))
 
     return sorted(files)
 

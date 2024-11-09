@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Literal
 
 from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
-    find_urls_in_html_page, find_files_in_directory, fetch_file_names_from_zip, \
+    find_urls_in_html_page, find_files_in_directories, fetch_file_names_from_zip, \
     ANY_VALID_STRING, paths_relative_to
 from scripts import config
 from scripts.file_extensions import FileExtension
@@ -41,7 +41,7 @@ def verify_source(source_url: str, package_name: str, version: str, expected_pyt
         If the source url is incorrect or the files contained in the source differ from the expected ones.
     """
     log_message("Starting to verify source distribution")
-    package_and_version_path = Path(f"{package_name}-{version}")
+    package_and_version = f"{package_name}-{version}"
 
     verify_source_url(source_url=source_url, package_name=package_name, version=version)
 
@@ -50,12 +50,12 @@ def verify_source(source_url: str, package_name: str, version: str, expected_pyt
 
     actual_python_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.PYTHON_EXTENSION])
     actual_python_files.remove(os.path.join(f"{package_name}-{version}", "setup.py"))
-    actual_python_files = paths_relative_to(paths=actual_python_files, relative_to=package_and_version_path)
+    actual_python_files = paths_relative_to(paths=actual_python_files, relative_to=package_and_version)
 
     compare_expected_vs_actual_files(expected_files=expected_python_files, actual_files=actual_python_files, object_name="source", file_type="python")
 
     actual_cpp_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION])
-    actual_cpp_files = paths_relative_to(paths=actual_cpp_files, relative_to=package_and_version_path)
+    actual_cpp_files = paths_relative_to(paths=actual_cpp_files, relative_to=package_and_version)
     compare_expected_vs_actual_files(expected_files=expected_cpp_files, actual_files=actual_cpp_files, object_name="source", file_type="cpp or header")
 
 
@@ -295,13 +295,10 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     if len(wheel_urls) != expected_nb_wheels:
         raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
-    # TODO: englobe the below in a function?
-    expected_python_files = find_files_in_directory(directory=main_package_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=True)
-    for subpackage_directory in subpackage_directories:
-        expected_python_files += find_files_in_directory(directory=subpackage_directory, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=True)
+    expected_python_files = find_files_in_directories(directories=[main_package_directory] + subpackage_directories, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=True)
     expected_python_files = paths_relative_to(paths=expected_python_files, relative_to=root_repository)
 
-    expected_source_cpp_files = find_files_in_directory(directory=root_repository, extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION], recursive=True, absolute_path=True)
+    expected_source_cpp_files = find_files_in_directories(directories=[root_repository], extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION], recursive=True, absolute_path=True)
     expected_source_cpp_files = paths_relative_to(paths=expected_source_cpp_files, relative_to=root_repository)
 
     source_url = source_urls[0]
