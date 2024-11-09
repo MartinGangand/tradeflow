@@ -55,19 +55,19 @@ class TestVerifySource:
         assert str(ex.value) == expected_error_message
 
     @pytest.mark.parametrize("file_names,expected_python_files,expected_cpp_files,expected_matched_python_files", [
-        (["package-0.0.1/package/ar_model.py"], [], [], ["package/ar_model.py"]),
+        (["package/ar_model.py"], [], [], ["package/ar_model.py"]),
         ([], ["ar_model.py"], [], []),
         ([], ["time_series.py", "ar_model.py"], [], []),
-        (["package-0.0.1/package/time_series.py"], ["time_series.py", "ar_model.py"], [], ["package/time_series.py"]),
-        (["package-0.0.1/package/time_series.py", "package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"], ["package/time_series.py", "package/ar_model.py"], ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"], ["package/time_series.py"]),
-        (["package-0.0.1/time_series.py", "package-0.0.1/ar_model.py", "package-0.0.1/model.py"], ["time_series.py", "ar_model.py"], [], ["time_series.py", "ar_model.py", "model.py"]),
-        (["package-0.0.1/package/time_series.py", "package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"],
+        (["package/time_series.py"], ["time_series.py", "ar_model.py"], [], ["package/time_series.py"]),
+        (["package/time_series.py", "lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"], ["package/time_series.py", "package/ar_model.py"], ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"], ["package/time_series.py"]),
+        (["time_series.py", "ar_model.py", "model.py"], ["time_series.py", "ar_model.py"], [], ["time_series.py", "ar_model.py", "model.py"]),
+        (["package/time_series.py", "lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"],
          ["package/time_series.py", "package/ar_model.py"],
          ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"],
          ["package/time_series.py"])
     ])
     def test_verify_source_should_raise_exception_when_incorrect_python_files(self, mocker, file_names, expected_python_files, expected_cpp_files, expected_matched_python_files):
-        file_names_with_setup = file_names + [os.path.join("package-0.0.1", "setup.py")]
+        file_names_with_setup = [os.path.join("package-0.0.1", file_name) for file_name in file_names] + [os.path.join("package-0.0.1", "setup.py")]
         mock_request_get = mock_response_with_source(mocker=mocker, file_names=file_names_with_setup)
         mocker.patch("requests.get", return_value=mock_request_get)
 

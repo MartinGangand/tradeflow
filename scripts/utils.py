@@ -134,11 +134,11 @@ def find_urls_in_html_page(html_page_content: str, target_url_extension: str) ->
 
 def find_files_in_directories(directories: List[Path], extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
     """
-    Find files within a specified directory that match given file extensions.
+    Find files within specified directories that match given file extensions.
 
     Parameters
     ----------
-    directories : Path
+    directories : list of Path
         The directories to search for files.
     extensions : list of str
         A list of file extensions to filter files by (without dots). Files with
@@ -221,5 +221,5 @@ def file_names_with_prefixes(file_names: List[str], *prefixes) -> List[str]:
     return [os.path.join(prefix, file_name) for file_name in file_names]
 
 
-def paths_relative_to(paths: List[str], relative_to: str | Path) -> List[str]:
+def paths_relative_to(paths: List[str] | List[Path], relative_to: str | Path) -> List[str]:
     return [str(Path(path).relative_to(relative_to)) for path in paths]

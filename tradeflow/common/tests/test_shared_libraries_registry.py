@@ -81,12 +81,11 @@ class TestSharedLibrary:
         assert getattr(loaded_function_2, SharedLibrary.ARGUMENT_TYPES) == (ct.c_double,)
         assert getattr(loaded_function_2, SharedLibrary.RESULT_TYPE) == ct.c_double
 
-    def test_load_should_raise_exception_when_file_does_not_exist(self, mocker, shared_library_with_2_functions):
+    def test_load_should_raise_exception_when_file_does_not_exist(self, mocker):
         mocker.patch("platform.system", return_value="Linux")
-        mocker.patch("pathlib.Path.exists", return_value=False)
-        mocker.patch("pathlib.Path.is_file", return_value=False)
 
+        shared_library = SharedLibrary(name="lib", directory=SHARED_LIBRARIES_DIRECTORY)
         with pytest.raises(FileNotFoundError) as ex:
-            shared_library_with_2_functions.load()
+            shared_library.load()
 
         assert str(ex.value) == f"Shared library 'lib.so' not found in directory '{str(SHARED_LIBRARIES_DIRECTORY)}'."
