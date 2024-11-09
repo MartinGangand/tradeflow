@@ -13,7 +13,7 @@ from pytest_mock import MockerFixture
 
 from scripts.utils import get_response, html_page_as_string, fetch_file_names_from_zip, \
     fetch_file_names_from_tar_gz, find_urls_in_html_page, find_file_names_with_given_extensions, \
-    find_files_in_directory, file_names_with_prefixes
+    find_files_in_directory, file_names_with_prefixes, paths_relative_to
 
 DATASETS_DIRECTORY = Path(__file__).parent.parent.joinpath("datasets").resolve()
 UTF_8 = "utf-8"
@@ -239,8 +239,20 @@ class TestFileNamesWithPrefixes:
         (["f1.py"], ["p1", "p2"], [os.path.join("p1", "p2", "f1.py")]),
         (["f1.py", "f2.py"], [], ["f1.py", "f2.py"]),
         (["f1.py", "f2.py"], ["p1"], [os.path.join("p1", "f1.py"), os.path.join("p1", "f2.py")]),
-        (["f1.py", "f2.py"], ["p1", "p2"], [os.path.join("p1", "p2", "f1.py"), os.path.join("p1", "p2", "f2.py")]),
+        (["f1.py", "f2.py"], ["p1", "p2"], [os.path.join("p1", "p2", "f1.py"), os.path.join("p1", "p2", "f2.py")])
     ])
     def test_file_names_with_prefixes(self, actual_files, prefixes, expected_files_with_prefixes):
         actual_files_with_prefixes = file_names_with_prefixes(actual_files, *prefixes)
         assert_equal(actual=actual_files_with_prefixes, desired=expected_files_with_prefixes)
+
+
+class TestPathsRelativeTo:
+
+    @pytest.mark.parametrize("paths,relative_to,expected_paths", [
+        (["A/B/file1.py", "A/B/file2.py"], "A", ["B/file1.py", "B/file2.py"]),
+        (["A/B/file1.py", "A/B/file2.py"], Path("A").joinpath("B"), ["file1.py", "file2.py"]),
+        (["A/B/file1.py", "A/B/file2.py"], "", ["A/B/file1.py", "A/B/file2.py"]),
+    ])
+    def test(self, paths, relative_to, expected_paths):
+        actual_paths = paths_relative_to(paths=paths, relative_to=relative_to)
+        assert_equal(actual=actual_paths, desired=expected_paths)

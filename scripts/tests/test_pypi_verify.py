@@ -30,14 +30,14 @@ WHEEL_CP312_MACOSX = f"{PACKAGE_NAME}-{VERSION}-cp312-cp312-macosx_11_0_arm64.wh
 class TestVerifySource:
 
     @pytest.mark.parametrize("file_names,expected_python_files,expected_cpp_files", [
-        (["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py"], ["package/time_series.py", "package/ar_model.py"], []),
-        (["package-0.0.1/package/time_series.py", "package-0.0.1/simulation.cpp"], ["package/time_series.py"], ["simulation.cpp"]),
-        (["package-0.0.1/time_series.py", "package-0.0.1/ar_model.py", "package-0.0.1/lib/cpp/package/simulation.cpp", "package-0.0.1/lib/cpp/package/simulation.h"],
+        (["package/time_series.py", "package/ar_model.py"], ["package/time_series.py", "package/ar_model.py"], []),
+        (["package/time_series.py", "simulation.cpp"], ["package/time_series.py"], ["simulation.cpp"]),
+        (["time_series.py", "ar_model.py", "lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"],
          ["time_series.py", "ar_model.py"],
          ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"])
     ])
     def test_verify_source_should_not_raise_exception(self, mocker, file_names, expected_python_files, expected_cpp_files):
-        file_names_with_setup = file_names + [os.path.join("package-0.0.1", "setup.py")]
+        file_names_with_setup = [os.path.join("package-0.0.1", file_name) for file_name in file_names] + [os.path.join("package-0.0.1", "setup.py")]
         mock_request_get = mock_response_with_source(mocker=mocker, file_names=file_names_with_setup)
         request_get = mocker.patch("requests.get", return_value=mock_request_get)
 
@@ -46,11 +46,7 @@ class TestVerifySource:
         request_get.assert_called_once_with(url=source_url)
 
     @pytest.mark.parametrize("source_name", ["package-0.0.1.source.tar.gz", "package-0.0.2.tar.gz"])
-    def test_verify_source_should_raise_exception_when_invalid_url(self, mocker, source_name):
-        file_names_with_setup = ["ar_model.py", "simulation.cpp", os.path.join("package-0.0.1", "setup.py")]
-        mock_request_get = mock_response_with_source(mocker=mocker, file_names=file_names_with_setup)
-        mocker.patch("requests.get", return_value=mock_request_get)
-
+    def test_verify_source_should_raise_exception_when_invalid_url(self, source_name):
         source_url = f"{SOURCE_URL_START}/{source_name}"
         with pytest.raises(Exception) as ex:
             verify_source(source_url=source_url, package_name="package", version="0.0.1", expected_python_files=["ar_model.py"], expected_cpp_files=["simulation.cpp"])
@@ -83,19 +79,19 @@ class TestVerifySource:
         assert str(ex.value) == expected_error_message
 
     @pytest.mark.parametrize("file_names,expected_python_files,expected_cpp_files,expected_matched_cpp_files", [
-        (["package-0.0.1/simulation.cpp"], [], [], ["simulation.cpp"]),
+        (["simulation.cpp"], [], [], ["simulation.cpp"]),
         ([], [], ["simulation.cpp"], []),
         ([], [], ["simulation.cpp", "simulation.h"], []),
-        (["package-0.0.1/simulation.cpp"], [], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
-        (["package-0.0.1/time_series.py", "package-0.0.1/simulation.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
-        (["package-0.0.1/time_series.py", "package-0.0.1/simulation.cpp", "package-0.0.1/simulation.h", "package-0.0.1/simulation2.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp", "simulation.h", "simulation2.cpp"]),
-        (["package-0.0.1/package/time_series.py", "package-0.0.1/package/ar_model.py", "package-0.0.1/lib/cpp/package/simulation.cpp"],
+        (["simulation.cpp"], [], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
+        (["time_series.py", "simulation.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp"]),
+        (["time_series.py", "simulation.cpp", "simulation.h", "simulation2.cpp"], ["time_series.py"], ["simulation.cpp", "simulation.h"], ["simulation.cpp", "simulation.h", "simulation2.cpp"]),
+        (["package/time_series.py", "package/ar_model.py", "lib/cpp/package/simulation.cpp"],
          ["package/time_series.py", "package/ar_model.py"],
          ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"],
          ['lib/cpp/package/simulation.cpp']),
     ])
     def test_verify_source_should_raise_exception_when_incorrect_cpp_files(self, mocker, file_names, expected_python_files, expected_cpp_files, expected_matched_cpp_files):
-        file_names_with_setup = file_names + [os.path.join(f"package-0.0.1", "setup.py")]
+        file_names_with_setup = [os.path.join("package-0.0.1", file_name) for file_name in file_names] + [os.path.join(f"package-0.0.1", "setup.py")]
         mock_request_get = mock_response_with_source(mocker=mocker, file_names=file_names_with_setup)
         mocker.patch("requests.get", return_value=mock_request_get)
 
