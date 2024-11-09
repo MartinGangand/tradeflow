@@ -13,7 +13,7 @@ from pytest_mock import MockerFixture
 
 from scripts.utils import get_response, html_page_as_string, fetch_file_names_from_zip, \
     fetch_file_names_from_tar_gz, find_urls_in_html_page, find_file_names_with_given_extensions, \
-    find_files_in_directory, file_names_with_prefixes
+    find_files_in_directories, file_names_with_prefixes, paths_relative_to
 
 DATASETS_DIRECTORY = Path(__file__).parent.parent.joinpath("datasets").resolve()
 UTF_8 = "utf-8"
@@ -171,19 +171,21 @@ class TestFindUrlsInHtmlPage:
         assert_equal(actual=actual_urls, desired=expected_urls)
 
 
-class TestFindFilesInDirectory:
+class TestFindFilesInDirectories:
 
     TEMP_DIR = Path(__file__).parent.joinpath("temp")
 
-    FOLDER_A = TEMP_DIR.joinpath("folder_a")
-    FOLDER_B = FOLDER_A.joinpath("folder_b")
+    FOLDER_A = TEMP_DIR.joinpath("A")
+    FOLDER_B = FOLDER_A.joinpath("B")
+    FOLDER_C = TEMP_DIR.joinpath("C")
 
     @pytest.fixture(scope="function", autouse=True)
-    def find_files_in_directory_setup_and_tear_down(self):
+    def find_files_in_directories_setup_and_tear_down(self):
         self.TEMP_DIR.mkdir(parents=False, exist_ok=False)
 
         prepare_directory_with_files(directory_path=self.FOLDER_A, file_names=["file_a1.py", "file_a2.py", "file_a3.cpp", "file_a4.h"])
         prepare_directory_with_files(directory_path=self.FOLDER_B, file_names=["file_b1.py", "file_b2.cpp", "file_b3.h"])
+        prepare_directory_with_files(directory_path=self.FOLDER_C, file_names=["file_c1.py", "file_c2.dylib"])
 
         yield
 
@@ -197,22 +199,27 @@ class TestFindFilesInDirectory:
         (FOLDER_A, ["py"], False, ["file_a1.py", "file_a2.py"]),
         (FOLDER_A, ["py", "cpp"], False, ["file_a1.py", "file_a2.py", "file_a3.cpp"])
     ])
-    def test_find_files_in_directory_when_recursive_is_false(self, directory, extensions, absolute_path, expected_files):
-        actual_files = find_files_in_directory(directory=directory, extensions=extensions, recursive=False, absolute_path=absolute_path)
+    def test_find_files_in_directories_when_recursive_is_false(self, directory, extensions, absolute_path, expected_files):
+        actual_files = find_files_in_directories(directories=[directory], extensions=extensions, recursive=False, absolute_path=absolute_path)
         assert_equal(actual=sorted(actual_files), desired=sorted(expected_files))
 
     @pytest.mark.parametrize("directory,extensions,absolute_path,expected_files", [
-        (TEMP_DIR, ["py"], True, [str(FOLDER_A.joinpath("file_a1.py")), str(FOLDER_A.joinpath("file_a2.py")), str(FOLDER_B.joinpath("file_b1.py"))]),
-        (TEMP_DIR, ["py"], False, ["folder_a/file_a1.py", "folder_a/file_a2.py", "folder_a/folder_b/file_b1.py"]),
-        (TEMP_DIR, ["py", "cpp"], False, ["folder_a/file_a1.py", "folder_a/file_a2.py", "folder_a/file_a3.cpp", "folder_a/folder_b/file_b1.py", "folder_a/folder_b/file_b2.cpp"]),
+        (TEMP_DIR, ["py"], True, [str(FOLDER_A.joinpath("file_a1.py")), str(FOLDER_A.joinpath("file_a2.py")), str(FOLDER_B.joinpath("file_b1.py")), str(FOLDER_C.joinpath("file_c1.py"))]),
+        (TEMP_DIR, ["py"], False, ["A/file_a1.py", "A/file_a2.py", "A/B/file_b1.py", "C/file_c1.py"]),
+        (TEMP_DIR, ["py", "cpp"], False, ["A/file_a1.py", "A/file_a2.py", "A/file_a3.cpp", "A/B/file_b1.py", "A/B/file_b2.cpp", "C/file_c1.py"]),
         (FOLDER_A, ["py"], True, [str(FOLDER_A.joinpath("file_a1.py")), str(FOLDER_A.joinpath("file_a2.py")), str(FOLDER_B.joinpath("file_b1.py"))]),
-        (FOLDER_A, ["py"], False, ["file_a1.py", "file_a2.py", "folder_b/file_b1.py"]),
+        (FOLDER_A, ["py"], False, ["file_a1.py", "file_a2.py", "B/file_b1.py"]),
         (FOLDER_B, ["py"], True, [str(FOLDER_B.joinpath("file_b1.py"))]),
         (FOLDER_B, ["py"], False, ["file_b1.py"]),
         (FOLDER_B, ["py", "h"], True, [str(FOLDER_B.joinpath("file_b1.py")), str(FOLDER_B.joinpath("file_b3.h"))]),
     ])
-    def test_find_files_in_directory_when_recursive_is_true(self, directory, extensions, absolute_path, expected_files):
-        actual_files = find_files_in_directory(directory=directory, extensions=extensions, recursive=True, absolute_path=absolute_path)
+    def test_find_files_in_directories_when_recursive_is_true(self, directory, extensions, absolute_path, expected_files):
+        actual_files = find_files_in_directories(directories=[directory], extensions=extensions, recursive=True, absolute_path=absolute_path)
+        assert_equal(actual=sorted(actual_files), desired=sorted(expected_files))
+
+    def test_find_files_in_directories_when_multiple_directories(self):
+        expected_files = [str(self.FOLDER_A.joinpath("file_a1.py")), str(self.FOLDER_A.joinpath("file_a2.py")), str(self.FOLDER_C.joinpath("file_c1.py"))]
+        actual_files = find_files_in_directories(directories=[self.FOLDER_A, self.FOLDER_C], extensions=["py"], recursive=False, absolute_path=True)
         assert_equal(actual=sorted(actual_files), desired=sorted(expected_files))
 
 
@@ -232,15 +239,29 @@ class TestFileNamesWithPrefixes:
 
     @pytest.mark.parametrize("actual_files,prefixes,expected_files_with_prefixes", [
         ([], [], []),
-        ([], ["p1"], []),
-        (["f1.py"], [], ["f1.py"]),
-        (["f1.py"], [""], ["f1.py"]),
-        (["f1.py"], ["p1"], [os.path.join("p1", "f1.py")]),
-        (["f1.py"], ["p1", "p2"], [os.path.join("p1", "p2", "f1.py")]),
-        (["f1.py", "f2.py"], [], ["f1.py", "f2.py"]),
-        (["f1.py", "f2.py"], ["p1"], [os.path.join("p1", "f1.py"), os.path.join("p1", "f2.py")]),
-        (["f1.py", "f2.py"], ["p1", "p2"], [os.path.join("p1", "p2", "f1.py"), os.path.join("p1", "p2", "f2.py")]),
+        ([], ["prefix1"], []),
+        (["file1.py"], [], ["file1.py"]),
+        (["file1.py"], [""], ["file1.py"]),
+        (["file1.py"], ["prefix1"], [os.path.join("prefix1", "file1.py")]),
+        (["file1.py"], ["prefix1", "prefix2"], [os.path.join("prefix1", "prefix2", "file1.py")]),
+        (["file1.py", "file2.py"], [], ["file1.py", "file2.py"]),
+        (["file1.py", "file2.py"], ["prefix1"], [os.path.join("prefix1", "file1.py"), os.path.join("prefix1", "file2.py")]),
+        (["file1.py", "file2.py"], ["prefix1", "prefix2"], [os.path.join("prefix1", "prefix2", "file1.py"), os.path.join("prefix1", "prefix2", "file2.py")])
     ])
     def test_file_names_with_prefixes(self, actual_files, prefixes, expected_files_with_prefixes):
         actual_files_with_prefixes = file_names_with_prefixes(actual_files, *prefixes)
         assert_equal(actual=actual_files_with_prefixes, desired=expected_files_with_prefixes)
+
+
+class TestPathsRelativeTo:
+
+    @pytest.mark.parametrize("paths,relative_to,expected_paths", [
+        (["A/B/file1.py", "A/B/file2.py"], "A", ["B/file1.py", "B/file2.py"]),
+        (["A/B/file1.py", "A/B/file2.py"], Path("A"), ["B/file1.py", "B/file2.py"]),
+        ([Path("A").joinpath("B").joinpath("file1.py"), Path("A").joinpath("B").joinpath("file2.py")], "A", ["B/file1.py", "B/file2.py"]),
+        (["A/B/file1.py", "A/B/file2.py"], "A/B", ["file1.py", "file2.py"]),
+        (["A/B/file1.py", "A/B/file2.py"], "", ["A/B/file1.py", "A/B/file2.py"]),
+    ])
+    def test(self, paths, relative_to, expected_paths):
+        actual_paths = paths_relative_to(paths=paths, relative_to=relative_to)
+        assert_equal(actual=actual_paths, desired=expected_paths)

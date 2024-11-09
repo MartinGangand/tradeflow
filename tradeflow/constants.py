@@ -25,8 +25,3 @@ class InformationCriterion(Enum):
 
     def __str__(self) -> str:
         return self._value_
-
-
-class Logger:
-    FORMAT = "%(asctime)s [%(filename)s] [%(levelname)s] - %(message)s"
-    LEVEL = logging.INFO
