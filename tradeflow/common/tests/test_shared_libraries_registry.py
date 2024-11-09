@@ -21,12 +21,14 @@ def shared_library_with_2_functions():
 class TestSharedLibrariesRegistry:
 
     def test_load_shared_library(self, mocker, shared_library_with_2_functions):
-        load_shared_library = mocker.patch.object(shared_library_with_2_functions, "load")
+        init_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_init_shared_libraries")
+        load = mocker.patch.object(shared_library_with_2_functions, "load")
 
-        registry = SharedLibrariesRegistry().add_shared_library(shared_library_with_2_functions)
+        registry = SharedLibrariesRegistry()._add_shared_library(shared_library=shared_library_with_2_functions)
         registry.load_shared_library("lib")
 
-        load_shared_library.assert_called_once()
+        load.assert_called_once()
+        init_shared_libraries.assert_called_once()
         assert len(registry._name_to_shared_library) == 1
         assert registry._name_to_shared_library["lib"] == shared_library_with_2_functions
         assert len(registry._name_to_loaded_shared_library) == 1

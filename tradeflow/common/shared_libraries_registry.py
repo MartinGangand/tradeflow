@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple, Union, List
 
 from tradeflow.common import logger_utils
+from tradeflow.common.config import LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY
 from tradeflow.common.exceptions import UnsupportedOsException
 
 logger = logger_utils.get_logger(__name__)
@@ -17,7 +18,16 @@ class SharedLibrariesRegistry:
         self._name_to_shared_library: Dict[str, SharedLibrary] = {}
         self._name_to_loaded_shared_library: Dict[str, ct.CDLL] = {}
 
-    def add_shared_library(self, shared_library: SharedLibrary) -> SharedLibrariesRegistry:
+        self._init_shared_libraries()
+
+    def _init_shared_libraries(self) -> None:
+        # simulate: size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), res (int*)
+        libtradeflow = SharedLibrary(name="libtradeflow", directory=LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY).add_function(name="simulate",
+                                                                                                                        argtypes=[ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int)],
+                                                                                                                        restype=ct.c_void_p)
+        self._add_shared_library(libtradeflow)
+
+    def _add_shared_library(self, shared_library: SharedLibrary) -> SharedLibrariesRegistry:
         assert shared_library.name not in self._name_to_shared_library
         self._name_to_shared_library[shared_library.name] = shared_library
         logger.info(f"Added shared library '{shared_library.name}' to the registry")
