@@ -6,6 +6,7 @@ import numpy as np
 from statsmodels.regression import yule_walker
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import ar_select_order, AutoReg
+from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
 from tradeflow.common.ctypes_utils import CArray, CArrayEmpty
@@ -13,7 +14,7 @@ from tradeflow.common.shared_libraries_registry import SharedLibrariesRegistry
 from tradeflow.config import LIB_TRADEFLOW
 from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
-    NonStationaryTimeSeriesException
+    NonStationaryTimeSeriesException, AutocorrelatedResidualsException
 from tradeflow.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
     is_value_within_interval_exclusive
 from tradeflow.time_series import TimeSeries
@@ -68,18 +69,25 @@ class AR(TimeSeries):
         self._constant_parameter = 0
         self._parameters = None
 
+        self._resid = None
+
+    def resid(self) -> np.ndarray:
+        x, y = lagmat(x=self._signs, maxlag=self._order, trim="both", original="sep", use_pandas=False)
+        x_with_cst = np.c_[np.ones(shape=x.shape[0]), x]
+        resid = y.squeeze() - x_with_cst @ self._parameters
+        return resid
+
     def _init_max_order(self, max_order: Optional[int]) -> int:
         if max_order is None:
             # Schwert (1989)
             max_order = int(np.ceil(12.0 * np.power(len(self._signs) / 100.0, 1 / 4.0)))
 
         check_condition(condition=1 <= max_order < len(self._signs) // 2,
-                        exception=IllegalNbLagsException(
-                            f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< {len(self._signs) // 2})."))
+                        exception=IllegalNbLagsException(f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< {len(self._signs) // 2})."))
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "ols_with_cst"]) -> AR:
+    def fit(self, method: Literal["yule_walker", "ols_with_cst"], check_residuals: bool = False) -> AR:
         """
         Estimate the model parameters.
 
@@ -95,26 +103,34 @@ class AR(TimeSeries):
             * 'ols_with_cst' - Use OLS to estimate model parameters.
               There will be a constant term, thus the percentage of buy signs in the time series
               generated with these parameters will be close to the one from the training time series.
+        check_residuals : bool, default False
+            If `True`, performs a residual autocorrelation check using the Breusch-Godfrey test.
+            Raises an exception if residuals are autocorrelated (default is `False`).
 
         Returns
         -------
         AR
             The AR instance.
         """
-        method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method",
-                                           is_none_valid=False)
+        method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
 
         if method == FitMethodAR.YULE_WALKER:
-            check_condition(self._is_time_series_stationary(regression="n"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
+            check_condition(condition=self._is_time_series_stationary(regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
         elif method == FitMethodAR.OLS_WITH_CST:
-            check_condition(self._is_time_series_stationary(regression="c"), NonStationaryTimeSeriesException("The time series must be stationary to be fitted."))
+            check_condition(condition=self._is_time_series_stationary(regression="c"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
             self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
         else:
             raise IllegalValueException(
                 f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
+
+        if check_residuals:
+            _, p_value = self.breusch_godfrey_test(resid=self.resid())
+            # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
+            check_condition(condition=p_value > 0.05,
+                            exception=AutocorrelatedResidualsException("The residuals of the model seems to be autocorrelated, you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
 
         logger.info(f"The AR({self._order}) model has been fitted with method '{method}'.")
         return self
@@ -168,13 +184,11 @@ class AR(TimeSeries):
         np.ndarray
             The simulated signs (+1 for buy, -1 for sell).
         """
-        check_condition(size > 0, IllegalValueException(
-            f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
-        check_condition(self._parameters is not None, ModelNotFittedException(
-            "The model has not yet been fitted. Fit the model first by calling 'fit()'."))
+        check_condition(condition=size > 0, exception=IllegalValueException(f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
+        check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model has not yet been fitted. Fit the model first by calling 'fit()'."))
 
         inverted_params = CArray.of(c_type_str="double", arr=self._parameters[::-1])
-        last_signs = CArray.of(c_type_str="int", arr=np.array(self._signs[-self._order:]).astype(int))
+        last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
         self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
         cpp_lib = SharedLibrariesRegistry().load_shared_library(name=LIB_TRADEFLOW)

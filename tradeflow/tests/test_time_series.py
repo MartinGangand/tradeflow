@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +28,28 @@ def time_series_signs_non_stationary():
     time_series = TimeSeries(signs=[-1] * 500 + [1] * 500)
     time_series._order = 1
     return time_series
+
+
+def generate_white_noise(size: int, sigma: float, seed: Optional[int] = None) -> np.ndarray:
+    np.random.seed(seed)
+    return np.random.normal(loc=0, scale=sigma, size=size)
+
+
+def generate_autoregressive(size: int, parameters: List[float], sigma: float, seed: Optional[int] = None) -> np.ndarray:
+    nb_parameters = len(parameters)
+    adjusted_size = size + nb_parameters
+    inverted_parameters = parameters[::-1]
+
+    epsilon = generate_white_noise(size=adjusted_size, sigma=sigma, seed=seed)
+    simulation = [epsilon[0]]
+    for i in range(1, adjusted_size):
+        nb_el_to_consider = min(nb_parameters, i)
+        visible_inverted_parameters = inverted_parameters[-nb_el_to_consider:]
+        visible_series = simulation[-nb_el_to_consider:]
+
+        simulation.append(epsilon[i] + np.dot(visible_inverted_parameters, visible_series))
+
+    return np.asarray(simulation[nb_parameters:])
 
 
 class TestCalculateAcf:
@@ -77,7 +99,7 @@ class TestCalculatePacf:
         assert_almost_equal(actual=actual_pacf, desired=expected_pacf, decimal=10)
 
 
-class TestTimeSeriesStationarity:
+class TestIsTimeSeriesStationary:
 
     @pytest.mark.parametrize("regression", ["c", "ct", "ctt", "n"])
     def test_time_series_should_be_stationary(self, time_series_signs, regression):
@@ -86,6 +108,28 @@ class TestTimeSeriesStationarity:
     @pytest.mark.parametrize("regression", ["c", "ct", "ctt", "n"])
     def test_time_series_should_be_non_stationary(self, time_series_signs_non_stationary, regression):
         assert not time_series_signs_non_stationary._is_time_series_stationary(significance_level=0.05, regression=regression)
+
+
+class TestBreuschGodfreyTest:
+    """
+    Results are from statsmodels.
+    """
+    
+    SIZE = 100_000
+
+    def test_breusch_godfrey_test_with_autocorrelation(self):
+        autocorrelated_resid = generate_autoregressive(size=self.SIZE, parameters=[0.13, 0.04, 0.01], sigma=1, seed=1)
+        actual_lagrange_multiplier, actual_p_value = TimeSeries.breusch_godfrey_test(resid=autocorrelated_resid, nb_lags=10)
+
+        assert_almost_equal(actual=actual_lagrange_multiplier, desired=1934.4000726500221, decimal=8)
+        assert actual_p_value == 0  # Can reject the null hypothesis of no autocorrelation
+
+    def test_breusch_godfrey_test_with_no_autocorrelation(self):
+        white_noise_resid = generate_white_noise(size=self.SIZE, sigma=1, seed=1)
+        actual_lagrange_multiplier, actual_p_value = TimeSeries.breusch_godfrey_test(resid=white_noise_resid, nb_lags=10)
+
+        assert_almost_equal(actual=actual_lagrange_multiplier, desired=7.658271690957896, decimal=9)
+        assert_almost_equal(actual=actual_p_value, desired=0.6621766710678502, decimal=10)  # Can't reject the null hypothesis of no autocorrelation
 
 
 class TestSimulationSummary:
@@ -132,7 +176,7 @@ class TestSimulationSummary:
         ([-1., -1., -1., -1., 1.], 100 * 1 / 5)
     ])
     def test_percentage_buy(self, signs, expected_buy_pct):
-        assert TimeSeries._percentage_buy(signs=signs) == expected_buy_pct
+        assert TimeSeries.percentage_buy(signs=signs) == expected_buy_pct
 
 
 class TestPlot:
@@ -168,7 +212,7 @@ class TestPlot:
 
         acf_axe = fig.get_axes()[0]
         expected_acf = ResultsTimeSeries.correlation().acf[:2 * order + 1]
-        expected_acf_title = f"ACF plot for training and simulated time series ({y_scale} scale)"
+        expected_acf_title = f"ACF function for training and simulated time series ({y_scale} scale)"
         self.check_axe_values_training_vs_simulation(axe=acf_axe, training_values=expected_acf,
                                                      simulation_values=expected_acf,
                                                      order=order, title=expected_acf_title, y_scale=y_scale,
@@ -176,7 +220,7 @@ class TestPlot:
 
         pacf_axe = fig.get_axes()[1]
         expected_pacf = ResultsTimeSeries.correlation().pacf[:2 * order + 1]
-        expected_pacf_title = f"PACF plot for training and simulated time series ({y_scale} scale)"
+        expected_pacf_title = f"PACF function for training and simulated time series ({y_scale} scale)"
         self.check_axe_values_training_vs_simulation(axe=pacf_axe, training_values=expected_pacf,
                                                      simulation_values=expected_pacf, order=order,
                                                      title=expected_pacf_title,
@@ -196,9 +240,7 @@ class TestPlot:
         title = "Test plot training vs simulation"
 
         fig, axe = plt.subplots(1, 1, figsize=(8, 4))
-        time_series._fill_axe_training_vs_simulation(axe=axe, training=training_values,
-                                                     simulation=simulation_values,
-                                                     order=order, title=title, log_scale=log_scale)
+        time_series._fill_axe(axe=axe, functions=[training_values, simulation_values], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=title, xlabel="Lag", log_scale=log_scale, order=order)
 
         y_scale = "log" if log_scale else "linear"
         expected_title = f"{title} ({y_scale} scale)"

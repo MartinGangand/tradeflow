@@ -57,6 +57,17 @@ class TestInit:
         assert str(ex.value) == expected_exception_message
 
 
+class TestResid:
+
+    def test_resid(self):
+        ar = AR(signs=[1, 1, 1, -1, 1, 1, -1, 1, 1, 1], max_order=3)
+        ar._order = 3
+        ar._parameters = [0.009, 0.43, 0.21, 0.20]
+
+        actual_resid = ar.resid()
+        assert_almost_equal(actual=actual_resid, desired=[-1.849, 1.011, 0.571, -1.449, 1.011, 0.571, 0.551], decimal=10)
+
+
 class TestInitMaxOrder:
 
     @pytest.mark.parametrize("max_order,expected_max_order", [
@@ -98,7 +109,7 @@ class TestFit:
         with pytest.raises(NonStationaryTimeSeriesException) as ex:
             ar_model_non_stationary_with_max_order_1.fit(method="yule_walker")
 
-        assert str(ex.value) == "The time series must be stationary to be fitted."
+        assert str(ex.value) == "The time series must be stationary in order to be fitted."
 
 
 class TestSelectOrder:
