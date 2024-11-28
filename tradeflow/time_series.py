@@ -40,6 +40,13 @@ class TimeSeries(ABC):
         self._resid = None
 
     @abstractmethod
+    def resid(self) -> np.ndarray:
+        """
+        Estimate the model residuals.
+        """
+        pass
+
+    @abstractmethod
     def fit(self, method: str) -> TimeSeries:
         """
         Estimate the model parameters.

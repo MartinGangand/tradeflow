@@ -87,7 +87,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "ols_with_cst"], check_residuals: bool = False) -> AR:
+    def fit(self, method: Literal["yule_walker", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = False) -> AR:
         """
         Estimate the model parameters.
 
@@ -103,6 +103,9 @@ class AR(TimeSeries):
             * 'ols_with_cst' - Use OLS to estimate model parameters.
               There will be a constant term, thus the percentage of buy signs in the time series
               generated with these parameters will be close to the one from the training time series.
+        significance_level : float, default 0.05
+            The significance level for stationarity and residual autocorrelation (if `check_residuals` is `True`) tests.
+            Default is `0.05`.
         check_residuals : bool, default False
             If `True`, performs a residual autocorrelation check using the Breusch-Godfrey test.
             Raises an exception if residuals are autocorrelated (default is `False`).
@@ -116,10 +119,10 @@ class AR(TimeSeries):
         self._select_order()
 
         if method == FitMethodAR.YULE_WALKER:
-            check_condition(condition=self._is_time_series_stationary(regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
+            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
         elif method == FitMethodAR.OLS_WITH_CST:
-            check_condition(condition=self._is_time_series_stationary(regression="c"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
+            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="c"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
             self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
         else:
@@ -127,10 +130,11 @@ class AR(TimeSeries):
                 f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
 
         if check_residuals:
+            a = self.resid()
             _, p_value = self.breusch_godfrey_test(resid=self.resid())
             # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
-            check_condition(condition=p_value > 0.05,
-                            exception=AutocorrelatedResidualsException("The residuals of the model seems to be autocorrelated, you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
+            check_condition(condition=p_value > significance_level,
+                            exception=AutocorrelatedResidualsException(f"The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is {round(p_value, 4)}), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
 
         logger.info(f"The AR({self._order}) model has been fitted with method '{method}'.")
         return self
