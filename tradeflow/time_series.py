@@ -9,7 +9,7 @@ import pandas as pd
 import statsmodels.tsa.stattools as stattools
 from matplotlib.figure import Figure
 from scipy import stats
-from statsmodels.regression.linear_model import OLS, OLSResults, RegressionResults
+from statsmodels.regression.linear_model import OLS
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tools.validation import bool_like
 from statsmodels.tsa.stattools import acf, pacf
@@ -37,12 +37,11 @@ class TimeSeries(ABC):
         self._signs = signs
         self._order = None
         self._simulation = None  # Will be set in simulate()
-        self._resid = None
 
     @abstractmethod
     def resid(self) -> np.ndarray:
         """
-        Estimate the model residuals.
+        Estimate and return the residuals of the model.
         """
         pass
 
@@ -166,18 +165,16 @@ class TimeSeries(ABC):
     def breusch_godfrey_test(resid: np.ndarray, nb_lags: Optional[int] = None) -> Tuple[float, float]:
         resid = np.asarray(resid)
         if resid.ndim != 1:
-            raise ValueError("Residuals must be a 1d array")
+            raise ValueError("Residuals must be a 1d array.")
 
         nb_resid = resid.shape[0]
         if nb_lags is None:
             nb_lags = min(10, resid.shape[0] // 5)
 
-        resid_with_zeros = np.concatenate((np.zeros(nb_lags), resid))
-
-        x = lagmat(x=resid_with_zeros[:, None], maxlag=nb_lags, trim="both", original="ex")
+        x = lagmat(x=resid, maxlag=nb_lags, trim="forward", original="ex")
         x_with_cst = np.c_[np.ones(shape=nb_resid), x]
 
-        res: RegressionResults = OLS(resid, x_with_cst).fit()
+        res = OLS(resid, x_with_cst).fit()
 
         lagrange_multiplier = nb_resid * res.rsquared
         p_value = stats.chi2.sf(lagrange_multiplier, nb_lags)
@@ -239,7 +236,7 @@ class TimeSeries(ABC):
         y_scale = f"{'log' if log_scale else 'linear'}"
 
         for function, color, linestyle, label in zip(functions, colors, linestyles, labels):
-            axe.plot(function, color, linestyle=linestyle, label=label)
+            axe.plot(function, color=color, linestyle=linestyle, label=label)
 
         axe.set_title(f"{title} ({y_scale} scale)")
         axe.set_yscale(y_scale)
@@ -247,7 +244,7 @@ class TimeSeries(ABC):
         axe.set_xlabel(xlabel)
         axe.set_xlim(-1, max(len(function) for function in functions) - 1)
 
-        y_min = max(0.0001, np.min(all_values)) if y_scale == "log" else np.min(all_values)
+        y_min = max(0.0001, np.min(all_values)) if log_scale else np.min(all_values)
         axe.set_ylim(y_min, np.max(all_values) + 0.1)
 
         if order is not None:
@@ -261,11 +258,11 @@ class TimeSeries(ABC):
             time_series = self._signs
 
         acf_function = self.calculate_acf(nb_lags=nb_lags, time_series=time_series)
-        pacf_function, conf = self.calculate_pacf(nb_lags=nb_lags, alpha=0.05, time_series=time_series)
+        pacf_function = self.calculate_pacf(nb_lags=nb_lags, alpha=None, time_series=time_series)
 
         fig, axe = plt.subplots(1, 2, figsize=(16, 4))
         self._fill_axe(axe=axe[0], functions=[acf_function], colors=["green"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="ACF function", xlabel="Lag", log_scale=log_scale, order=None)
-        self._fill_axe(axe=axe[1], functions=[pacf_function, conf[:, 0], conf[:, 1]], colors=["orange", "grey", "grey"], linestyles=["solid", "dashed", "dashed"], labels=[f"Time series of size {len(time_series)}", "Lower band", "Upper band"], title="PACF function", xlabel="Lag", log_scale=log_scale, order=None)
+        self._fill_axe(axe=axe[1], functions=[pacf_function], colors=["orange"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="PACF function", xlabel="Lag", log_scale=log_scale, order=None)
 
         plt.show()
         return fig

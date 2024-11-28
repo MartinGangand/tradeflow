@@ -129,7 +129,7 @@ def find_urls_in_html_page(html_page_content: str, target_url_extension: str) ->
         Urls with the given `target_url_extension` extension contained in the html page.
     """
     urls = re.findall(pattern=rf"https:{ANY_VALID_STRING}\.{target_url_extension}\b", string=html_page_content)
-    return urls
+    return sorted(list(set(urls)))
 
 
 def find_files_in_directories(directories: List[Path], extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:

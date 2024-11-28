@@ -168,7 +168,7 @@ class TestFindUrlsInHtmlPage:
         html_page = read_html_page_from_datasets(file_name="html_page_test_find_urls_in_html_page.html")
 
         actual_urls = find_urls_in_html_page(html_page_content=html_page, target_url_extension=target_url_extension)
-        assert_equal(actual=actual_urls, desired=expected_urls)
+        assert_equal(actual=sorted(actual_urls), desired=sorted(expected_urls))
 
 
 class TestFindFilesInDirectories:

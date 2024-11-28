@@ -69,12 +69,29 @@ class AR(TimeSeries):
         self._constant_parameter = 0
         self._parameters = None
 
-        self._resid = None
-
     def resid(self) -> np.ndarray:
-        x, y = lagmat(x=self._signs, maxlag=self._order, trim="both", original="sep", use_pandas=False)
+        """
+        Estimate and return the residuals of the model.
+
+        Residuals are calculated as the difference between the observed values and the
+        values predicted by the model using the fitted parameters.
+
+        Returns
+        -------
+        np.ndarray
+            The residuals of the AR model.
+
+        Raises
+        ------
+        ModelNotFittedException
+            If the model's parameters are not set. This occurs if the model
+            has not been fitted by calling `fit()`.
+
+        """
+        check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'."))
+        x, y = lagmat(x=self._signs, maxlag=len(self._parameters), trim="both", original="sep", use_pandas=False)
         x_with_cst = np.c_[np.ones(shape=x.shape[0]), x]
-        resid = y.squeeze() - x_with_cst @ self._parameters
+        resid = y.squeeze() - x_with_cst @ np.append(self._constant_parameter, self._parameters)
         return resid
 
     def _init_max_order(self, max_order: Optional[int]) -> int:
@@ -87,7 +104,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = False) -> AR:
+    def fit(self, method: Literal["yule_walker", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -105,10 +122,9 @@ class AR(TimeSeries):
               generated with these parameters will be close to the one from the training time series.
         significance_level : float, default 0.05
             The significance level for stationarity and residual autocorrelation (if `check_residuals` is `True`) tests.
-            Default is `0.05`.
-        check_residuals : bool, default False
+        check_residuals : bool, default True
             If `True`, performs a residual autocorrelation check using the Breusch-Godfrey test.
-            Raises an exception if residuals are autocorrelated (default is `False`).
+            Raises an exception if residuals are autocorrelated.
 
         Returns
         -------
@@ -130,9 +146,9 @@ class AR(TimeSeries):
                 f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
 
         if check_residuals:
-            a = self.resid()
             _, p_value = self.breusch_godfrey_test(resid=self.resid())
             # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
+            logger.info(f"Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}")
             check_condition(condition=p_value > significance_level,
                             exception=AutocorrelatedResidualsException(f"The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is {round(p_value, 4)}), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
 
@@ -181,7 +197,7 @@ class AR(TimeSeries):
             The number of signs to simulate.
         seed : int, default None
             Seed used to initialize the pseudo-random number generator.
-            If `seed` is ``None``, then a random seed is used.
+            If `seed` is `None`, then a random seed is used.
 
         Returns
         -------
