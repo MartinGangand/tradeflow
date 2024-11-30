@@ -158,34 +158,30 @@ class AR(TimeSeries):
     def _select_order(self) -> None:
         if self._order_selection_method is None:
             self._order = self._max_order
+        elif self._order_selection_method == OrderSelectionMethodAR.INFORMATION_CRITERION:
+            model = ar_select_order(endog=self._signs, maxlag=self._max_order,
+                                    ic=self._information_criterion.value, trend="n")
+            self._order = len(model.ar_lags)
+        elif self._order_selection_method == OrderSelectionMethodAR.PACF:
+            pacf_coeffs, confidence_interval = self.calculate_pacf(nb_lags=self._max_order, alpha=0.05)
 
+            pacf_coeffs = pacf_coeffs[1:]
+            confidence_interval = confidence_interval[1:]
+
+            lower_band = confidence_interval[:, 0] - pacf_coeffs
+            upper_band = confidence_interval[:, 1] - pacf_coeffs
+
+            order = 0
+            for acf_coeff, value_lower_band, value_upper_band in zip(pacf_coeffs, lower_band, upper_band):
+                if is_value_within_interval_exclusive(value=acf_coeff, lower_bound=value_lower_band, upper_bound=value_upper_band):
+                    break
+                order += 1
+            self._order = order
         else:
-            if self._order_selection_method == OrderSelectionMethodAR.INFORMATION_CRITERION:
-                model = ar_select_order(endog=self._signs, maxlag=self._max_order,
-                                        ic=self._information_criterion.value, trend="n")
-                self._order = len(model.ar_lags)
-            elif self._order_selection_method == OrderSelectionMethodAR.PACF:
-                pacf_coeffs, confidence_interval = self.calculate_pacf(nb_lags=self._max_order, alpha=0.05)
+            raise IllegalValueException(
+                f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
 
-                pacf_coeffs = pacf_coeffs[1:]
-                confidence_interval = confidence_interval[1:]
-
-                lower_band = confidence_interval[:, 0] - pacf_coeffs
-                upper_band = confidence_interval[:, 1] - pacf_coeffs
-
-                order = 0
-                for acf_coeff, value_lower_band, value_upper_band in zip(pacf_coeffs, lower_band, upper_band):
-                    if is_value_within_interval_exclusive(value=acf_coeff, lower_bound=value_lower_band,
-                                                          upper_bound=value_upper_band):
-                        break
-                    order += 1
-                self._order = order
-            else:
-                raise IllegalValueException(
-                    f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
-
-        logger.info(
-            f"AR order selection: {self._order} lags (method: {self._order_selection_method}, information criterion: {self._information_criterion}, time series length: {len(self._signs)}).")
+        logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, information criterion: {self._information_criterion}, time series length: {len(self._signs)}).")
 
     def simulate(self, size: int, seed: Optional[int] = None) -> np.ndarray:
         """
@@ -207,10 +203,10 @@ class AR(TimeSeries):
         check_condition(condition=size > 0, exception=IllegalValueException(f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
         check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model has not yet been fitted. Fit the model first by calling 'fit()'."))
 
-        inverted_params = CArray.of(c_type_str="double", arr=self._parameters[::-1])
+        inverted_parameters = CArray.of(c_type_str="double", arr=self._parameters[::-1])
         last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
         self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
         cpp_lib = SharedLibrariesRegistry().load_shared_library(name=LIB_TRADEFLOW)
-        cpp_lib.simulate(size, inverted_params, self._constant_parameter, len(inverted_params), last_signs, seed, self._simulation)
+        cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
         return self._simulation[:]
