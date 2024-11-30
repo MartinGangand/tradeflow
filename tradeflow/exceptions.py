@@ -26,3 +26,8 @@ class ModelNotSimulatedException(Exception):
 class NonStationaryTimeSeriesException(Exception):
     """Raised when the time series is not stationary"""
     pass
+
+
+class AutocorrelatedResidualsException(Exception):
+    """Raised when the residuals are autocorrelated, based on the result of a hypothesis test"""
+    pass

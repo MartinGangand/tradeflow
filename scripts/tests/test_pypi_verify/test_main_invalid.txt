@@ -13,24 +13,17 @@ Starting to verify wheel package-0.0.1-cp312-cp312-no_os_1_2_x86_64.whl
     Wheel url: OK
 package-0.0.1-cp312-cp312-no_os_1_2_x86_64.whl: The wheel name does not contain 'linux', 'macosx' nor 'win'
 
-Starting to verify wheel package-0.0.1-manylinux-too-many-shared-libraries.whl
-    Wheel url: OK
-    Wheel shared library extension: so
-    Fetched 5 file names from the wheel
-package-0.0.1-manylinux-too-many-shared-libraries.whl: expected wheel to contain 1 shared library file(s) (['package/lib1.so']), but found 2 (['package/lib1.so', 'package/lib2.so']) instead
-
 Starting to verify wheel package-0.0.1-macosx-no-shared-libraries.whl
     Wheel url: OK
     Wheel shared library extension: dylib
     Fetched 2 file names from the wheel
 package-0.0.1-macosx-no-shared-libraries.whl: expected wheel to contain 1 shared library file(s) (['package/lib1.dylib']), but found 0 ([]) instead
 
-Starting to verify wheel package-0.0.1-win-missing-python-files.whl
+Starting to verify wheel package-0.0.1-manylinux-too-many-shared-libraries.whl
     Wheel url: OK
-    Wheel shared library extension: dll
-    Fetched 2 file names from the wheel
-    Verify wheel shared library files: OK
-package-0.0.1-win-missing-python-files.whl: expected wheel to contain 2 python file(s) (['package/ar_model.py', 'package/time_series.py']), but found 1 (['package/time_series.py']) instead
+    Wheel shared library extension: so
+    Fetched 5 file names from the wheel
+package-0.0.1-manylinux-too-many-shared-libraries.whl: expected wheel to contain 1 shared library file(s) (['package/lib1.so']), but found 2 (['package/lib1.so', 'package/lib2.so']) instead
 
 Starting to verify wheel package-0.0.1-musllinux-too-many-python-files.whl
     Wheel url: OK
@@ -38,4 +31,11 @@ Starting to verify wheel package-0.0.1-musllinux-too-many-python-files.whl
     Fetched 4 file names from the wheel
     Verify wheel shared library files: OK
 package-0.0.1-musllinux-too-many-python-files.whl: expected wheel to contain 2 python file(s) (['package/ar_model.py', 'package/time_series.py']), but found 3 (['package/time_series.py', 'package/ar_model.py', 'package/ar_model2.py']) instead
+
+Starting to verify wheel package-0.0.1-win-missing-python-files.whl
+    Wheel url: OK
+    Wheel shared library extension: dll
+    Fetched 2 file names from the wheel
+    Verify wheel shared library files: OK
+package-0.0.1-win-missing-python-files.whl: expected wheel to contain 2 python file(s) (['package/ar_model.py', 'package/time_series.py']), but found 1 (['package/time_series.py']) instead
 
