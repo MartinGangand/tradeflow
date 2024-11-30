@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tradeflow"
-version = "0.0.16"
+version = "0.0.18"
 dependencies = [
     "matplotlib>=3.0.0",
     "numpy>=1.21.0",
     "pandas>=1.3.0",
     "statsmodels>=0.12.2",
+    "scipy>=1.9.0",
 ]
 authors = [
     { name="Martin Gangand", email="martin.gangand@gmail.com" },

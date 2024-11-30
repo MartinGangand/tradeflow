@@ -4,8 +4,11 @@ from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
 from tradeflow.ar_model import AR
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.exceptions import IllegalNbLagsException, EnumValueException, \
-    IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException
+    IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException, AutocorrelatedResidualsException
 from tradeflow.tests.results.results_ar_model import ResultsAR
+from tradeflow.tests.test_time_series import generate_autoregressive, generate_white_noise
+
+SIGNIFICANCE_LEVEL = 0.05
 
 
 @pytest.fixture
@@ -57,6 +60,29 @@ class TestInit:
         assert str(ex.value) == expected_exception_message
 
 
+class TestResid:
+
+    def test_resid(self):
+        ar = AR(signs=[1, 1, 1, -1, 1, 1, -1, 1, 1, 1], max_order=3)
+        ar._order = 3
+        ar._constant_parameter = 0.009
+        ar._parameters = [0.43, 0.21, 0.20]
+
+        actual_resid = ar.resid()
+        assert_almost_equal(actual=actual_resid, desired=[-1.849, 1.011, 0.571, -1.449, 1.011, 0.571, 0.551], decimal=10)
+
+    def test_resid_should_raise_exception_when_parameters_not_set(self):
+        ar = AR(signs=[1, 1, 1, -1, 1, 1, -1, 1, 1, 1], max_order=3)
+        ar._order = None
+        ar._constant_parameter = 0
+        ar._parameters = None
+
+        with pytest.raises(ModelNotFittedException) as ex:
+            ar.resid()
+
+        assert str(ex.value) == "The model does not have its parameters set. Fit the model first by calling 'fit()'."
+
+
 class TestInitMaxOrder:
 
     @pytest.mark.parametrize("max_order,expected_max_order", [
@@ -79,7 +105,7 @@ class TestFit:
 
     @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
     def test_fit(self, ar_model_with_max_order_6, method):
-        ar_model_with_max_order_6.fit(method=method)
+        ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         expected_parameters_results = ResultsAR.parameters_order_6(method=method)
         assert_almost_equal(actual=ar_model_with_max_order_6._constant_parameter, desired=expected_parameters_results.constant_parameter, decimal=10)
@@ -89,16 +115,52 @@ class TestFit:
     def test_fit_should_raise_exception_when_invalid_method(self, ar_model_with_max_order_6, method):
         expected_exception_message = f"The value '{method}' for method is not valid, it must be among ['yule_walker', 'ols_with_cst'] or None if it is valid."
         with pytest.raises(EnumValueException) as ex:
-            ar_model_with_max_order_6.fit(method=method)
+            ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         assert str(ex.value) == expected_exception_message
 
     @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
     def test_fit_should_raise_exception_when_time_series_non_stationary(self, ar_model_non_stationary_with_max_order_1, method):
         with pytest.raises(NonStationaryTimeSeriesException) as ex:
-            ar_model_non_stationary_with_max_order_1.fit(method="yule_walker")
+            ar_model_non_stationary_with_max_order_1.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
-        assert str(ex.value) == "The time series must be stationary to be fitted."
+        assert str(ex.value) == "The time series must be stationary in order to be fitted."
+
+    def test_fit_should_raise_exception_when_residuals_are_autocorrelated_and_check_residuals_is_true(self, mocker, ar_model_with_max_order_6):
+        autocorrelated_resid = generate_autoregressive(size=10_000, parameters=[0.04, 0.01], sigma=1, seed=1)
+        mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=autocorrelated_resid)
+        spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
+
+        with pytest.raises(AutocorrelatedResidualsException) as ex:
+            ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+
+        assert str(ex.value) == "The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is 0.0129), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."
+        spy_breusch_godfrey_test.assert_called_once_with(autocorrelated_resid)
+        actual_lagrange_multiplier, actual_p_value = spy_breusch_godfrey_test.spy_return
+        assert_almost_equal(actual=actual_lagrange_multiplier, desired=22.46997749885238, decimal=11)  # Results are from statsmodels (function acorr_breusch_godfrey).
+        assert_almost_equal(actual=actual_p_value, desired=0.012881423129239181, decimal=13)
+
+    def test_fit_should_not_raise_exception_when_residuals_are_not_autocorrelated_and_check_residuals_is_true(self, mocker, ar_model_with_max_order_6):
+        white_noise_resid = generate_white_noise(size=10_000, sigma=1, seed=1)
+        mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=white_noise_resid)
+        spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
+
+        ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+
+        spy_breusch_godfrey_test.assert_called_once_with(white_noise_resid)
+        actual_lagrange_multiplier, actual_p_value = spy_breusch_godfrey_test.spy_return
+        assert_almost_equal(actual=actual_lagrange_multiplier, desired=10.584578876704498, decimal=10)  # Results are from statsmodels (function acorr_breusch_godfrey).
+        assert_almost_equal(actual=actual_p_value, desired=0.39078478482620826, decimal=11)
+
+    def test_fit_should_not_raise_exception_when_residuals_are_autocorrelated_and_check_residuals_is_false(self, mocker, ar_model_with_max_order_6):
+        autocorrelated_resid = generate_autoregressive(size=10_000, parameters=[0.04, 0.01], sigma=1, seed=1)
+        mock_resid = mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=autocorrelated_resid)
+        spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
+
+        ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+
+        mock_resid.assert_not_called()
+        spy_breusch_godfrey_test.assert_not_called()
 
 
 class TestSelectOrder:
@@ -133,7 +195,7 @@ class TestSimulate:
     @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
     @pytest.mark.parametrize("size", [50, 1000])
     def test_simulate(self, ar_model_with_max_order_6, method, size):
-        actual_simulation = ar_model_with_max_order_6.fit(method=method).simulate(size=size, seed=1)
+        actual_simulation = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False).simulate(size=size, seed=1)
 
         expected_signs = ResultsAR.simulated_signs(fit_method=method)
         assert len(actual_simulation) == size
@@ -142,7 +204,7 @@ class TestSimulate:
     @pytest.mark.parametrize("size", [-50, 0])
     def test_simulate_should_raise_exception_when_invalid_size(self, ar_model_with_max_order_6, size):
         with pytest.raises(IllegalValueException) as ex:
-            ar_model_with_max_order_6.fit("yule_walker").simulate(size=size)
+            ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False).simulate(size=size)
 
         assert str(ex.value) == f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."
 
@@ -159,7 +221,7 @@ class TestSimulationSummary:
     def test_simulation_summary(self, signs_btcusdt, fit_method):
         size_simulation = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf", information_criterion=None)
-        actual_simulation = ar_model.fit(method=fit_method).simulate(size=size_simulation, seed=1)
+        actual_simulation = ar_model.fit(method=fit_method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True).simulate(size=size_simulation, seed=1)
         summary_df = ar_model.simulation_summary(plot=False, percentiles=(50.0, 75.0, 95.0, 99.0))
 
         res_training_signs_stats = ResultsAR.simulation_summary_training_signs(fit_method=fit_method)

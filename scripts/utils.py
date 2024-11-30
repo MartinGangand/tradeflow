@@ -129,17 +129,17 @@ def find_urls_in_html_page(html_page_content: str, target_url_extension: str) ->
         Urls with the given `target_url_extension` extension contained in the html page.
     """
     urls = re.findall(pattern=rf"https:{ANY_VALID_STRING}\.{target_url_extension}\b", string=html_page_content)
-    return urls
+    return sorted(list(set(urls)))
 
 
-def find_files_in_directory(directory: Path, extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
+def find_files_in_directories(directories: List[Path], extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
     """
-    Find files within a specified directory that match given file extensions.
+    Find files within specified directories that match given file extensions.
 
     Parameters
     ----------
-    directory : Path
-        The root directory to search for files.
+    directories : list of Path
+        The directories to search for files.
     extensions : list of str
         A list of file extensions to filter files by (without dots). Files with
         matching extensions will be included in the results.
@@ -157,16 +157,17 @@ def find_files_in_directory(directory: Path, extensions: List[str], recursive: b
         The paths are either absolute or relative depending on the `absolute_path` parameter.
     """
     extensions = {f".{ext}" for ext in extensions}
-    files = []
-    glob_function = directory.rglob if recursive else directory.glob
-    for file_path in glob_function(pattern="*"):
-        if not (file_path.is_file() and file_path.suffix in extensions):
-            continue
+    files = set()
+    for directory in directories:
+        glob_function = directory.rglob if recursive else directory.glob
+        for file_path in glob_function(pattern="*"):
+            if not (file_path.is_file() and file_path.suffix in extensions):
+                continue
 
-        if not absolute_path:
-            file_path = file_path.relative_to(directory)
+            if not absolute_path:
+                file_path = file_path.relative_to(directory)
 
-        files.append(str(file_path))
+            files.add(str(file_path))
 
     return sorted(files)
 
@@ -218,3 +219,7 @@ def file_names_with_prefixes(file_names: List[str], *prefixes) -> List[str]:
     elif len(prefixes) > 1:
         prefix = os.path.join(prefixes[0], *prefixes[1:])
     return [os.path.join(prefix, file_name) for file_name in file_names]
+
+
+def paths_relative_to(paths: List[str] | List[Path], relative_to: str | Path) -> List[str]:
+    return [str(Path(path).relative_to(relative_to)) for path in paths]

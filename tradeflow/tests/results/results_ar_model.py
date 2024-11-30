@@ -1,10 +1,10 @@
-import os
+from pathlib import Path
 
 import numpy as np
 
 from tradeflow.constants import FitMethodAR
 
-current_directory = os.path.abspath(os.path.dirname(__file__))
+CURRENT_DIRECTORY = Path(__file__).parent.absolute()
 
 
 class Namespace:
@@ -47,9 +47,9 @@ class ResultsAR:
     def simulated_signs(fit_method: str) -> Namespace:
         obj = Namespace()
         if fit_method == FitMethodAR.YULE_WALKER.value:
-            obj.simulation = np.loadtxt(fname=os.path.join(current_directory, 'simulated_signs_yule_walker.csv'), dtype=float, delimiter=",")
+            obj.simulation = np.loadtxt(fname=CURRENT_DIRECTORY.joinpath("simulated_signs_yule_walker.csv"), dtype=float, delimiter=",")
         elif fit_method == FitMethodAR.OLS_WITH_CST.value:
-            obj.simulation = np.loadtxt(fname=os.path.join(current_directory, 'simulated_signs_ols_with_cst.csv'), dtype=float, delimiter=",")
+            obj.simulation = np.loadtxt(fname=CURRENT_DIRECTORY.joinpath("simulated_signs_ols_with_cst.csv"), dtype=float, delimiter=",")
 
         return obj
 

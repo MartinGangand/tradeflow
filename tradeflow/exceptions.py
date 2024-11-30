@@ -28,6 +28,6 @@ class NonStationaryTimeSeriesException(Exception):
     pass
 
 
-class TooManySharedLibrariesException(Exception):
-    """Raised when several shared libraries are found when loading a given shared library"""
+class AutocorrelatedResidualsException(Exception):
+    """Raised when the residuals are autocorrelated, based on the result of a hypothesis test"""
     pass
