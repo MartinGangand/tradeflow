@@ -12,11 +12,20 @@ from tradeflow.common.exceptions import UnsupportedOsException
 logger = logger_utils.get_logger(__name__)
 
 
-class SharedLibrariesRegistry:
+class Singleton(type):
+
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class SharedLibrariesRegistry(metaclass=Singleton):
 
     def __init__(self) -> None:
         self._name_to_shared_library: Dict[str, SharedLibrary] = {}
-        self._name_to_loaded_shared_library: Dict[str, ct.CDLL] = {}
 
         self._init_shared_libraries()
 
@@ -33,11 +42,8 @@ class SharedLibrariesRegistry:
         logger.info(f"Added shared library '{shared_library.name}' to the registry")
         return self
 
-    def load_shared_library(self, name: str) -> ct.CDLL:
-        if name not in self._name_to_loaded_shared_library:
-            self._name_to_loaded_shared_library[name] = self._name_to_shared_library.get(name).load()
-
-        return self._name_to_loaded_shared_library[name]
+    def find(self, name: str) -> SharedLibrary:
+        return self._name_to_shared_library.get(name)
 
 
 class SharedLibrary:
@@ -58,6 +64,7 @@ class SharedLibrary:
         self._directory = directory
         self._functions = []
         self._shared_library_extension = None
+        self._loaded = None
 
     @property
     def name(self):
@@ -81,6 +88,9 @@ class SharedLibrary:
         if self._shared_library_extension is None:
             self._shared_library_extension = SharedLibrary.get_shared_library_extension()
 
+        if self._loaded is not None:
+            return self._loaded
+
         shared_library_path = self._directory.joinpath(f"{self._name}.{self._shared_library_extension}")
         if not (shared_library_path.exists() and shared_library_path.is_file()):
             raise FileNotFoundError(f"Shared library '{self._name}.{self._shared_library_extension}' not found in directory '{self._directory}'.")
@@ -91,7 +101,8 @@ class SharedLibrary:
             setattr(getattr(shared_library, function.name), self.RESULT_TYPE, function.restype)
 
         logger.info(f"Loaded shared library '{self._name}'")
-        return shared_library
+        self._loaded = shared_library
+        return self._loaded
 
     @staticmethod
     def get_shared_library_extension() -> str:

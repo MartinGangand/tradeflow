@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from tradeflow.common.exceptions import UnsupportedOsException
-from tradeflow.common.shared_libraries_registry import SharedLibrary, SharedLibrariesRegistry
+from tradeflow.common.shared_libraries_registry import SharedLibrary, SharedLibrariesRegistry, Singleton
 
 SHARED_LIBRARIES_DIRECTORY = Path("temp")
 
@@ -21,17 +21,32 @@ def shared_library_with_2_functions():
 class TestSharedLibrariesRegistry:
 
     def test_load_shared_library(self, mocker, shared_library_with_2_functions):
-        init_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_init_shared_libraries")
-        load = mocker.patch.object(shared_library_with_2_functions, "load")
+        mocker.patch("pathlib.Path.exists", return_value=True)
+        mocker.patch("pathlib.Path.is_file", return_value=True)
+        mock_init_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_init_shared_libraries", )
+        mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
 
         registry = SharedLibrariesRegistry()._add_shared_library(shared_library=shared_library_with_2_functions)
-        registry.load_shared_library("lib")
+        mock_init_shared_libraries.assert_called_once()
+        assert registry._name_to_shared_library == {"lib": shared_library_with_2_functions}
 
-        load.assert_called_once()
-        init_shared_libraries.assert_called_once()
-        assert len(registry._name_to_shared_library) == 1
-        assert registry._name_to_shared_library["lib"] == shared_library_with_2_functions
-        assert len(registry._name_to_loaded_shared_library) == 1
+        shared_library_1 = registry.find("lib")
+        shared_library_2 = registry.find("lib")
+        assert shared_library_1 is shared_library_2
+
+        cdll1 = shared_library_1.load()
+        cdll2 = shared_library_2.load()
+        assert cdll1 is cdll2
+        mock_cdll.assert_called_once()
+
+    def test_shared_library_registry_should_be_a_singleton(self, mocker):
+        spy_init = mocker.spy(SharedLibrariesRegistry, "__init__")
+
+        registry_1 = SharedLibrariesRegistry()
+        registry_2 = SharedLibrariesRegistry()
+
+        assert registry_1 == registry_2
+        assert spy_init.call_count == 1
 
 
 class TestSharedLibrary:

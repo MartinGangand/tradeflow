@@ -207,6 +207,6 @@ class AR(TimeSeries):
         last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
         self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
-        cpp_lib = SharedLibrariesRegistry().load_shared_library(name=LIB_TRADEFLOW)
+        cpp_lib = SharedLibrariesRegistry().find(name=LIB_TRADEFLOW)
         cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
         return self._simulation[:]
