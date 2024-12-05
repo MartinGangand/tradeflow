@@ -26,15 +26,18 @@ class SharedLibrariesRegistry(metaclass=Singleton):
 
     def __init__(self) -> None:
         self._name_to_shared_library: Dict[str, SharedLibrary] = {}
+        self._set_shared_libraries(self._get_shared_libraries())
 
-        self._init_shared_libraries()
+    def _set_shared_libraries(self, shared_libraries: List[SharedLibrary]) -> None:
+        for shared_library in shared_libraries:
+            self._add_shared_library(shared_library=shared_library)
 
-    def _init_shared_libraries(self) -> None:
+    def _get_shared_libraries(self) -> List[SharedLibrary]:
         # simulate: size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), res (int*)
         libtradeflow = SharedLibrary(name="libtradeflow", directory=LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY).add_function(name="simulate",
                                                                                                                         argtypes=[ct.c_int, ct.POINTER(ct.c_double), ct.c_double, ct.c_int, ct.POINTER(ct.c_int), ct.c_int, ct.POINTER(ct.c_int)],
                                                                                                                         restype=ct.c_void_p)
-        self._add_shared_library(libtradeflow)
+        return [libtradeflow]
 
     def _add_shared_library(self, shared_library: SharedLibrary) -> SharedLibrariesRegistry:
         assert shared_library.name not in self._name_to_shared_library

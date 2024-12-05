@@ -20,14 +20,22 @@ def shared_library_with_2_functions():
 
 class TestSharedLibrariesRegistry:
 
+    @pytest.fixture(scope="function", autouse=True)
+    def main_setup_and_tear_down(self):
+        Singleton._instances = {}
+
+        yield
+
+        Singleton._instances = {}
+
     def test_load_shared_library(self, mocker, shared_library_with_2_functions):
+        mock_get_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_get_shared_libraries", return_value=[shared_library_with_2_functions])
         mocker.patch("pathlib.Path.exists", return_value=True)
         mocker.patch("pathlib.Path.is_file", return_value=True)
-        mock_init_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_init_shared_libraries", )
         mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
 
-        registry = SharedLibrariesRegistry()._add_shared_library(shared_library=shared_library_with_2_functions)
-        mock_init_shared_libraries.assert_called_once()
+        registry = SharedLibrariesRegistry()
+        mock_get_shared_libraries.assert_called_once()
         assert registry._name_to_shared_library == {"lib": shared_library_with_2_functions}
 
         shared_library_1 = registry.find("lib")
@@ -39,14 +47,26 @@ class TestSharedLibrariesRegistry:
         assert cdll1 is cdll2
         mock_cdll.assert_called_once()
 
-    def test_shared_library_registry_should_be_a_singleton(self, mocker):
-        spy_init = mocker.spy(SharedLibrariesRegistry, "__init__")
+    def test_shared_library_registry_should_be_a_singleton(self, mocker, shared_library_with_2_functions):
+        mock_get_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_get_shared_libraries", return_value=[shared_library_with_2_functions])
+        mocker.patch("pathlib.Path.exists", return_value=True)
+        mocker.patch("pathlib.Path.is_file", return_value=True)
+        mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
 
         registry_1 = SharedLibrariesRegistry()
+        mock_get_shared_libraries.assert_called_once()
+
         registry_2 = SharedLibrariesRegistry()
+        mock_get_shared_libraries.assert_called_once()  # _get_shared_libraries should not have been called again because SharedLibrariesRegistry should be initialized only once
 
         assert registry_1 == registry_2
-        assert spy_init.call_count == 1
+        assert registry_1._name_to_shared_library == {"lib": shared_library_with_2_functions}
+        assert registry_2._name_to_shared_library == {"lib": shared_library_with_2_functions}
+
+        cdll1 = registry_1.find("lib").load()
+        cdll2 = registry_2.find("lib").load()
+        assert cdll1 is cdll2
+        mock_cdll.assert_called_once()
 
 
 class TestSharedLibrary:
@@ -81,20 +101,38 @@ class TestSharedLibrary:
         mocker.patch("platform.system", return_value=os_name)
         mocker.patch("pathlib.Path.exists", return_value=True)
         mocker.patch("pathlib.Path.is_file", return_value=True)
-        cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
+        mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
 
-        lib = shared_library_with_2_functions.load()
+        cdll = shared_library_with_2_functions.load()
 
         expected_shared_library_path = SHARED_LIBRARIES_DIRECTORY.joinpath(f"lib.{shared_library_extension}")
-        cdll.assert_called_once_with(str(expected_shared_library_path), winmode=0)
+        mock_cdll.assert_called_once_with(str(expected_shared_library_path), winmode=0)
 
-        loaded_function_1 = getattr(lib, "function_1")
+        loaded_function_1 = getattr(cdll, "function_1")
         assert getattr(loaded_function_1, SharedLibrary.ARGUMENT_TYPES) == (ct.c_int, ct.POINTER(ct.c_double))
         assert getattr(loaded_function_1, SharedLibrary.RESULT_TYPE) == ct.c_int
 
-        loaded_function_2 = getattr(lib, "function_2")
+        loaded_function_2 = getattr(cdll, "function_2")
         assert getattr(loaded_function_2, SharedLibrary.ARGUMENT_TYPES) == (ct.c_double,)
         assert getattr(loaded_function_2, SharedLibrary.RESULT_TYPE) == ct.c_double
+
+    def test_load_should_cache_loaded_shared_libraries(self, mocker, shared_library_with_2_functions):
+        mocker.patch("platform.system", return_value="Windows")
+        mocker.patch("pathlib.Path.exists", return_value=True)
+        mocker.patch("pathlib.Path.is_file", return_value=True)
+        mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
+
+        expected_shared_library_path = SHARED_LIBRARIES_DIRECTORY.joinpath(f"lib.dll")
+
+        cdll1 = shared_library_with_2_functions.load()
+        mock_cdll.assert_called_once_with(str(expected_shared_library_path), winmode=0)
+        assert shared_library_with_2_functions._loaded is cdll1
+
+        cdll2 = shared_library_with_2_functions.load()
+        mock_cdll.assert_called_once_with(str(expected_shared_library_path), winmode=0)  # ctypes.CDLL should not have been called again because the cdll is cached
+        assert shared_library_with_2_functions._loaded is cdll2
+
+        assert cdll1 is cdll2
 
     def test_load_should_raise_exception_when_file_does_not_exist(self, mocker):
         mocker.patch("platform.system", return_value="Linux")
@@ -104,3 +142,26 @@ class TestSharedLibrary:
             shared_library.load()
 
         assert str(ex.value) == f"Shared library 'lib.so' not found in directory '{str(SHARED_LIBRARIES_DIRECTORY)}'."
+
+
+class TestSingleton:
+
+    class SingletonClass(metaclass=Singleton):
+        def __init__(self):
+            pass
+
+    def test_singleton(self, mocker):
+        spy_call = mocker.spy(Singleton, "__call__")
+        spy_init = mocker.spy(TestSingleton.SingletonClass, "__init__")
+
+        singleton_1 = TestSingleton.SingletonClass()
+        assert spy_call.call_count == 1
+        assert spy_init.call_count == 1
+        singleton_1.x = 1
+
+        singleton_2 = TestSingleton.SingletonClass()
+        assert spy_call.call_count == 2
+        assert spy_init.call_count == 1
+        assert singleton_2.x == 1
+
+        assert singleton_1 is singleton_2
