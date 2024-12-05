@@ -8,18 +8,9 @@ from typing import Dict, Tuple, Union, List
 from tradeflow.common import logger_utils
 from tradeflow.common.config import LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY
 from tradeflow.common.exceptions import UnsupportedOsException
+from tradeflow.common.singleton import Singleton
 
 logger = logger_utils.get_logger(__name__)
-
-
-class Singleton(type):
-
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super().__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 
 class SharedLibrariesRegistry(metaclass=Singleton):

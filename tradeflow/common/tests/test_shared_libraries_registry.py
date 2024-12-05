@@ -5,7 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from tradeflow.common.exceptions import UnsupportedOsException
-from tradeflow.common.shared_libraries_registry import SharedLibrary, SharedLibrariesRegistry, Singleton
+from tradeflow.common.shared_libraries_registry import SharedLibrary, SharedLibrariesRegistry
+from tradeflow.common.singleton import Singleton
 
 SHARED_LIBRARIES_DIRECTORY = Path("temp")
 
@@ -21,12 +22,9 @@ def shared_library_with_2_functions():
 class TestSharedLibrariesRegistry:
 
     @pytest.fixture(scope="function", autouse=True)
-    def main_setup_and_tear_down(self):
-        Singleton._instances = {}
-
+    def reset_singleton(self):
         yield
-
-        Singleton._instances = {}
+        Singleton._instances.clear()
 
     def test_load_shared_library(self, mocker, shared_library_with_2_functions):
         mock_get_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_get_shared_libraries", return_value=[shared_library_with_2_functions])
@@ -142,26 +140,3 @@ class TestSharedLibrary:
             shared_library.load()
 
         assert str(ex.value) == f"Shared library 'lib.so' not found in directory '{str(SHARED_LIBRARIES_DIRECTORY)}'."
-
-
-class TestSingleton:
-
-    class SingletonClass(metaclass=Singleton):
-        def __init__(self):
-            pass
-
-    def test_singleton(self, mocker):
-        spy_call = mocker.spy(Singleton, "__call__")
-        spy_init = mocker.spy(TestSingleton.SingletonClass, "__init__")
-
-        singleton_1 = TestSingleton.SingletonClass()
-        assert spy_call.call_count == 1
-        assert spy_init.call_count == 1
-        singleton_1.x = 1
-
-        singleton_2 = TestSingleton.SingletonClass()
-        assert spy_call.call_count == 2
-        assert spy_init.call_count == 1
-        assert singleton_2.x == 1
-
-        assert singleton_1 is singleton_2

@@ -2,6 +2,7 @@ import pytest
 from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
 
 from tradeflow.ar_model import AR
+from tradeflow.common.shared_libraries_registry import Singleton
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.exceptions import IllegalNbLagsException, EnumValueException, \
     IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException, AutocorrelatedResidualsException
@@ -191,6 +192,11 @@ class TestSelectOrder:
 
 
 class TestSimulate:
+
+    @pytest.fixture(scope="function", autouse=True)
+    def reset_singleton(self):
+        yield
+        Singleton._instances.clear()
 
     @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
     @pytest.mark.parametrize("size", [50, 1000])
