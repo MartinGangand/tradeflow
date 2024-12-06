@@ -12,11 +12,14 @@ SHARED_LIBRARIES_DIRECTORY = Path("temp")
 
 
 @pytest.fixture
-def shared_library_with_2_functions():
+def shared_library_with_2_functions(mocker):
+    mocker.patch("pathlib.Path.exists", return_value=True)
+    mocker.patch("pathlib.Path.is_file", return_value=True)
+
     function_1 = Function(name="function_1", argtypes=[ct.c_int, ct.POINTER(ct.c_double)], restype=ct.c_int)
     function_2 = Function(name="function_2", argtypes=[ct.c_double], restype=ct.c_double)
-    shared_library = SharedLibrary(name="lib", directory=SHARED_LIBRARIES_DIRECTORY, functions=[function_1, function_2])
-    return shared_library
+
+    return SharedLibrary(name="lib", directory=SHARED_LIBRARIES_DIRECTORY, functions=[function_1, function_2])
 
 
 class TestSharedLibrariesRegistry:
@@ -26,45 +29,53 @@ class TestSharedLibrariesRegistry:
         yield
         Singleton._instances.clear()
 
-    def test_load_shared_library(self, mocker, shared_library_with_2_functions):
+    def test_load_should_cache_cdll(self, mocker, shared_library_with_2_functions):
         mock_get_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_get_shared_libraries", return_value=[shared_library_with_2_functions])
-        mocker.patch("pathlib.Path.exists", return_value=True)
-        mocker.patch("pathlib.Path.is_file", return_value=True)
         mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
 
         registry = SharedLibrariesRegistry()
-        mock_get_shared_libraries.assert_called_once()
         assert registry._name_to_shared_library == {"lib": shared_library_with_2_functions}
+        assert mock_get_shared_libraries.call_count == 1
 
         shared_library_1 = registry.find("lib")
+        assert shared_library_1 is shared_library_with_2_functions
+
         shared_library_2 = registry.find("lib")
-        assert shared_library_1 is shared_library_2
+        assert shared_library_2 is shared_library_1
 
         cdll1 = shared_library_1.load()
+        expected_shared_library_path = str(shared_library_with_2_functions._directory.joinpath(f"{shared_library_with_2_functions._name}.{SharedLibrary.get_shared_library_extension()}"))
+        mock_cdll.assert_called_once_with(expected_shared_library_path, winmode=0)
+
+        # Calling load() a second time should not create a new CDLL object because it is cached after the first call
         cdll2 = shared_library_2.load()
+        assert mock_cdll.call_count == 1
+
         assert cdll1 is cdll2
-        mock_cdll.assert_called_once()
 
     def test_shared_library_registry_should_be_a_singleton(self, mocker, shared_library_with_2_functions):
         mock_get_shared_libraries = mocker.patch.object(SharedLibrariesRegistry, "_get_shared_libraries", return_value=[shared_library_with_2_functions])
-        mocker.patch("pathlib.Path.exists", return_value=True)
-        mocker.patch("pathlib.Path.is_file", return_value=True)
         mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
 
         registry_1 = SharedLibrariesRegistry()
-        mock_get_shared_libraries.assert_called_once()
+        assert registry_1._name_to_shared_library == {"lib": shared_library_with_2_functions}
+        assert mock_get_shared_libraries.call_count == 1
 
+        # _get_shared_libraries should not be called again because SharedLibrariesRegistry should be initialized only once
         registry_2 = SharedLibrariesRegistry()
-        mock_get_shared_libraries.assert_called_once()  # _get_shared_libraries should not have been called again because SharedLibrariesRegistry should be initialized only once
+        assert registry_2._name_to_shared_library == {"lib": shared_library_with_2_functions}
+        assert mock_get_shared_libraries.call_count == 1
 
         assert registry_1 == registry_2
-        assert registry_1._name_to_shared_library == {"lib": shared_library_with_2_functions}
-        assert registry_2._name_to_shared_library == {"lib": shared_library_with_2_functions}
 
         cdll1 = registry_1.find("lib").load()
+        expected_shared_library_path = str(shared_library_with_2_functions._directory.joinpath(f"{shared_library_with_2_functions._name}.{SharedLibrary.get_shared_library_extension()}"))
+        mock_cdll.assert_called_once_with(expected_shared_library_path, winmode=0)
+
         cdll2 = registry_2.find("lib").load()
+        assert mock_cdll.call_count == 1
+
         assert cdll1 is cdll2
-        mock_cdll.assert_called_once()
 
 
 class TestSharedLibrary:
