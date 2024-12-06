@@ -135,7 +135,7 @@ class TestSharedLibrary:
     def test_load_should_raise_exception_when_file_does_not_exist(self, mocker):
         mocker.patch("platform.system", return_value="Linux")
 
-        shared_library = SharedLibrary(name="lib", directory=SHARED_LIBRARIES_DIRECTORY)
+        shared_library = SharedLibrary(name="lib", directory=SHARED_LIBRARIES_DIRECTORY, functions=[])
         with pytest.raises(FileNotFoundError) as ex:
             shared_library.load()
 

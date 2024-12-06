@@ -57,7 +57,7 @@ class SharedLibrary:
         self._name = name
         self._directory = directory
         self._functions = functions
-        self._cdll = None  # Shared library is cached after the first call to load()
+        self._cdll = None  # Loaded shared library is cached after the first call to load()
 
     @property
     def name(self):

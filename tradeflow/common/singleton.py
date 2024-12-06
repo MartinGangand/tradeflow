@@ -4,7 +4,7 @@ from threading import Lock
 class Singleton(type):
 
     _instances = {}
-    _lock: Lock()
+    _lock = Lock()
 
     def __call__(cls, *args, **kwargs):
         with cls._lock:
