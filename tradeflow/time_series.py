@@ -16,9 +16,9 @@ from statsmodels.tsa.stattools import acf, pacf
 from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
+from tradeflow.common.general_utils import check_condition
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, \
     ModelNotSimulatedException
-from tradeflow.general_utils import check_condition
 
 logger = logger_utils.get_logger(__name__)
 

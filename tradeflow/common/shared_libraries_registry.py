@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Union, List
 from tradeflow.common import logger_utils
 from tradeflow.common.config import LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY
 from tradeflow.common.exceptions import UnsupportedOsException
+from tradeflow.common.general_utils import check_condition
 from tradeflow.common.singleton import Singleton
 
 logger = logger_utils.get_logger(__name__)
@@ -57,8 +58,7 @@ class SharedLibrary:
         self._name = name
         self._directory = directory
         self._functions = []
-        self._shared_library_extension = None
-        self._loaded = None
+        self._cdll = None
 
     @property
     def name(self):
@@ -79,15 +79,14 @@ class SharedLibrary:
         ct.CDLL
             The loaded shared library.
         """
-        if self._shared_library_extension is None:
-            self._shared_library_extension = SharedLibrary.get_shared_library_extension()
+        if self._cdll is not None:
+            return self._cdll
 
-        if self._loaded is not None:
-            return self._loaded
+        shared_library_extension = SharedLibrary.get_shared_library_extension()
 
-        shared_library_path = self._directory.joinpath(f"{self._name}.{self._shared_library_extension}")
+        shared_library_path = self._directory.joinpath(f"{self._name}.{shared_library_extension}")
         if not (shared_library_path.exists() and shared_library_path.is_file()):
-            raise FileNotFoundError(f"Shared library '{self._name}.{self._shared_library_extension}' not found in directory '{self._directory}'.")
+            raise FileNotFoundError(f"Shared library '{self._name}.{shared_library_extension}' not found in directory '{self._directory}'.")
 
         shared_library = ct.CDLL(str(shared_library_path), winmode=0)
         for function in self._functions:
@@ -95,8 +94,8 @@ class SharedLibrary:
             setattr(getattr(shared_library, function.name), self.RESULT_TYPE, function.restype)
 
         logger.info(f"Loaded shared library '{self._name}'")
-        self._loaded = shared_library
-        return self._loaded
+        self._cdll = shared_library
+        return self._cdll
 
     @staticmethod
     def get_shared_library_extension() -> str:
@@ -122,9 +121,7 @@ class SharedLibrary:
         os_name = platform.system().lower()
         extension = os_name_to_shared_library_extension.get(os_name)
 
-        if extension is None:
-            raise UnsupportedOsException(f"Unsupported OS '{os_name}'. Supported OS values are Linux, Darwin, and Windows.")
-
+        check_condition(condition=extension is not None, exception=UnsupportedOsException(f"Unsupported OS '{os_name}'. Supported OS values are Linux, Darwin, and Windows."))
         return extension
 
 

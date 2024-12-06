@@ -10,13 +10,13 @@ from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
 from tradeflow.common.ctypes_utils import CArray, CArrayEmpty
+from tradeflow.common.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
+    is_value_within_interval_exclusive
 from tradeflow.common.shared_libraries_registry import SharedLibrariesRegistry
 from tradeflow.config import LIB_TRADEFLOW
 from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException
-from tradeflow.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
-    is_value_within_interval_exclusive
 from tradeflow.time_series import TimeSeries
 
 logger = logger_utils.get_logger(__name__)

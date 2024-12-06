@@ -124,11 +124,11 @@ class TestSharedLibrary:
 
         cdll1 = shared_library_with_2_functions.load()
         mock_cdll.assert_called_once_with(str(expected_shared_library_path), winmode=0)
-        assert shared_library_with_2_functions._loaded is cdll1
+        assert shared_library_with_2_functions._cdll is cdll1
 
         cdll2 = shared_library_with_2_functions.load()
         mock_cdll.assert_called_once_with(str(expected_shared_library_path), winmode=0)  # ctypes.CDLL should not have been called again because the cdll is cached
-        assert shared_library_with_2_functions._loaded is cdll2
+        assert shared_library_with_2_functions._cdll is cdll2
 
         assert cdll1 is cdll2
 
