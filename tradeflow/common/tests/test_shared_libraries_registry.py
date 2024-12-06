@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from tradeflow.common.exceptions import UnsupportedOsException
-from tradeflow.common.shared_libraries_registry import SharedLibrary, SharedLibrariesRegistry
+from tradeflow.common.shared_libraries_registry import SharedLibrary, SharedLibrariesRegistry, Function
 from tradeflow.common.singleton import Singleton
 
 SHARED_LIBRARIES_DIRECTORY = Path("temp")
@@ -13,9 +13,9 @@ SHARED_LIBRARIES_DIRECTORY = Path("temp")
 
 @pytest.fixture
 def shared_library_with_2_functions():
-    shared_library = SharedLibrary(name="lib", directory=SHARED_LIBRARIES_DIRECTORY)
-    shared_library.add_function(name="function_1", argtypes=[ct.c_int, ct.POINTER(ct.c_double)], restype=ct.c_int)
-    shared_library.add_function(name="function_2", argtypes=[ct.c_double], restype=ct.c_double)
+    function_1 = Function(name="function_1", argtypes=[ct.c_int, ct.POINTER(ct.c_double)], restype=ct.c_int)
+    function_2 = Function(name="function_2", argtypes=[ct.c_double], restype=ct.c_double)
+    shared_library = SharedLibrary(name="lib", directory=SHARED_LIBRARIES_DIRECTORY, functions=[function_1, function_2])
     return shared_library
 
 
