@@ -14,7 +14,7 @@ You can create an autoregressive model from a training time series of signs `tim
 ```
 >>> import tradeflow
 >>>
->>> ar_model = tradeflow.AR(signs=time_series_signs, max_order=50, order_selection_method='pacf', information_criterion=None)
+>>> ar_model = tradeflow.AR(signs=time_series_signs, max_order=50, order_selection_method='pacf')
 ```
 
 To fit the model parameters, you have to call the `fit` function:

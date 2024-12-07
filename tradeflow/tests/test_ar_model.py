@@ -25,13 +25,13 @@ def signs_btcusdt():
 
 @pytest.fixture
 def ar_model_with_max_order_6(signs_sample):
-    ar_model = AR(signs=signs_sample, max_order=6, order_selection_method=None, information_criterion=None)
+    ar_model = AR(signs=signs_sample, max_order=6, order_selection_method=None)
     return ar_model
 
 
 @pytest.fixture
 def ar_model_non_stationary_with_max_order_1():
-    ar_model = AR(signs=[-1] * 500 + [1] * 500, max_order=1, order_selection_method=None, information_criterion=None)
+    ar_model = AR(signs=[-1] * 500 + [1] * 500, max_order=1, order_selection_method=None)
     return ar_model
 
 
@@ -40,26 +40,15 @@ class TestInit:
     @pytest.mark.parametrize("max_order", [500, 1000])
     def test_init_max_order_should_raise_exception_when_invalid_max_order(self, signs_sample, max_order):
         with pytest.raises(IllegalNbLagsException) as ex:
-            AR(signs=signs_sample, max_order=max_order, order_selection_method=None, information_criterion=None)
+            AR(signs=signs_sample, max_order=max_order, order_selection_method=None)
 
         assert str(ex.value) == f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< 500)."
 
     def test_init_should_raise_exception_when_invalid_order_selection_method(self, signs_sample):
         with pytest.raises(EnumValueException) as ex:
-            AR(signs=signs_sample, max_order=6, order_selection_method="invalid_order_selection_method", information_criterion="aic")
+            AR(signs=signs_sample, max_order=6, order_selection_method="invalid_order_selection_method")
 
-        assert str(ex.value) == "The value 'invalid_order_selection_method' for order_selection_method is not valid, it must be among ['information_criterion', 'pacf'] or None if it is valid."
-
-    @pytest.mark.parametrize("order_selection_method,information_criterion", [
-        ("information_criterion", "invalid_ic"),
-        ("information_criterion", None)
-    ])
-    def test_init_should_raise_exception_when_invalid_information_criterion(self, signs_sample, order_selection_method, information_criterion):
-        expected_exception_message = f"The value '{information_criterion}' for information_criterion is not valid, it must be among ['aic', 'bic', 'hqic'] or None if it is valid."
-        with pytest.raises(EnumValueException) as ex:
-            AR(signs=signs_sample, max_order=6, order_selection_method=order_selection_method, information_criterion=information_criterion)
-
-        assert str(ex.value) == expected_exception_message
+        assert str(ex.value) == "The value 'invalid_order_selection_method' for order_selection_method is not valid, it must be among ['pacf'] or None if it is valid."
 
 
 class TestResid:
@@ -167,27 +156,25 @@ class TestFit:
 
 class TestSelectOrder:
 
-    @pytest.mark.parametrize("max_order,order_selection_method,information_criterion,expected_order", [
-        (25, "information_criterion", "aic", 6), (4, "information_criterion", "aic", 4),
-        (50, "information_criterion", "bic", 5), (3, "information_criterion", "bic", 3),
-        (25, "information_criterion", "hqic", 6), (2, "information_criterion", "hqic", 2),
-        (499, "pacf", "hqic", 6), (1, "pacf", "hqic", 1)
+    @pytest.mark.parametrize("max_order,order_selection_method,expected_order", [
+        (499, "pacf", 6),
+        (1, "pacf", 1)
     ])
-    def test_select_order_with_selection_method(self, signs_sample, max_order, order_selection_method, information_criterion, expected_order):
-        ar_model = AR(signs=signs_sample, max_order=max_order, order_selection_method=order_selection_method, information_criterion=information_criterion)
+    def test_select_order_with_selection_method(self, signs_sample, max_order, order_selection_method, expected_order):
+        ar_model = AR(signs=signs_sample, max_order=max_order, order_selection_method=order_selection_method)
         assert ar_model._max_order == max_order
 
         ar_model._select_order()
         assert ar_model._order == expected_order
 
-    @pytest.mark.parametrize("max_order,information_criterion,expected_order", [
-        (25, None, 25),
-        (25, "aic", 25),
-        (None, None, 22),  # Schwert (1989)
-        (None, "aic", 22)  # Schwert (1989)
+    @pytest.mark.parametrize("max_order,expected_order", [
+        (25, 25),
+        (25, 25),
+        (None, 22),  # Schwert (1989)
+        (None, 22)  # Schwert (1989)
     ])
-    def test_select_order_without_selection_method(self, signs_sample, max_order, information_criterion, expected_order):
-        ar_model = AR(signs=signs_sample, max_order=max_order, order_selection_method=None, information_criterion=information_criterion)
+    def test_select_order_without_selection_method(self, signs_sample, max_order, expected_order):
+        ar_model = AR(signs=signs_sample, max_order=max_order, order_selection_method=None)
         ar_model._select_order()
         assert ar_model._order == expected_order == ar_model._max_order
 
@@ -232,7 +219,7 @@ class TestSimulationSummary:
     @pytest.mark.parametrize("fit_method", ["ols_with_cst", "yule_walker"])
     def test_simulation_summary(self, signs_btcusdt, fit_method):
         size_simulation = 2_000_000
-        ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf", information_criterion=None)
+        ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")
         actual_simulation = ar_model.fit(method=fit_method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True).simulate(size=size_simulation, seed=1)
         summary_df = ar_model.simulation_summary(plot=False, percentiles=(50.0, 75.0, 95.0, 99.0))
 

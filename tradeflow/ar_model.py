@@ -14,7 +14,7 @@ from tradeflow.common.general_utils import check_condition, check_enum_value_is_
     is_value_within_interval_exclusive
 from tradeflow.common.shared_libraries_registry import SharedLibrariesRegistry
 from tradeflow.config import LIB_TRADEFLOW
-from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR, InformationCriterion
+from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException
 from tradeflow.time_series import TimeSeries
@@ -33,37 +33,20 @@ class AR(TimeSeries):
     max_order : int, default None
         The maximum order of the autoregressive model.
         If None, the maximum order is set to 12*(nobs/100)^{1/4} as outlined in Schwert (1989).
-    order_selection_method : {'information_criterion', 'pacf'}, default None
+    order_selection_method : {'pacf'}, default None
         The method for selecting the order of the model. If None, the order of the model will be `max_order`.
 
-        * 'information_criterion' - Choose the model that minimizes a given information criterion.
         * 'pacf' - Choose the model using the number of significant lags in the partial autocorrelation function of the time series of signs.
-
-    information_criterion : {'aic', 'bic', 'hqic'}, optional
-        The information criterion to use in the order selection.
-        It has no effect if `order_selection_method` is not 'information_criterion'.
-        * 'aic' - Akaike information criterion.
-        * 'bic' - Bayesian information criterion.
-        * 'hqic' - Hannan–Quinn information criterion.
     """
 
     def __init__(self, signs: ArrayLike1D, max_order: Optional[int] = None,
-                 order_selection_method: Optional[Literal["information_criterion", "pacf"]] = None,
-                 information_criterion: Optional[Literal["aic", "bic", "hqic"]] = None) -> None:
+                 order_selection_method: Optional[Literal["pacf"]] = None) -> None:
         super().__init__(signs=signs)
         self._max_order = self._init_max_order(max_order=max_order)
         self._order_selection_method = check_enum_value_is_valid(enum_obj=OrderSelectionMethodAR,
                                                                  value=order_selection_method,
                                                                  parameter_name="order_selection_method",
                                                                  is_none_valid=True)
-        self._information_criterion = check_enum_value_is_valid(enum_obj=InformationCriterion,
-                                                                value=information_criterion,
-                                                                parameter_name="information_criterion",
-                                                                is_none_valid=self._order_selection_method is None or self._order_selection_method == OrderSelectionMethodAR.PACF)
-        if self._information_criterion is not None and (
-                self._order_selection_method is None or self._order_selection_method == OrderSelectionMethodAR.PACF):
-            logger.warning(
-                f"The information criterion '{self._information_criterion}' will have no effect as the order selection method '{self._order_selection_method}' doesn't use it.")
 
         # Will be set during fit()
         self._constant_parameter = 0
@@ -158,10 +141,6 @@ class AR(TimeSeries):
     def _select_order(self) -> None:
         if self._order_selection_method is None:
             self._order = self._max_order
-        elif self._order_selection_method == OrderSelectionMethodAR.INFORMATION_CRITERION:
-            model = ar_select_order(endog=self._signs, maxlag=self._max_order,
-                                    ic=self._information_criterion.value, trend="n")
-            self._order = len(model.ar_lags)
         elif self._order_selection_method == OrderSelectionMethodAR.PACF:
             pacf_coeffs, confidence_interval = self.calculate_pacf(nb_lags=self._max_order, alpha=0.05)
 
@@ -181,7 +160,7 @@ class AR(TimeSeries):
             raise IllegalValueException(
                 f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
 
-        logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, information criterion: {self._information_criterion}, time series length: {len(self._signs)}).")
+        logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, time series length: {len(self._signs)}).")
 
     def simulate(self, size: int, seed: Optional[int] = None) -> np.ndarray:
         """
