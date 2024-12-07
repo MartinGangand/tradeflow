@@ -7,7 +7,7 @@ from typing import Dict, Tuple, Union, List
 
 from tradeflow.common import logger_utils
 from tradeflow.common.config import LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY
-from tradeflow.common.exceptions import UnsupportedOsException
+from tradeflow.common.exceptions import UnsupportedOsException, SharedLibraryNotFoundException
 from tradeflow.common.general_utils import check_condition
 from tradeflow.common.singleton import Singleton
 
@@ -36,7 +36,8 @@ class SharedLibrariesRegistry(metaclass=Singleton):
         logger.info(f"Added shared library '{shared_library.name}' to the registry")
         return self
 
-    def find(self, name: str) -> SharedLibrary:
+    def find_shared_library(self, name: str) -> SharedLibrary:
+        check_condition(condition=name in self._name_to_shared_library, exception=SharedLibraryNotFoundException(f"Shared library '{name}' not found in the registry."))
         return self._name_to_shared_library.get(name)
 
 
@@ -77,8 +78,8 @@ class SharedLibrary:
 
         shared_library_extension = SharedLibrary.get_shared_library_extension()
         shared_library_path = self._directory.joinpath(f"{self._name}.{shared_library_extension}")
-        if not (shared_library_path.exists() and shared_library_path.is_file()):
-            raise FileNotFoundError(f"Shared library '{self._name}.{shared_library_extension}' not found in directory '{self._directory}'.")
+        check_condition(condition=shared_library_path.exists() and shared_library_path.is_file(),
+                        exception=FileNotFoundError(f"Shared library '{self._name}.{shared_library_extension}' not found in directory '{self._directory}'."))
 
         cdll = ct.CDLL(str(shared_library_path), winmode=0)
         for function in self._functions:

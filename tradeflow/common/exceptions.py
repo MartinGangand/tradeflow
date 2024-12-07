@@ -6,3 +6,8 @@ class EnumValueException(Exception):
 class UnsupportedOsException(Exception):
     """Raised if the OS is not supported when loading a shared library"""
     pass
+
+
+class SharedLibraryNotFoundException(Exception):
+    """Raised if the shared library is not found in the registry"""
+    pass
