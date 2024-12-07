@@ -2,9 +2,11 @@ import pytest
 from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
 
 from tradeflow.ar_model import AR
+from tradeflow.common.exceptions import EnumValueException
+from tradeflow.common.shared_libraries_registry import Singleton
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
-from tradeflow.exceptions import IllegalNbLagsException, EnumValueException, \
-    IllegalValueException, ModelNotFittedException, NonStationaryTimeSeriesException, AutocorrelatedResidualsException
+from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, ModelNotFittedException, \
+    NonStationaryTimeSeriesException, AutocorrelatedResidualsException
 from tradeflow.tests.results.results_ar_model import ResultsAR
 from tradeflow.tests.test_time_series import generate_autoregressive, generate_white_noise
 
@@ -192,6 +194,11 @@ class TestSelectOrder:
 
 class TestSimulate:
 
+    @pytest.fixture(scope="function", autouse=True)
+    def reset_singleton(self):
+        yield
+        Singleton._instances.clear()
+
     @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
     @pytest.mark.parametrize("size", [50, 1000])
     def test_simulate(self, ar_model_with_max_order_6, method, size):
@@ -216,6 +223,11 @@ class TestSimulate:
 
 
 class TestSimulationSummary:
+
+    @pytest.fixture(scope="function", autouse=True)
+    def reset_singleton(self):
+        yield
+        Singleton._instances.clear()
 
     @pytest.mark.parametrize("fit_method", ["ols_with_cst", "yule_walker"])
     def test_simulation_summary(self, signs_btcusdt, fit_method):
