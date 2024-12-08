@@ -94,7 +94,7 @@ class TestSharedLibrary:
         assert getattr(loaded_function_2, SharedLibrary.ARGUMENT_TYPES) == (ct.c_double,)
         assert getattr(loaded_function_2, SharedLibrary.RESULT_TYPE) == ct.c_double
 
-    def test_load_should_cache_loaded_shared_libraries(self, mocker, shared_library_with_2_functions):
+    def test_only_1_cdll_should_be_created_when_loading_shared_library_twice(self, mocker, shared_library_with_2_functions):
         mocker.patch("platform.system", return_value="Windows")
         mock_cdll = mocker.patch("ctypes.CDLL", return_value=MagicMock())
 
@@ -105,7 +105,7 @@ class TestSharedLibrary:
         assert shared_library_with_2_functions._cdll is cdll1
 
         cdll2 = shared_library_with_2_functions.load()
-        assert mock_cdll.call_count == 1  # ctypes.CDLL should not have been called again because the cdll is cached
+        assert mock_cdll.call_count == 1  # ctypes.CDLL should not be called again because the cdll is cached
         assert shared_library_with_2_functions._cdll is cdll2
 
         assert cdll1 is cdll2

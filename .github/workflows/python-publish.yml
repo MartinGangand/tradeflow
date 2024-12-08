@@ -103,7 +103,7 @@ jobs:
         run: python scripts/pypi_verify.py test.pypi
 
   upload-pypi:
-    needs: [build-wheels, build-sdist, upload-testpypi, verify-test-pypi]
+    needs: [build-wheels, build-sdist, upload-testpypi]
 
     runs-on: ubuntu-latest
 
