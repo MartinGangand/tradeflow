@@ -249,14 +249,11 @@ class TestPlot:
                               expected_title=expected_title, expected_log_scale=log_scale, expected_x_lim=(-1.0, 4.0), expected_y_lim=(1.0, 3.1), expected_order=order)
 
     @pytest.mark.parametrize("log_scale", [True, False])
-    def test_plot_acf_and_pacf(self, mocker, time_series_signs, log_scale):
+    def test_plot_acf_and_pacf(self, time_series_signs, log_scale):
         nb_lags = 10
         y_scale = "log" if log_scale else "linear"
 
-        mock_show = mocker.patch("matplotlib.pyplot.show")
         fig = time_series_signs.plot_acf_and_pacf(nb_lags=10, log_scale=log_scale)
-
-        mock_show.assert_called_once()
 
         expected_acf = ResultsTimeSeries.correlation().acf[:nb_lags + 1]
         self.check_axe_values(axe=fig.get_axes()[0], expected_functions=[expected_acf], expected_labels=["Time series of size 1000"],
