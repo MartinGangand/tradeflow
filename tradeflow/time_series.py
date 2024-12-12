@@ -149,7 +149,6 @@ class TimeSeries(ABC):
 
         if plot:
             self._build_fig_corr_training_vs_simulation(log_scale=log_scale)
-            plt.show()
 
         return statistics
 
@@ -264,5 +263,4 @@ class TimeSeries(ABC):
         self._fill_axe(axe=axe[0], functions=[acf_function], colors=["green"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="ACF function", xlabel="Lag", log_scale=log_scale, order=None)
         self._fill_axe(axe=axe[1], functions=[pacf_function], colors=["orange"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="PACF function", xlabel="Lag", log_scale=log_scale, order=None)
 
-        plt.show()
         return fig

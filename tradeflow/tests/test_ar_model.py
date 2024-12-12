@@ -189,22 +189,36 @@ class TestSimulate:
     @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
     @pytest.mark.parametrize("size", [50, 1000])
     def test_simulate(self, ar_model_with_max_order_6, method, size):
-        actual_simulation = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False).simulate(size=size, seed=1)
+        ar_model = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+        actual_simulation = ar_model.simulate(size=size, seed=1)
+        assert len(actual_simulation) == size
 
         expected_signs = ResultsAR.simulated_signs(fit_method=method)
+        assert_equal(actual=actual_simulation, desired=expected_signs.simulation[:size])
+
+    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
+    @pytest.mark.parametrize("size", [50, 1000])
+    def test_simulate_with_no_seed(self, mocker, ar_model_with_max_order_6, method, size):
+        mocker.patch("numpy.random.randint", return_value=1)
+
+        ar_model = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+        actual_simulation = ar_model.simulate(size=size, seed=None)
         assert len(actual_simulation) == size
+
+        expected_signs = ResultsAR.simulated_signs(fit_method=method)
         assert_equal(actual=actual_simulation, desired=expected_signs.simulation[:size])
 
     @pytest.mark.parametrize("size", [-50, 0])
     def test_simulate_should_raise_exception_when_invalid_size(self, ar_model_with_max_order_6, size):
+        ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
         with pytest.raises(IllegalValueException) as ex:
-            ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False).simulate(size=size)
+            ar_model_with_max_order_6.simulate(size=size, seed=1)
 
         assert str(ex.value) == f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."
 
     def test_simulate_should_raise_exception_when_model_not_fitted(self, ar_model_with_max_order_6):
         with pytest.raises(ModelNotFittedException) as ex:
-            ar_model_with_max_order_6.simulate(size=50)
+            ar_model_with_max_order_6.simulate(size=50, seed=1)
 
         assert str(ex.value) == "The model has not yet been fitted. Fit the model first by calling 'fit()'."
 
@@ -218,14 +232,15 @@ class TestSimulationSummary:
 
     @pytest.mark.parametrize("fit_method", ["ols_with_cst", "yule_walker"])
     def test_simulation_summary(self, signs_btcusdt, fit_method):
-        size_simulation = 2_000_000
+        simulation_size = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")
-        actual_simulation = ar_model.fit(method=fit_method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True).simulate(size=size_simulation, seed=1)
+        ar_model = ar_model.fit(method=fit_method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        actual_simulation = ar_model.simulate(size=simulation_size, seed=1)
+
         summary_df = ar_model.simulation_summary(plot=False, percentiles=(50.0, 75.0, 95.0, 99.0))
+        assert ar_model._order == 52
 
         res_training_signs_stats = ResultsAR.simulation_summary_training_signs(fit_method=fit_method)
-
-        assert ar_model._order == 52
         assert_almost_equal(actual=ar_model._constant_parameter, desired=res_training_signs_stats.constant_parameter, decimal=10)
         assert_almost_equal(actual=ar_model._parameters, desired=res_training_signs_stats.parameters, decimal=10)
 
@@ -240,7 +255,7 @@ class TestSimulationSummary:
         assert summary_df.loc["Q99.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q99_nb_consecutive_values
 
         # Checks that simulated signs are close to training signs statistics
-        assert len(actual_simulation) == size_simulation
+        assert len(actual_simulation) == simulation_size
         expected_pct_buy = summary_df.loc["pct_buy (%)"]["Training"] if fit_method == "ols_with_cst" else 50.0  # If the fit method is yule_walker there is no constant parameter, so we expect 50% of buy
         assert_allclose(actual=summary_df.loc["pct_buy (%)"]["Simulation"], desired=expected_pct_buy, rtol=0, atol=1.0, equal_nan=False)
         assert_allclose(actual=summary_df.loc["mean_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["mean_nb_consecutive_values"]["Training"], rtol=0, atol=0.25, equal_nan=False)
