@@ -184,7 +184,7 @@ class AR(TimeSeries):
         check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model has not yet been fitted. Fit the model first by calling 'fit()'."))
 
         if seed is None:
-            seed = np.random.randint(0, sys.maxsize)
+            seed = np.random.randint(0, np.iinfo(np.int32).max)
 
         inverted_parameters = CArray.of(c_type_str="double", arr=self._parameters[::-1])
         last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
