@@ -197,21 +197,21 @@ class TestSimulate:
     def fitted_model(self, ar_model_with_max_order_6):
         return ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
 
-    def test_simulate(self, ar_model_with_max_order_6, fitted_model):
+    def test_simulate(self, fitted_model, num_regression):
         actual_simulation = fitted_model.simulate(size=1000, seed=1)
         assert len(actual_simulation) == 1000
 
-        expected_signs = ResultsAR.simulated_signs()
-        assert_equal(actual=actual_simulation, desired=expected_signs.simulation)
+        # Results are from statsmodels.
+        num_regression.check({"simulated_signs": actual_simulation}, default_tolerance=dict(atol=0, rtol=0))
 
-    def test_simulate_with_no_seed(self, mocker, fitted_model):
+    def test_simulate_with_no_seed(self, mocker, fitted_model, num_regression):
         mocker.patch("numpy.random.randint", return_value=1)
 
         actual_simulation = fitted_model.simulate(size=1000, seed=None)
         assert len(actual_simulation) == 1000
 
-        expected_signs = ResultsAR.simulated_signs()
-        assert_equal(actual=actual_simulation, desired=expected_signs.simulation)
+        # Results are from statsmodels.
+        num_regression.check({"simulated_signs": actual_simulation}, default_tolerance=dict(atol=0, rtol=0))
 
     @pytest.mark.parametrize("size", [-50, 0])
     def test_simulate_should_raise_exception_when_invalid_size(self, fitted_model, size):

@@ -46,12 +46,12 @@ class ResultsAR:
     #
     #     return obj
 
-    @staticmethod
-    def simulated_signs() -> Namespace:
-        obj = Namespace()
-        obj.simulation = np.loadtxt(fname=CURRENT_DIRECTORY.joinpath("simulated_signs.csv"), dtype=float, delimiter=",")
-
-        return obj
+    # @staticmethod
+    # def simulated_signs() -> Namespace:
+    #     obj = Namespace()
+    #     obj.simulation = np.loadtxt(fname=CURRENT_DIRECTORY.joinpath("simulated_signs.csv"), dtype=float, delimiter=",")
+    #
+    #     return obj
 
     @staticmethod
     def simulation_summary_training_signs(fit_method: str) -> Namespace:
