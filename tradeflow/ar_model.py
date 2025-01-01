@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import sys
 from typing import Literal, Optional
 
 import numpy as np
 from statsmodels.regression import yule_walker
 from statsmodels.tools.typing import ArrayLike1D
-from statsmodels.tsa.ar_model import ar_select_order, AutoReg
+from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
@@ -181,6 +182,9 @@ class AR(TimeSeries):
         """
         check_condition(condition=size > 0, exception=IllegalValueException(f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
         check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model has not yet been fitted. Fit the model first by calling 'fit()'."))
+
+        if seed is None:
+            seed = np.random.randint(0, sys.maxsize)
 
         inverted_parameters = CArray.of(c_type_str="double", arr=self._parameters[::-1])
         last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
