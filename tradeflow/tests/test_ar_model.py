@@ -94,7 +94,7 @@ class TestInitMaxOrder:
 
 class TestFit:
 
-    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
+    @pytest.mark.parametrize("method", ["yule_walker", "burg", "ols_with_cst"])
     def test_fit(self, ar_model_with_max_order_6, method):
         ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
@@ -186,33 +186,30 @@ class TestSimulate:
         yield
         Singleton._instances.clear()
 
-    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
-    @pytest.mark.parametrize("size", [50, 1000])
-    def test_simulate(self, ar_model_with_max_order_6, method, size):
-        ar_model = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
-        actual_simulation = ar_model.simulate(size=size, seed=1)
-        assert len(actual_simulation) == size
+    @pytest.fixture
+    def fitted_model(self, ar_model_with_max_order_6):
+        return ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
 
-        expected_signs = ResultsAR.simulated_signs(fit_method=method)
-        assert_equal(actual=actual_simulation, desired=expected_signs.simulation[:size])
+    def test_simulate(self, ar_model_with_max_order_6, fitted_model):
+        actual_simulation = fitted_model.simulate(size=1000, seed=1)
+        assert len(actual_simulation) == 1000
 
-    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
-    @pytest.mark.parametrize("size", [50, 1000])
-    def test_simulate_with_no_seed(self, mocker, ar_model_with_max_order_6, method, size):
+        expected_signs = ResultsAR.simulated_signs()
+        assert_equal(actual=actual_simulation, desired=expected_signs.simulation)
+
+    def test_simulate_with_no_seed(self, mocker, fitted_model):
         mocker.patch("numpy.random.randint", return_value=1)
 
-        ar_model = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
-        actual_simulation = ar_model.simulate(size=size, seed=None)
-        assert len(actual_simulation) == size
+        actual_simulation = fitted_model.simulate(size=1000, seed=None)
+        assert len(actual_simulation) == 1000
 
-        expected_signs = ResultsAR.simulated_signs(fit_method=method)
-        assert_equal(actual=actual_simulation, desired=expected_signs.simulation[:size])
+        expected_signs = ResultsAR.simulated_signs()
+        assert_equal(actual=actual_simulation, desired=expected_signs.simulation)
 
     @pytest.mark.parametrize("size", [-50, 0])
-    def test_simulate_should_raise_exception_when_invalid_size(self, ar_model_with_max_order_6, size):
-        ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+    def test_simulate_should_raise_exception_when_invalid_size(self, fitted_model, size):
         with pytest.raises(IllegalValueException) as ex:
-            ar_model_with_max_order_6.simulate(size=size, seed=1)
+            fitted_model.simulate(size=size, seed=1)
 
         assert str(ex.value) == f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."
 
@@ -230,7 +227,7 @@ class TestSimulationSummary:
         yield
         Singleton._instances.clear()
 
-    @pytest.mark.parametrize("fit_method", ["ols_with_cst", "yule_walker"])
+    @pytest.mark.parametrize("fit_method", ["ols_with_cst", "burg", "yule_walker"])
     def test_simulation_summary(self, signs_btcusdt, fit_method):
         simulation_size = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")

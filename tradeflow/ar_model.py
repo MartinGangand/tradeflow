@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import sys
 from typing import Literal, Optional
 
 import numpy as np
 from statsmodels.regression import yule_walker
+from statsmodels.regression.linear_model import burg
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.tsatools import lagmat
@@ -88,7 +88,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
+    def fit(self, method: Literal["yule_walker", "burg", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -100,6 +100,8 @@ class AR(TimeSeries):
             * 'yule_walker' - Use the Yule Walker equations to estimate model parameters.
               There will be no constant term, thus the percentage of buy signs
               in the time series generated with these parameters will be close to 50%.
+
+            * 'burg' - TODO.
 
             * 'ols_with_cst' - Use OLS to estimate model parameters.
               There will be a constant term, thus the percentage of buy signs in the time series
@@ -121,6 +123,9 @@ class AR(TimeSeries):
         if method == FitMethodAR.YULE_WALKER:
             check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
+        elif method == FitMethodAR.BURG:
+            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
+            self._parameters, _ = burg(endog=self._signs, order=self._order, demean=True)
         elif method == FitMethodAR.OLS_WITH_CST:
             check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="c"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
