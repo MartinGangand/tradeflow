@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
 
@@ -270,9 +269,3 @@ class TestSimulationSummary:
         assert_allclose(actual=summary_df.loc["Q75.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q75.0_nb_consecutive_values"]["Training"], rtol=0, atol=2, equal_nan=False)
         assert_allclose(actual=summary_df.loc["Q95.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q95.0_nb_consecutive_values"]["Training"], rtol=0, atol=3, equal_nan=False)
         assert_allclose(actual=summary_df.loc["Q99.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q99.0_nb_consecutive_values"]["Training"], rtol=0, atol=6, equal_nan=False)
-
-
-def test(num_regression):
-    arr1 = np.array([1.0, 2., 3.74, 4.0, 5.0])
-    arr2 = 10.9
-    num_regression.check({"arr1": arr1, "arr2": arr2}, tolerances={'arr2': dict(atol=0.0, rtol=0)})
