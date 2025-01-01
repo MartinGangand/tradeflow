@@ -50,7 +50,7 @@ class AR(TimeSeries):
                                                                  is_none_valid=True)
 
         # Will be set during fit()
-        self._constant_parameter = 0
+        self._constant_parameter = 0.0
         self._parameters = None
 
     def resid(self) -> np.ndarray:

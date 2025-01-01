@@ -1,9 +1,12 @@
+import numpy as np
 import pytest
 from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
 
 from tradeflow.ar_model import AR
 from tradeflow.common.exceptions import EnumValueException
+from tradeflow.common.general_utils import get_enum_values
 from tradeflow.common.shared_libraries_registry import Singleton
+from tradeflow.constants import FitMethodAR
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, ModelNotFittedException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException
@@ -95,16 +98,21 @@ class TestInitMaxOrder:
 class TestFit:
 
     @pytest.mark.parametrize("method", ["yule_walker", "burg", "ols_with_cst"])
-    def test_fit(self, ar_model_with_max_order_6, method):
+    def test_fit(self, ar_model_with_max_order_6, method, num_regression):
         ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
-        expected_parameters_results = ResultsAR.parameters_order_6(method=method)
-        assert_almost_equal(actual=ar_model_with_max_order_6._constant_parameter, desired=expected_parameters_results.constant_parameter, decimal=10)
-        assert_almost_equal(actual=ar_model_with_max_order_6._parameters, desired=expected_parameters_results.parameters, decimal=10)
+        # Results are from statsmodels.
+        num_regression.check(
+            {
+                "parameters": ar_model_with_max_order_6._parameters,
+                "constant_parameter": [ar_model_with_max_order_6._constant_parameter]
+            },
+            default_tolerance=dict(atol=1e-10, rtol=0)
+        )
 
     @pytest.mark.parametrize("method", ["invalid_method", None])
     def test_fit_should_raise_exception_when_invalid_method(self, ar_model_with_max_order_6, method):
-        expected_exception_message = f"The value '{method}' for method is not valid, it must be among ['yule_walker', 'ols_with_cst'] or None if it is valid."
+        expected_exception_message = f"The value '{method}' for method is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)} or None if it is valid."
         with pytest.raises(EnumValueException) as ex:
             ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
@@ -262,3 +270,9 @@ class TestSimulationSummary:
         assert_allclose(actual=summary_df.loc["Q75.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q75.0_nb_consecutive_values"]["Training"], rtol=0, atol=2, equal_nan=False)
         assert_allclose(actual=summary_df.loc["Q95.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q95.0_nb_consecutive_values"]["Training"], rtol=0, atol=3, equal_nan=False)
         assert_allclose(actual=summary_df.loc["Q99.0_nb_consecutive_values"]["Simulation"], desired=summary_df.loc["Q99.0_nb_consecutive_values"]["Training"], rtol=0, atol=6, equal_nan=False)
+
+
+def test(num_regression):
+    arr1 = np.array([1.0, 2., 3.74, 4.0, 5.0])
+    arr2 = 10.9
+    num_regression.check({"arr1": arr1, "arr2": arr2}, tolerances={'arr2': dict(atol=0.0, rtol=0)})
