@@ -121,15 +121,13 @@ class AR(TimeSeries):
         """
         method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
+        check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
 
         if method == FitMethodAR.YULE_WALKER:
-            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
         elif method == FitMethodAR.BURG:
-            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             self._parameters, _ = burg(endog=self._signs, order=self._order, demean=True)
         elif method == FitMethodAR.OLS_WITH_CST:
-            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="c"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
             self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
         else:
