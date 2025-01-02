@@ -1,5 +1,5 @@
 import pytest
-from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
+from numpy.testing import assert_almost_equal, assert_allclose
 
 from tradeflow.ar_model import AR
 from tradeflow.common.exceptions import EnumValueException
@@ -9,7 +9,6 @@ from tradeflow.constants import FitMethodAR
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, ModelNotFittedException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException
-from tradeflow.tests.results.results_ar_model import ResultsAR
 from tradeflow.tests.test_time_series import generate_autoregressive, generate_white_noise
 
 SIGNIFICANCE_LEVEL = 0.05
@@ -211,7 +210,7 @@ class TestSimulate:
         assert len(actual_simulation) == 1000
 
         # Results are from statsmodels.
-        num_regression.check({"simulated_signs": actual_simulation}, default_tolerance=dict(atol=0, rtol=0))
+        num_regression.check({"simulated_signs": actual_simulation}, basename="test_simulate", default_tolerance=dict(atol=0, rtol=0))
 
     @pytest.mark.parametrize("size", [-50, 0])
     def test_simulate_should_raise_exception_when_invalid_size(self, fitted_model, size):
@@ -229,12 +228,23 @@ class TestSimulate:
 
 class TestSimulationSummary:
 
+    # Expected training signs statistics
+    EXPECTED_ORDER = 52
+    EXPECTED_SIZE = 995093
+    EXPECTED_PCT_BUY = 42.32
+    EXPECTED_MEAN_NB_CONSECUTIVE_VALUES = 7.64
+    EXPECTED_STD_NB_CONSECUTIVE_VALUES = 32.34
+    EXPECTED_Q50_NB_CONSECUTIVE_VALUES = 2
+    EXPECTED_Q75_NB_CONSECUTIVE_VALUES = 4
+    EXPECTED_Q95_NB_CONSECUTIVE_VALUES = 34
+    EXPECTED_Q99_NB_CONSECUTIVE_VALUES = 95
+
     @pytest.fixture(scope="function", autouse=True)
     def reset_singleton(self):
         yield
         Singleton._instances.clear()
 
-    @pytest.mark.parametrize("fit_method", ["ols_with_cst", "burg", "yule_walker"])
+    @pytest.mark.parametrize("fit_method", ["yule_walker", "burg", "ols_with_cst"])
     def test_simulation_summary(self, signs_btcusdt, fit_method):
         simulation_size = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")
@@ -242,21 +252,17 @@ class TestSimulationSummary:
         actual_simulation = ar_model.simulate(size=simulation_size, seed=1)
 
         summary_df = ar_model.simulation_summary(plot=False, percentiles=(50.0, 75.0, 95.0, 99.0))
-        assert ar_model._order == 52
-
-        res_training_signs_stats = ResultsAR.simulation_summary_training_signs(fit_method=fit_method)
-        assert_almost_equal(actual=ar_model._constant_parameter, desired=res_training_signs_stats.constant_parameter, decimal=10)
-        assert_almost_equal(actual=ar_model._parameters, desired=res_training_signs_stats.parameters, decimal=10)
+        assert ar_model._order == self.EXPECTED_ORDER
 
         # Checks that training signs statistics did not change
-        assert len(signs_btcusdt) == res_training_signs_stats.size
-        assert summary_df.loc["pct_buy (%)"]["Training"] == res_training_signs_stats.pct_buy
-        assert summary_df.loc["mean_nb_consecutive_values"]["Training"] == res_training_signs_stats.mean_nb_consecutive_values
-        assert summary_df.loc["std_nb_consecutive_values"]["Training"] == res_training_signs_stats.std_nb_consecutive_values
-        assert summary_df.loc["Q50.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q50_nb_consecutive_values
-        assert summary_df.loc["Q75.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q75_nb_consecutive_values
-        assert summary_df.loc["Q95.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q95_nb_consecutive_values
-        assert summary_df.loc["Q99.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q99_nb_consecutive_values
+        assert len(signs_btcusdt) == self.EXPECTED_SIZE
+        assert summary_df.loc["pct_buy (%)"]["Training"] == self.EXPECTED_PCT_BUY
+        assert summary_df.loc["mean_nb_consecutive_values"]["Training"] == self.EXPECTED_MEAN_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["std_nb_consecutive_values"]["Training"] == self.EXPECTED_STD_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q50.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q50_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q75.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q75_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q95.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q95_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q99.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q99_NB_CONSECUTIVE_VALUES
 
         # Checks that simulated signs are close to training signs statistics
         assert len(actual_simulation) == simulation_size

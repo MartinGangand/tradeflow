@@ -101,7 +101,9 @@ class AR(TimeSeries):
               There will be no constant term, thus the percentage of buy signs
               in the time series generated with these parameters will be close to 50%.
 
-            * 'burg' - TODO.
+            * 'burg' - Use Burg's method to estimate model parameters.
+              There will be no constant term, thus the percentage of buy signs
+              in the time series generated with these parameters will be close to 50%.
 
             * 'ols_with_cst' - Use OLS to estimate model parameters.
               There will be a constant term, thus the percentage of buy signs in the time series
