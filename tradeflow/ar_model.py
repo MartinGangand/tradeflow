@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import sys
 from typing import Literal, Optional
 
 import numpy as np
 from statsmodels.regression import yule_walker
+from statsmodels.regression.linear_model import burg
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.tsatools import lagmat
@@ -50,7 +50,7 @@ class AR(TimeSeries):
                                                                  is_none_valid=True)
 
         # Will be set during fit()
-        self._constant_parameter = 0
+        self._constant_parameter = 0.0
         self._parameters = None
 
     def resid(self) -> np.ndarray:
@@ -88,7 +88,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
+    def fit(self, method: Literal["yule_walker", "burg", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -98,6 +98,10 @@ class AR(TimeSeries):
             The method to use for estimating parameters.
 
             * 'yule_walker' - Use the Yule Walker equations to estimate model parameters.
+              There will be no constant term, thus the percentage of buy signs
+              in the time series generated with these parameters will be close to 50%.
+
+            * 'burg' - Use Burg's method to estimate model parameters.
               There will be no constant term, thus the percentage of buy signs
               in the time series generated with these parameters will be close to 50%.
 
@@ -117,12 +121,13 @@ class AR(TimeSeries):
         """
         method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
+        check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
 
         if method == FitMethodAR.YULE_WALKER:
-            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
+        elif method == FitMethodAR.BURG:
+            self._parameters, _ = burg(endog=self._signs, order=self._order, demean=True)
         elif method == FitMethodAR.OLS_WITH_CST:
-            check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="c"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
             ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
             self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
         else:
@@ -184,7 +189,7 @@ class AR(TimeSeries):
         check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model has not yet been fitted. Fit the model first by calling 'fit()'."))
 
         if seed is None:
-            seed = np.random.randint(0, sys.maxsize)
+            seed = np.random.randint(0, np.iinfo(np.int32).max)
 
         inverted_parameters = CArray.of(c_type_str="double", arr=self._parameters[::-1])
         last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))

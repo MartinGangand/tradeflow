@@ -1,13 +1,14 @@
 import pytest
-from numpy.testing import assert_equal, assert_almost_equal, assert_allclose
+from numpy.testing import assert_almost_equal, assert_allclose
 
 from tradeflow.ar_model import AR
 from tradeflow.common.exceptions import EnumValueException
+from tradeflow.common.general_utils import get_enum_values
 from tradeflow.common.shared_libraries_registry import Singleton
+from tradeflow.constants import FitMethodAR
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, ModelNotFittedException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException
-from tradeflow.tests.results.results_ar_model import ResultsAR
 from tradeflow.tests.test_time_series import generate_autoregressive, generate_white_noise
 
 SIGNIFICANCE_LEVEL = 0.05
@@ -94,17 +95,22 @@ class TestInitMaxOrder:
 
 class TestFit:
 
-    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
-    def test_fit(self, ar_model_with_max_order_6, method):
+    @pytest.mark.parametrize("method", ["yule_walker", "burg", "ols_with_cst"])
+    def test_fit(self, ar_model_with_max_order_6, method, num_regression):
         ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
-        expected_parameters_results = ResultsAR.parameters_order_6(method=method)
-        assert_almost_equal(actual=ar_model_with_max_order_6._constant_parameter, desired=expected_parameters_results.constant_parameter, decimal=10)
-        assert_almost_equal(actual=ar_model_with_max_order_6._parameters, desired=expected_parameters_results.parameters, decimal=10)
+        # Results are from statsmodels.
+        num_regression.check(
+            {
+                "parameters": ar_model_with_max_order_6._parameters,
+                "constant_parameter": [ar_model_with_max_order_6._constant_parameter]
+            },
+            default_tolerance=dict(atol=1e-10, rtol=0)
+        )
 
     @pytest.mark.parametrize("method", ["invalid_method", None])
     def test_fit_should_raise_exception_when_invalid_method(self, ar_model_with_max_order_6, method):
-        expected_exception_message = f"The value '{method}' for method is not valid, it must be among ['yule_walker', 'ols_with_cst'] or None if it is valid."
+        expected_exception_message = f"The value '{method}' for method is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)} or None if it is valid."
         with pytest.raises(EnumValueException) as ex:
             ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
@@ -186,33 +192,30 @@ class TestSimulate:
         yield
         Singleton._instances.clear()
 
-    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
-    @pytest.mark.parametrize("size", [50, 1000])
-    def test_simulate(self, ar_model_with_max_order_6, method, size):
-        ar_model = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
-        actual_simulation = ar_model.simulate(size=size, seed=1)
-        assert len(actual_simulation) == size
+    @pytest.fixture
+    def fitted_model(self, ar_model_with_max_order_6):
+        return ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
 
-        expected_signs = ResultsAR.simulated_signs(fit_method=method)
-        assert_equal(actual=actual_simulation, desired=expected_signs.simulation[:size])
+    def test_simulate(self, fitted_model, num_regression):
+        actual_simulation = fitted_model.simulate(size=1000, seed=1)
+        assert len(actual_simulation) == 1000
 
-    @pytest.mark.parametrize("method", ["yule_walker", "ols_with_cst"])
-    @pytest.mark.parametrize("size", [50, 1000])
-    def test_simulate_with_no_seed(self, mocker, ar_model_with_max_order_6, method, size):
+        # Results are from statsmodels.
+        num_regression.check({"simulated_signs": actual_simulation}, default_tolerance=dict(atol=0, rtol=0))
+
+    def test_simulate_with_no_seed(self, mocker, fitted_model, num_regression):
         mocker.patch("numpy.random.randint", return_value=1)
 
-        ar_model = ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
-        actual_simulation = ar_model.simulate(size=size, seed=None)
-        assert len(actual_simulation) == size
+        actual_simulation = fitted_model.simulate(size=1000, seed=None)
+        assert len(actual_simulation) == 1000
 
-        expected_signs = ResultsAR.simulated_signs(fit_method=method)
-        assert_equal(actual=actual_simulation, desired=expected_signs.simulation[:size])
+        # Results are from statsmodels.
+        num_regression.check({"simulated_signs": actual_simulation}, basename="test_simulate", default_tolerance=dict(atol=0, rtol=0))
 
     @pytest.mark.parametrize("size", [-50, 0])
-    def test_simulate_should_raise_exception_when_invalid_size(self, ar_model_with_max_order_6, size):
-        ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+    def test_simulate_should_raise_exception_when_invalid_size(self, fitted_model, size):
         with pytest.raises(IllegalValueException) as ex:
-            ar_model_with_max_order_6.simulate(size=size, seed=1)
+            fitted_model.simulate(size=size, seed=1)
 
         assert str(ex.value) == f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."
 
@@ -225,12 +228,23 @@ class TestSimulate:
 
 class TestSimulationSummary:
 
+    # Expected training signs statistics
+    EXPECTED_ORDER = 52
+    EXPECTED_SIZE = 995093
+    EXPECTED_PCT_BUY = 42.32
+    EXPECTED_MEAN_NB_CONSECUTIVE_VALUES = 7.64
+    EXPECTED_STD_NB_CONSECUTIVE_VALUES = 32.34
+    EXPECTED_Q50_NB_CONSECUTIVE_VALUES = 2
+    EXPECTED_Q75_NB_CONSECUTIVE_VALUES = 4
+    EXPECTED_Q95_NB_CONSECUTIVE_VALUES = 34
+    EXPECTED_Q99_NB_CONSECUTIVE_VALUES = 95
+
     @pytest.fixture(scope="function", autouse=True)
     def reset_singleton(self):
         yield
         Singleton._instances.clear()
 
-    @pytest.mark.parametrize("fit_method", ["ols_with_cst", "yule_walker"])
+    @pytest.mark.parametrize("fit_method", ["yule_walker", "burg", "ols_with_cst"])
     def test_simulation_summary(self, signs_btcusdt, fit_method):
         simulation_size = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")
@@ -238,21 +252,17 @@ class TestSimulationSummary:
         actual_simulation = ar_model.simulate(size=simulation_size, seed=1)
 
         summary_df = ar_model.simulation_summary(plot=False, percentiles=(50.0, 75.0, 95.0, 99.0))
-        assert ar_model._order == 52
-
-        res_training_signs_stats = ResultsAR.simulation_summary_training_signs(fit_method=fit_method)
-        assert_almost_equal(actual=ar_model._constant_parameter, desired=res_training_signs_stats.constant_parameter, decimal=10)
-        assert_almost_equal(actual=ar_model._parameters, desired=res_training_signs_stats.parameters, decimal=10)
+        assert ar_model._order == self.EXPECTED_ORDER
 
         # Checks that training signs statistics did not change
-        assert len(signs_btcusdt) == res_training_signs_stats.size
-        assert summary_df.loc["pct_buy (%)"]["Training"] == res_training_signs_stats.pct_buy
-        assert summary_df.loc["mean_nb_consecutive_values"]["Training"] == res_training_signs_stats.mean_nb_consecutive_values
-        assert summary_df.loc["std_nb_consecutive_values"]["Training"] == res_training_signs_stats.std_nb_consecutive_values
-        assert summary_df.loc["Q50.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q50_nb_consecutive_values
-        assert summary_df.loc["Q75.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q75_nb_consecutive_values
-        assert summary_df.loc["Q95.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q95_nb_consecutive_values
-        assert summary_df.loc["Q99.0_nb_consecutive_values"]["Training"] == res_training_signs_stats.Q99_nb_consecutive_values
+        assert len(signs_btcusdt) == self.EXPECTED_SIZE
+        assert summary_df.loc["pct_buy (%)"]["Training"] == self.EXPECTED_PCT_BUY
+        assert summary_df.loc["mean_nb_consecutive_values"]["Training"] == self.EXPECTED_MEAN_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["std_nb_consecutive_values"]["Training"] == self.EXPECTED_STD_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q50.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q50_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q75.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q75_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q95.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q95_NB_CONSECUTIVE_VALUES
+        assert summary_df.loc["Q99.0_nb_consecutive_values"]["Training"] == self.EXPECTED_Q99_NB_CONSECUTIVE_VALUES
 
         # Checks that simulated signs are close to training signs statistics
         assert len(actual_simulation) == simulation_size
