@@ -171,3 +171,5 @@ draft_trade_flow
 TODO.txt
 utils.cpp
 .dSYM
+.html
+doc/

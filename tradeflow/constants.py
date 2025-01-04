@@ -10,6 +10,7 @@ class OrderSelectionMethodAR(Enum):
 
 class FitMethodAR(Enum):
     YULE_WALKER = "yule_walker"
+    BURG = "burg"
     OLS_WITH_CST = "ols_with_cst"
 
     def __str__(self) -> str:
