@@ -2,10 +2,15 @@ import io
 import os
 import re
 import tarfile
+import time
 import zipfile
 from pathlib import Path
 from typing import List
-
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 import requests
 from requests import Response
 
@@ -57,9 +62,18 @@ def html_page_as_string(url: str) -> str:
     Exception
         If the request is unsuccessful.
     """
-    response = get_response(url=url)
-    html_page_content = response.content.decode(encoding=response.encoding, errors="strict")
-    return html_page_content
+    options = Options()
+    options.add_argument("--headless")
+
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+    try:
+        driver.get(url=url)
+        time.sleep(5)
+    finally:
+        driver.quit()
+
+    return driver.page_source
 
 
 def fetch_file_names_from_tar_gz(url: str) -> List[str]:

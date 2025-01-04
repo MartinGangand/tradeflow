@@ -110,13 +110,15 @@ class TestHtmlPageAsString:
     def test_html_page_as_string(self, mocker):
         expected_html_page_content = "Content of the html page"
 
-        mock_request_get = mock_response_with_html_page(mocker=mocker, html_page_content=expected_html_page_content)
-        request_get = mocker.patch("requests.get", return_value=mock_request_get)
+        mock_webdriver = mocker.Mock()
+        mock_webdriver.page_source = expected_html_page_content
+        mocker.patch("selenium.webdriver.Chrome", return_value=mock_webdriver)
 
         html_page_url = f"https://pypi.org/#files"
         actual_html_page_content = html_page_as_string(url=html_page_url)
 
-        request_get.assert_called_once_with(url=html_page_url)
+        mock_webdriver.get.assert_called_once_with(url=html_page_url)
+        mock_webdriver.quit.assert_called_once()
         assert actual_html_page_content == expected_html_page_content
 
 
