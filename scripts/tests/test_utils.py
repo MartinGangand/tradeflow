@@ -44,6 +44,14 @@ def mock_response_with_wheel(mocker: MockerFixture, file_names: List[str]) -> Ma
     return mock_response(mocker=mocker, content=response_content, ok=True)
 
 
+def mock_chrome_with_html_page(mocker: MockerFixture, html_page_content) -> MagicMock:
+    mocker.patch("selenium.webdriver.chrome.service.Service")
+    mocker.patch("webdriver_manager.chrome.ChromeDriverManager.install")
+    mocked_webdriver = mocker.Mock()
+    mocked_webdriver.page_source = html_page_content
+    return mocked_webdriver
+
+
 def create_source(file_names: List[str]) -> bytes:
     source_buffer = io.BytesIO()
 
@@ -82,7 +90,7 @@ def prepare_directory_with_files(directory_path: Path, file_names: List[str]) ->
 
 class TestGetResponse:
 
-    url = "https://dummy/url.whl"
+    URL = "https://dummy/url.whl"
 
     def test_get_response(self, mocker):
         expected_response_content = "response content"
@@ -90,19 +98,19 @@ class TestGetResponse:
         mock_request_get = mock_response(mocker=mocker, content=expected_response_content, ok=True)
         request_get = mocker.patch("requests.get", return_value=mock_request_get)
 
-        response = get_response(url=self.url)
+        response = get_response(url=self.URL)
         assert response.ok is True
         assert response.content == expected_response_content
-        request_get.assert_called_once_with(url=self.url)
+        request_get.assert_called_once_with(url=self.URL)
 
     def test_get_response_should_raise_exception_when_unsuccessful_request(self, mocker):
         mock_request_get = mock_response(mocker=mocker, content="response content", ok=False)
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            get_response(url=self.url)
+            get_response(url=self.URL)
 
-        assert str(ex.value) == f"Request for url {self.url} was unsuccessful"
+        assert str(ex.value) == f"Request for url {self.URL} was unsuccessful"
 
 
 class TestHtmlPageAsString:
@@ -110,15 +118,14 @@ class TestHtmlPageAsString:
     def test_html_page_as_string(self, mocker):
         expected_html_page_content = "Content of the html page"
 
-        mock_webdriver = mocker.Mock()
-        mock_webdriver.page_source = expected_html_page_content
-        mocker.patch("selenium.webdriver.Chrome", return_value=mock_webdriver)
+        mocked_webdriver = mock_chrome_with_html_page(mocker=mocker, html_page_content=expected_html_page_content)
+        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_webdriver)
 
         html_page_url = f"https://pypi.org/#files"
         actual_html_page_content = html_page_as_string(url=html_page_url)
 
-        mock_webdriver.get.assert_called_once_with(url=html_page_url)
-        mock_webdriver.quit.assert_called_once()
+        mocked_webdriver.get.assert_called_once_with(url=html_page_url)
+        mocked_webdriver.quit.assert_called_once()
         assert actual_html_page_content == expected_html_page_content
 
 

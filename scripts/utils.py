@@ -6,13 +6,13 @@ import time
 import zipfile
 from pathlib import Path
 from typing import List
+
+import requests
+import selenium.webdriver.chrome.service as chrome_service
+from requests import Response
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-import requests
-from requests import Response
 
 ANY_VALID_STRING = r"[^'\"\s]+"
 
@@ -64,16 +64,16 @@ def html_page_as_string(url: str) -> str:
     """
     options = Options()
     options.add_argument("--headless")
-
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = webdriver.Chrome(service=chrome_service.Service(ChromeDriverManager().install()), options=options)
 
     try:
         driver.get(url=url)
         time.sleep(5)
+        html_page = driver.page_source
     finally:
         driver.quit()
 
-    return driver.page_source
+    return html_page
 
 
 def fetch_file_names_from_tar_gz(url: str) -> List[str]:
