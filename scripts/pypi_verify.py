@@ -5,11 +5,11 @@ import sys
 from pathlib import Path
 from typing import List, Literal
 
+from scripts import config
+from scripts.file_extensions import FileExtension
 from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
     find_urls_in_html_page, find_files_in_directories, fetch_file_names_from_zip, \
     ANY_VALID_STRING, paths_relative_to
-from scripts import config
-from scripts.file_extensions import FileExtension
 
 LINUX = "linux"
 MACOS = "macosx"

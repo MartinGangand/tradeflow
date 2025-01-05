@@ -29,11 +29,6 @@ def mock_response(mocker: MockerFixture, content: Any, ok: bool) -> MagicMock:
     return mocked_response
 
 
-def mock_response_with_html_page(mocker: MockerFixture, html_page_content: str) -> MagicMock:
-    response_content = html_page_content.encode(encoding=UTF_8, errors="strict")
-    return mock_response(mocker=mocker, content=response_content, ok=True)
-
-
 def mock_response_with_source(mocker: MockerFixture, file_names: List[str]) -> MagicMock:
     response_content = create_source(file_names=file_names)
     return mock_response(mocker=mocker, content=response_content, ok=True)
@@ -45,9 +40,9 @@ def mock_response_with_wheel(mocker: MockerFixture, file_names: List[str]) -> Ma
 
 
 def mock_chrome_with_html_page(mocker: MockerFixture, html_page_content) -> MagicMock:
-    mocked_webdriver = mocker.Mock()
-    mocked_webdriver.page_source = html_page_content
-    return mocked_webdriver
+    mocked_chrome = mocker.Mock()
+    mocked_chrome.page_source = html_page_content
+    return mocked_chrome
 
 
 def create_source(file_names: List[str]) -> bytes:
@@ -116,14 +111,14 @@ class TestHtmlPageAsString:
     def test_html_page_as_string(self, mocker):
         expected_html_page_content = "Content of the html page"
 
-        mocked_webdriver = mock_chrome_with_html_page(mocker=mocker, html_page_content=expected_html_page_content)
-        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_webdriver)
+        mocked_chrome = mock_chrome_with_html_page(mocker=mocker, html_page_content=expected_html_page_content)
+        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_chrome)
 
         html_page_url = f"https://pypi.org/#files"
         actual_html_page_content = html_page_as_string(url=html_page_url)
 
-        mocked_webdriver.get.assert_called_once_with(url=html_page_url)
-        mocked_webdriver.quit.assert_called_once()
+        mocked_chrome.get.assert_called_once_with(url=html_page_url)
+        mocked_chrome.quit.assert_called_once()
         assert actual_html_page_content == expected_html_page_content
 
 

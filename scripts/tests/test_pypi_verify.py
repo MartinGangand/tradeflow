@@ -9,9 +9,9 @@ from pytest_mock import MockerFixture
 from scripts.pypi_verify import verify_source_url, \
     verify_wheel_url, expected_wheel_shared_libraries_extension, \
     verify_source, verify_wheel, compare_expected_vs_actual_files, display_name, main
-from scripts.utils import file_names_with_prefixes
 from scripts.tests.test_utils import mock_response_with_source, mock_response_with_wheel, \
-    prepare_directory_with_files, mock_response_with_html_page, read_html_page_from_datasets, mock_chrome_with_html_page
+    prepare_directory_with_files, read_html_page_from_datasets, mock_chrome_with_html_page
+from scripts.utils import file_names_with_prefixes
 
 PACKAGE_NAME = "package"
 VERSION = "0.0.1"
@@ -345,8 +345,8 @@ class TestMain:
             return mock_response_with_wheel(mocker=mocker, file_names=file_names_with_prefixes(["time_series.py", "ar_model.py", "ar_model2.py", "lib1.so"], PACKAGE_NAME))
 
     def test_main_valid(self, mocker, capsys, file_regression):
-        mocked_webdriver = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_valid.html"))
-        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_webdriver)
+        mocked_chrome = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_valid.html"))
+        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_chrome)
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_valid(mocker=mocker, url=url))
 
         nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
@@ -355,8 +355,8 @@ class TestMain:
         file_regression.check(capsys.readouterr().out)
 
     def test_main_should_raise_exception_when_2_sources_instead_of_1(self, mocker, capsys, file_regression):
-        mocked_webdriver = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_2_sources.html"))
-        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_webdriver)
+        mocked_chrome = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_2_sources.html"))
+        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_chrome)
 
         with pytest.raises(Exception) as ex:
             main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
@@ -365,8 +365,8 @@ class TestMain:
         file_regression.check(capsys.readouterr().out)
 
     def test_main_should_raise_exception_when_3_wheels_instead_of_4(self, mocker, capsys, file_regression):
-        mocked_webdriver = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_3_wheels.html"))
-        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_webdriver)
+        mocked_chrome = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_3_wheels.html"))
+        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_chrome)
 
         with pytest.raises(Exception) as ex:
             main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=4, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
@@ -375,8 +375,8 @@ class TestMain:
         file_regression.check(capsys.readouterr().out)
 
     def test_main_invalid(self, mocker, capsys, file_regression):
-        mocked_webdriver = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_invalid.html"))
-        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_webdriver)
+        mocked_chrome = mock_chrome_with_html_page(mocker=mocker, html_page_content=read_html_page_from_datasets(file_name="html_page_test_main_invalid.html"))
+        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_chrome)
         mocker.patch("requests.get", side_effect=lambda url: self.mock_request_get_invalid(mocker=mocker, url=url))
 
         nb_errors = main(index="test.pypi", package_name=PACKAGE_NAME, version=VERSION, expected_nb_wheels=6, expected_shared_libraries=self.EXPECTED_SHARED_LIBRARIES, root_repository=self.ROOT_REPOSITORY, main_package_directory=self.MAIN_PACKAGE_DIRECTORY, subpackage_directories=self.SUBPACKAGES_DIRECTORIES)
