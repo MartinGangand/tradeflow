@@ -2,14 +2,18 @@ import io
 import os
 import re
 import tarfile
+import time
 import zipfile
 from pathlib import Path
 from typing import List
 
 import requests
 from requests import Response
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 ANY_VALID_STRING = r"[^'\"\s]+"
+DEFAULT_SLEEP_TIME_SECONDS = 5
 
 
 def get_response(url: str) -> Response:
@@ -57,9 +61,18 @@ def html_page_as_string(url: str) -> str:
     Exception
         If the request is unsuccessful.
     """
-    response = get_response(url=url)
-    html_page_content = response.content.decode(encoding=response.encoding, errors="strict")
-    return html_page_content
+    options = Options()
+    options.add_argument("--headless")
+    driver = webdriver.Chrome(options=options)
+
+    try:
+        driver.get(url=url)
+        time.sleep(DEFAULT_SLEEP_TIME_SECONDS)
+        html_page = driver.page_source
+    finally:
+        driver.quit()
+
+    return html_page
 
 
 def fetch_file_names_from_tar_gz(url: str) -> List[str]:
