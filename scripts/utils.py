@@ -13,6 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 ANY_VALID_STRING = r"[^'\"\s]+"
+DEFAULT_SLEEP_TIME_SECONDS = 5
 
 
 def get_response(url: str) -> Response:
@@ -66,7 +67,7 @@ def html_page_as_string(url: str) -> str:
 
     try:
         driver.get(url=url)
-        time.sleep(5)
+        time.sleep(DEFAULT_SLEEP_TIME_SECONDS)
         html_page = driver.page_source
     finally:
         driver.quit()
