@@ -6,4 +6,3 @@ pytest-cov
 toml
 requests
 selenium
-webdriver-manager

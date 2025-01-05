@@ -8,12 +8,9 @@ from pathlib import Path
 from typing import List
 
 import requests
-import selenium.webdriver.firefox.service as chrome_service
 from requests import Response
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.chrome.options import Options
 
 ANY_VALID_STRING = r"[^'\"\s]+"
 
@@ -65,7 +62,7 @@ def html_page_as_string(url: str) -> str:
     """
     options = Options()
     options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Chrome(options=options)
 
     try:
         driver.get(url=url)

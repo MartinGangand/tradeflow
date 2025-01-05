@@ -45,8 +45,6 @@ def mock_response_with_wheel(mocker: MockerFixture, file_names: List[str]) -> Ma
 
 
 def mock_chrome_with_html_page(mocker: MockerFixture, html_page_content) -> MagicMock:
-    mocker.patch("selenium.webdriver.chrome.service.Service")
-    mocker.patch("webdriver_manager.chrome.ChromeDriverManager.install")
     mocked_webdriver = mocker.Mock()
     mocked_webdriver.page_source = html_page_content
     return mocked_webdriver
