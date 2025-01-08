@@ -5,3 +5,4 @@ pytest-regressions
 pytest-cov
 toml
 requests
+selenium

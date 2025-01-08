@@ -29,11 +29,6 @@ def mock_response(mocker: MockerFixture, content: Any, ok: bool) -> MagicMock:
     return mocked_response
 
 
-def mock_response_with_html_page(mocker: MockerFixture, html_page_content: str) -> MagicMock:
-    response_content = html_page_content.encode(encoding=UTF_8, errors="strict")
-    return mock_response(mocker=mocker, content=response_content, ok=True)
-
-
 def mock_response_with_source(mocker: MockerFixture, file_names: List[str]) -> MagicMock:
     response_content = create_source(file_names=file_names)
     return mock_response(mocker=mocker, content=response_content, ok=True)
@@ -42,6 +37,12 @@ def mock_response_with_source(mocker: MockerFixture, file_names: List[str]) -> M
 def mock_response_with_wheel(mocker: MockerFixture, file_names: List[str]) -> MagicMock:
     response_content = create_wheel(file_names=file_names)
     return mock_response(mocker=mocker, content=response_content, ok=True)
+
+
+def mock_chrome_with_html_page(mocker: MockerFixture, html_page_content) -> MagicMock:
+    mocked_chrome = mocker.Mock()
+    mocked_chrome.page_source = html_page_content
+    return mocked_chrome
 
 
 def create_source(file_names: List[str]) -> bytes:
@@ -82,7 +83,7 @@ def prepare_directory_with_files(directory_path: Path, file_names: List[str]) ->
 
 class TestGetResponse:
 
-    url = "https://dummy/url.whl"
+    URL = "https://dummy/url.whl"
 
     def test_get_response(self, mocker):
         expected_response_content = "response content"
@@ -90,19 +91,19 @@ class TestGetResponse:
         mock_request_get = mock_response(mocker=mocker, content=expected_response_content, ok=True)
         request_get = mocker.patch("requests.get", return_value=mock_request_get)
 
-        response = get_response(url=self.url)
+        response = get_response(url=self.URL)
         assert response.ok is True
         assert response.content == expected_response_content
-        request_get.assert_called_once_with(url=self.url)
+        request_get.assert_called_once_with(url=self.URL)
 
     def test_get_response_should_raise_exception_when_unsuccessful_request(self, mocker):
         mock_request_get = mock_response(mocker=mocker, content="response content", ok=False)
         mocker.patch("requests.get", return_value=mock_request_get)
 
         with pytest.raises(Exception) as ex:
-            get_response(url=self.url)
+            get_response(url=self.URL)
 
-        assert str(ex.value) == f"Request for url {self.url} was unsuccessful"
+        assert str(ex.value) == f"Request for url {self.URL} was unsuccessful"
 
 
 class TestHtmlPageAsString:
@@ -110,13 +111,14 @@ class TestHtmlPageAsString:
     def test_html_page_as_string(self, mocker):
         expected_html_page_content = "Content of the html page"
 
-        mock_request_get = mock_response_with_html_page(mocker=mocker, html_page_content=expected_html_page_content)
-        request_get = mocker.patch("requests.get", return_value=mock_request_get)
+        mocked_chrome = mock_chrome_with_html_page(mocker=mocker, html_page_content=expected_html_page_content)
+        mocker.patch("selenium.webdriver.Chrome", return_value=mocked_chrome)
 
         html_page_url = f"https://pypi.org/#files"
         actual_html_page_content = html_page_as_string(url=html_page_url)
 
-        request_get.assert_called_once_with(url=html_page_url)
+        mocked_chrome.get.assert_called_once_with(url=html_page_url)
+        mocked_chrome.quit.assert_called_once()
         assert actual_html_page_content == expected_html_page_content
 
 
