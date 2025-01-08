@@ -61,7 +61,7 @@ class TestResid:
         ar._parameters = [0.43, 0.21, 0.20]
 
         actual_resid = ar.resid()
-        assert_almost_equal(actual=actual_resid, desired=[-1.849, 1.011, 0.571, -1.449, 1.011, 0.571, 0.551], decimal=10)
+        assert_almost_equal(actual=actual_resid, desired=[-2, 2, 0, -2, 0, 0, 0], decimal=10)
 
     def test_resid_should_raise_exception_when_parameters_not_set(self):
         ar = AR(signs=[1, 1, 1, -1, 1, 1, -1, 1, 1, 1], max_order=3)

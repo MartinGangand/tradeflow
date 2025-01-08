@@ -72,10 +72,20 @@ class AR(TimeSeries):
             has not been fitted by calling `fit()`.
 
         """
+        np.random.seed(1)
         check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'."))
         x, y = lagmat(x=self._signs, maxlag=len(self._parameters), trim="both", original="sep", use_pandas=False)
         x_with_cst = np.c_[np.ones(shape=x.shape[0]), x]
-        resid = y.squeeze() - x_with_cst @ np.append(self._constant_parameter, self._parameters)
+
+        pred_expected_value = x_with_cst @ np.append(self._constant_parameter, self._parameters)
+        uniforms = np.random.uniform(low=0, high=1, size=len(pred_expected_value))
+        pred_signs = []
+        for i in range(len(pred_expected_value)):
+            proba_buy = 0.5 * (1 + pred_expected_value[i])
+            next_sign = 1 if uniforms[i] <= proba_buy else -1
+            pred_signs.append(next_sign)
+
+        resid = y.squeeze() - np.array(pred_signs)
         return resid
 
     def _init_max_order(self, max_order: Optional[int]) -> int:
