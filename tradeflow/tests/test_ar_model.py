@@ -55,13 +55,13 @@ class TestInit:
 class TestResid:
 
     def test_resid(self):
-        ar = AR(signs=[1, 1, 1, -1, 1, 1, -1, 1, 1, 1], max_order=3)
+        ar = AR(signs=[1, 1, 1, -1, 1, 1, -1, 1, 1, 1, -1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1], max_order=3)
         ar._order = 3
         ar._constant_parameter = 0.009
         ar._parameters = [0.43, 0.21, 0.20]
 
-        actual_resid = ar.resid()
-        assert_almost_equal(actual=actual_resid, desired=[-2, 2, 0, -2, 0, 0, 0], decimal=10)
+        actual_resid = ar.resid(seed=1)
+        assert_almost_equal(actual=actual_resid, desired=[-2, 2, 0, -2, 0, 0, 0, -2, -2, 0, 2, 2, -2, 0, 0, 2, -2, 2, 0, 0, 0, 0, 0], decimal=10)
 
     def test_resid_should_raise_exception_when_parameters_not_set(self):
         ar = AR(signs=[1, 1, 1, -1, 1, 1, -1, 1, 1, 1], max_order=3)
@@ -70,7 +70,7 @@ class TestResid:
         ar._parameters = None
 
         with pytest.raises(ModelNotFittedException) as ex:
-            ar.resid()
+            ar.resid(seed=None)
 
         assert str(ex.value) == "The model does not have its parameters set. Fit the model first by calling 'fit()'."
 
@@ -194,7 +194,7 @@ class TestSimulate:
 
     @pytest.fixture
     def fitted_model(self, ar_model_with_max_order_6):
-        return ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+        return ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
     def test_simulate(self, fitted_model, num_regression):
         actual_simulation = fitted_model.simulate(size=1000, seed=1)
