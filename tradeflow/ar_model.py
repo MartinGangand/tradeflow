@@ -53,12 +53,18 @@ class AR(TimeSeries):
         self._constant_parameter = 0.0
         self._parameters = None
 
-    def resid(self, seed: Optional[int] = 1) -> np.ndarray:
+    def resid(self, seed: Optional[int] = None) -> np.ndarray:
         """
         Estimate and return the residuals of the model.
 
         Residuals are calculated as the difference between the observed values and the
         values predicted by the model using the fitted parameters.
+
+        Parameters
+        ----------
+        seed : int, default None
+            Seed used to initialize the pseudo-random number generator.
+            If `seed` is `None`, then a random seed between 0 and 2^32 - 1 is used.
 
         Returns
         -------
@@ -86,11 +92,11 @@ class AR(TimeSeries):
         x, y = lagmat(x=self._signs, maxlag=len(self._parameters), trim="both", original="sep", use_pandas=False)
         x_with_cst = np.c_[np.ones(shape=x.shape[0]), x]
 
-        expected_value_pred = x_with_cst @ np.append(self._constant_parameter, self._parameters)
-        uniforms = np.random.uniform(low=0, high=1, size=len(expected_value_pred))
-        predicted_signs = np.vectorize(predict_sign_from_expected_value)(expected_value_pred, uniforms)
+        expected_values_pred = x_with_cst @ np.append(self._constant_parameter, self._parameters)
+        uniforms = np.random.uniform(low=0, high=1, size=len(expected_values_pred))
+        signs_pred = np.vectorize(predict_sign_from_expected_value)(expected_values_pred, uniforms)
 
-        resid = y.squeeze() - predicted_signs
+        resid = y.squeeze() - signs_pred
         return resid
 
     def _init_max_order(self, max_order: Optional[int]) -> int:
@@ -193,7 +199,7 @@ class AR(TimeSeries):
             The number of signs to simulate.
         seed : int, default None
             Seed used to initialize the pseudo-random number generator.
-            If `seed` is `None`, then a random seed is used.
+            If `seed` is `None`, then a random seed between 0 and 2^32 - 1 is used.
 
         Returns
         -------
