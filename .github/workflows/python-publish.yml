@@ -187,10 +187,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-cov
-          pip install -r requirements.txt
-#          python -m pip install --upgrade pip
-#          pip install tradeflow numpy matplotlib
+          python -m pip install --upgrade pip
+          pip install numpy toml pytest pytest-cov
 
       - name: Run validation test
         run: pytest validation -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
