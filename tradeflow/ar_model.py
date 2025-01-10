@@ -53,12 +53,18 @@ class AR(TimeSeries):
         self._constant_parameter = 0.0
         self._parameters = None
 
-    def resid(self) -> np.ndarray:
+    def resid(self, seed: Optional[int] = None) -> np.ndarray:
         """
         Estimate and return the residuals of the model.
 
         Residuals are calculated as the difference between the observed values and the
         values predicted by the model using the fitted parameters.
+
+        Parameters
+        ----------
+        seed : int, default None
+            Seed used to initialize the pseudo-random number generator.
+            If `seed` is `None`, then a random seed between 0 and 2^32 - 1 is used.
 
         Returns
         -------
@@ -73,9 +79,24 @@ class AR(TimeSeries):
 
         """
         check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'."))
+
+        if seed is None:
+            seed = np.random.randint(0, np.iinfo(np.int32).max)
+        np.random.seed(seed)
+
+        def predict_sign_from_expected_value(expected_value: float, uniform: float) -> int:
+            buy_proba = 0.5 * (1 + expected_value)
+            next_sign = 1 if uniform <= buy_proba else -1
+            return next_sign
+
         x, y = lagmat(x=self._signs, maxlag=len(self._parameters), trim="both", original="sep", use_pandas=False)
         x_with_cst = np.c_[np.ones(shape=x.shape[0]), x]
-        resid = y.squeeze() - x_with_cst @ np.append(self._constant_parameter, self._parameters)
+
+        expected_values_pred = x_with_cst @ np.append(self._constant_parameter, self._parameters)
+        uniforms = np.random.uniform(low=0, high=1, size=len(expected_values_pred))
+        signs_pred = np.vectorize(predict_sign_from_expected_value)(expected_values_pred, uniforms)
+
+        resid = y.squeeze() - signs_pred
         return resid
 
     def _init_max_order(self, max_order: Optional[int]) -> int:
@@ -135,7 +156,7 @@ class AR(TimeSeries):
                 f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
 
         if check_residuals:
-            _, p_value = self.breusch_godfrey_test(resid=self.resid())
+            _, p_value = self.breusch_godfrey_test(resid=self.resid(seed=1))
             # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
             logger.info(f"Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}")
             check_condition(condition=p_value > significance_level,
@@ -178,7 +199,7 @@ class AR(TimeSeries):
             The number of signs to simulate.
         seed : int, default None
             Seed used to initialize the pseudo-random number generator.
-            If `seed` is `None`, then a random seed is used.
+            If `seed` is `None`, then a random seed between 0 and 2^32 - 1 is used.
 
         Returns
         -------
