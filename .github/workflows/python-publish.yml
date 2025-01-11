@@ -62,7 +62,7 @@ jobs:
     permissions:
       id-token: write
 
-    #if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -104,7 +104,7 @@ jobs:
         run: python scripts/pypi_verify.py test.pypi
 
   upload-pypi:
-    needs: [build-wheels, build-sdist, upload-testpypi]
+    needs: [build-wheels, build-sdist]
 
     runs-on: ubuntu-latest
 
@@ -115,7 +115,7 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
+    #if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
