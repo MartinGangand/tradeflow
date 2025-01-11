@@ -176,19 +176,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Create a virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-
-      - name: Echo
-        run: |
-          echo $PATH
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy toml pytest pytest-cov
+          pip install numpy toml pytest
 
       - name: Run validation test
-        run: pytest validation -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
+        run: pytest validation -v -s --log-level=WARNING --color=yes

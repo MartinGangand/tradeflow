@@ -14,42 +14,30 @@ package_data = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
 PACKAGE_NAME = package_data["name"]
 VERSION = package_data["version"]
 
+DATA_FOLDER = Path(__file__).parent.joinpath("data")
+
 
 def test_end_to_end():
-    # Remove tradeflow from the module search path (TODO: check that package not already installed by pip?)
+    # Remove tradeflow from the module search path
     sys.path[:] = [path for path in sys.path if PACKAGE_NAME not in path]
 
+    # Check that the package is not already  installed or can't be accessed
     with pytest.raises(ModuleNotFoundError) as ex:
         import tradeflow
-    assert str(ex.value) == "No module named 'tradeflow'"
+    assert str(ex.value) == f"No module named '{PACKAGE_NAME}'"
 
+    # Install package and check that the version corresponds to version of the recently uploaded package
     subprocess.check_call([sys.executable, "-m", "pip", "install", PACKAGE_NAME])
     installed_version = importlib.metadata.version(PACKAGE_NAME)
     assert installed_version == VERSION
 
-    import tradeflow
-    from tradeflow.common.logger_utils import get_logger
-    DATA_FOLDER = Path(__file__).parent.joinpath("data")
-    logger = get_logger(__file__)
-
-    max_order = 100
-    order_selection_method = "pacf"
-    fit_method = "burg"
-    seed = 1
-
     signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
-    logger.info(f"START")
-    logger.info(f"max_order: {max_order} | order_selection_method: pacf | fit_method: {fit_method} | seed: {seed}")
-    s2 = time.time()
-    ar_model = tradeflow.AR(signs=signs, max_order=max_order, order_selection_method=order_selection_method)
-    ar_model = ar_model.fit(method=fit_method, significance_level=0.05, check_residuals=True)
 
-    ar_model.simulate(size=300_000, seed=seed)
+    import tradeflow
+    ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
+    ar_model = ar_model.fit(method="burg", significance_level=0.05, check_residuals=True)
 
-    simulation_summary = ar_model.simulation_summary(plot=True, log_scale=True)
-    logger.info(f"\n{simulation_summary}")
-    e2 = time.time()
-    logger.info(f"END | =====> TIME: {round(e2 - s2, 4)}s\n\n")
+    ar_model.simulate(size=1_000_000, seed=1)
+    ar_model.simulation_summary(plot=True, log_scale=True)
 
-def test_a():
-    assert 1 == 1
+    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", PACKAGE_NAME])
