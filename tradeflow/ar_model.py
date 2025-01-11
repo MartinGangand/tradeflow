@@ -140,7 +140,7 @@ class AR(TimeSeries):
         AR
             The AR instance.
         """
-        print(f"++++++++ ___ PYPI !!!!!!!!!!!!!")
+        print(f"++++++++ ___2 PYPI !!!!!!!!!!!!!")
         method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
         check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))

@@ -32,7 +32,10 @@ def test_end_to_end_from_package_installation_to_simulation_of_signs(index):
 
     # Install package and check that the version corresponds to version of the recently uploaded package
     print(f"INSTALLING: https://{index}.org/simple/")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-i", f"https://{index}.org/simple/", "--extra-index-url", "https://pypi.org/simple/", PACKAGE_NAME])
+    if index == "test.pypi":
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", f"https://{index}.org/simple/", "--no-deps", "--no-cache-dir", PACKAGE_NAME])
+    else:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", f"https://{index}.org/simple/", "--no-cache-dir", PACKAGE_NAME])
     installed_version = importlib.metadata.version(PACKAGE_NAME)
     assert installed_version == VERSION
 
