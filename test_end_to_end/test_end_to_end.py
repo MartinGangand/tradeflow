@@ -1,7 +1,6 @@
 import importlib.metadata
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import numpy as np
@@ -10,14 +9,14 @@ import toml
 
 ROOT_REPOSITORY = Path(__file__).parent.parent
 
-package_data = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
-PACKAGE_NAME = package_data["name"]
-VERSION = package_data["version"]
+package_info = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
+PACKAGE_NAME = package_info["name"]
+VERSION = package_info["version"]
 
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
 
 
-def test_end_to_end():
+def test_end_to_end_from_package_installation_to_simulation_of_signs():
     # Remove tradeflow from the module search path
     sys.path[:] = [path for path in sys.path if PACKAGE_NAME not in path]
 

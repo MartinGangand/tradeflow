@@ -164,8 +164,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] #, ubuntu-24.04, ubuntu-22.04, ubuntu-24.04, macos-13, macos-14, macos-15, windows-latest, windows-2022, windows-2019
-        python-version: ["3.12"] #"3.8", "3.9", "3.10", "3.11",
+        os: [ubuntu-latest, ubuntu-24.04, ubuntu-22.04, ubuntu-24.04, macos-13, macos-14, macos-15, windows-latest, windows-2019, windows-2022]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
       - name: Checkout code
@@ -181,5 +181,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy toml pytest
 
-      - name: Run validation test
-        run: pytest validation -v -s --log-level=WARNING --color=yes
+      - name: Run end to end test
+        run: pytest test_end_to_end -v -s --log-level=WARNING --color=yes
