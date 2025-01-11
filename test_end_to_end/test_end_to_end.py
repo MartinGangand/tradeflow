@@ -16,7 +16,12 @@ VERSION = package_info["version"]
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
 
 
-def test_end_to_end_from_package_installation_to_simulation_of_signs():
+@pytest.fixture
+def index(request):
+    return request.config.getoption("--index")
+
+
+def test_end_to_end_from_package_installation_to_simulation_of_signs(index):
     # Remove tradeflow from the module search path
     sys.path[:] = [path for path in sys.path if PACKAGE_NAME not in path]
 
@@ -26,7 +31,8 @@ def test_end_to_end_from_package_installation_to_simulation_of_signs():
     assert str(ex.value) == f"No module named '{PACKAGE_NAME}'"
 
     # Install package and check that the version corresponds to version of the recently uploaded package
-    subprocess.check_call([sys.executable, "-m", "pip", "install", PACKAGE_NAME])
+    print(f"INSTALLING: https://{index}.org/simple/")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-i", f"https://{index}.org/simple/", "--extra-index-url", "https://pypi.org/simple/", PACKAGE_NAME])
     installed_version = importlib.metadata.version(PACKAGE_NAME)
     assert installed_version == VERSION
 
