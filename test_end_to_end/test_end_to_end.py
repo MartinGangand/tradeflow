@@ -31,11 +31,7 @@ def test_end_to_end_from_package_installation_to_simulation_of_signs(index):
     assert str(ex.value) == f"No module named '{PACKAGE_NAME}'"
 
     # Install package and check that the version corresponds to version of the recently uploaded package
-    print(f"INSTALLING: https://{index}.org/simple/")
-    if index == "test.pypi":
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", f"https://{index}.org/simple/", "--no-deps", "--no-cache-dir", PACKAGE_NAME])
-    else:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", f"https://{index}.org/simple/", "--no-cache-dir", PACKAGE_NAME])
+    install_package(index=index)
     installed_version = importlib.metadata.version(PACKAGE_NAME)
     assert installed_version == VERSION
 
@@ -49,3 +45,18 @@ def test_end_to_end_from_package_installation_to_simulation_of_signs(index):
     ar_model.simulation_summary(plot=True, log_scale=True)
 
     subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", PACKAGE_NAME])
+
+
+def install_package(index: str) -> None:
+    if index == "pypi":
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--no-cache-dir", PACKAGE_NAME])
+    elif index == "test.pypi":
+        # Install dependencies separately and then install the package without dependencies in order to install it from test.pypi.
+        # Using 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME' does not work because it tries to install dependencies from test.pypi but some are not available.
+        # Using 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME --extra-index-url https://pypi.org/simple/' does not work because if the package is also available on index pypi it will install it by default.
+        requirements_file = ROOT_REPOSITORY.joinpath("requirements.txt")
+        assert requirements_file.is_file()
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", str(requirements_file)])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", f"https://test.pypi.org/simple/", "--no-deps", "--no-cache-dir", PACKAGE_NAME])
+    else:
+        raise Exception(f"Unknown index {index}")

@@ -50,7 +50,7 @@ jobs:
           name: cibw-sdist
           path: dist/*.tar.gz
 
-  upload-testpypi:
+  upload-test-pypi:
     needs: [build-wheels, build-sdist]
 
     runs-on: ubuntu-latest
@@ -62,7 +62,7 @@ jobs:
     permissions:
       id-token: write
 
-    #if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -79,7 +79,7 @@ jobs:
   verify-test-pypi:
     name: Run PyPi Verify script on index Test PyPi
 
-    needs: [upload-testpypi]
+    needs: [upload-test-pypi]
 
     runs-on: ubuntu-latest
 
@@ -104,7 +104,7 @@ jobs:
         run: python scripts/pypi_verify.py test.pypi
 
   upload-pypi:
-    needs: [build-wheels, build-sdist, upload-testpypi]
+    needs: [build-wheels, build-sdist, upload-test-pypi]
 
     runs-on: ubuntu-latest
 
@@ -115,7 +115,7 @@ jobs:
     permissions:
       id-token: write
 
-    #if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -159,7 +159,7 @@ jobs:
   end-to-end-test-test-pypi:
     name: End to end test for package uploaded to Test PyPi
 
-    needs: [upload-testpypi]
+    needs: [upload-test-pypi]
 
     runs-on: ${{ matrix.os }}
 
@@ -178,14 +178,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Sleep for 60 seconds
-        run: sleep 120
+      - name: Sleep for 4 minutes
+        run: sleep 240
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install toml pytest
+          pip install numpy toml pytest
 
       - name: Run end to end test
         run: pytest test_end_to_end --index test.pypi -v -s --log-level=WARNING --color=yes
@@ -212,8 +211,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Sleep for 60 seconds
-        run: sleep 120
+      - name: Sleep for 4 minutes
+        run: sleep 240
 
       - name: Install dependencies
         run: |
