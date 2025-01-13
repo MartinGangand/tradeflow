@@ -1,6 +1,6 @@
 name: CI Scripts
 
-on: [workflow_dispatch]
+on: [push, workflow_dispatch]
 
 jobs:
   run-tests:

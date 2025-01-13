@@ -6,7 +6,6 @@ on:
   release:
     types:
       - published
-  push:
 
 permissions:
   contents: read
@@ -156,8 +155,8 @@ jobs:
       - name: Run script
         run: python scripts/pypi_verify.py pypi
 
-  end-to-end-test-test-pypi:
-    name: End to end test for package uploaded to Test PyPi
+  test-pypi-post-upload:
+    name: Test package installation and usage from Test PyPi
 
     needs: [upload-test-pypi]
 
@@ -166,7 +165,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04, ubuntu-22.04, ubuntu-24.04, macos-13, macos-14, macos-15, windows-latest, windows-2019, windows-2022]
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, macos-13, macos-latest, windows-2019, windows-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
@@ -178,6 +177,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Wait for some time before installing package, otherwise it might not pick the freshly uploaded version
       - name: Sleep for 4 minutes
         run: sleep 240
 
@@ -186,11 +186,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy toml pytest
 
-      - name: Run end to end test
-        run: pytest test_end_to_end --index test.pypi -v -s --log-level=WARNING --color=yes
+      - name: Run test_pypi_post_upload with index test.pypi
+        run: pytest test_pypi_post_upload --index test.pypi -v -s --log-level=WARNING --color=yes
 
-  end-to-end-test-pypi:
-    name: End to end test for package uploaded to PyPi
+  pypi-post-upload:
+    name: Test package installation and usage from PyPi
 
     needs: [upload-pypi]
 
@@ -199,7 +199,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04, ubuntu-22.04, ubuntu-24.04, macos-13, macos-14, macos-15, windows-latest, windows-2019, windows-2022]
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, macos-13, macos-latest, windows-2019, windows-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
@@ -211,6 +211,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Wait for some time before installing package, otherwise it might not pick the freshly uploaded version
       - name: Sleep for 4 minutes
         run: sleep 240
 
@@ -219,5 +220,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy toml pytest
 
-      - name: Run end to end test
-        run: pytest test_end_to_end --index pypi -v -s --log-level=WARNING --color=yes
+      - name: Run test_pypi_post_upload with index pypi
+        run: pytest test_pypi_post_upload --index pypi -v -s --log-level=WARNING --color=yes
