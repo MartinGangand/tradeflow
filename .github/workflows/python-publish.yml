@@ -61,7 +61,7 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
+    #if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -114,7 +114,7 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
+    #if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -177,17 +177,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Wait for some time before installing package, otherwise it might not pick the freshly uploaded version
+      # Wait for some time before installing the package, otherwise it might not install the freshly uploaded version
       - name: Sleep for 4 minutes
         run: sleep 240
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy toml pytest
+          pip install pytest toml numpy
 
-      - name: Run test_pypi_post_upload with index test.pypi
-        run: pytest test_pypi_post_upload --index test.pypi -v -s --log-level=WARNING --color=yes
+      - name: Run pypi_post_upload_test test with index 'test.pypi'
+        run: pytest pypi_post_upload_test --index test.pypi -v -s --log-level=WARNING --color=yes
 
   pypi-post-upload:
     name: Test package installation and usage from PyPi
@@ -211,14 +211,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Wait for some time before installing package, otherwise it might not pick the freshly uploaded version
+      # Wait for some time before installing the package, otherwise it might not install the freshly uploaded version
       - name: Sleep for 4 minutes
         run: sleep 240
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy toml pytest
+          pip install pytest toml numpy
 
-      - name: Run test_pypi_post_upload with index pypi
-        run: pytest test_pypi_post_upload --index pypi -v -s --log-level=WARNING --color=yes
+      - name: Run pypi_post_upload_test test with index 'pypi'
+        run: pytest pypi_post_upload_test --index pypi -v -s --log-level=WARNING --color=yes
