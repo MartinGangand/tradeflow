@@ -61,7 +61,7 @@ jobs:
     permissions:
       id-token: write
 
-    #if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -102,6 +102,40 @@ jobs:
       - name: Run script
         run: python scripts/pypi_verify.py test.pypi
 
+  post-upload-test-pypi:
+    name: Test package installation and usage from Test PyPi
+
+    needs: [upload-test-pypi]
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, macos-13, macos-latest, windows-2019, windows-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Wait for some time before installing the package, otherwise it might not install the freshly uploaded version
+      - name: Sleep for 4 minutes
+        run: sleep 240
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest toml numpy
+
+      - name: Run test with index 'test.pypi'
+        run: pytest pypi_post_upload_test --index test.pypi -v -s --log-level=WARNING --color=yes
+
   upload-pypi:
     needs: [build-wheels, build-sdist, upload-test-pypi]
 
@@ -114,7 +148,7 @@ jobs:
     permissions:
       id-token: write
 
-    #if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -155,41 +189,7 @@ jobs:
       - name: Run script
         run: python scripts/pypi_verify.py pypi
 
-  test-pypi-post-upload:
-    name: Test package installation and usage from Test PyPi
-
-    needs: [upload-test-pypi]
-
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, macos-13, macos-latest, windows-2019, windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      # Wait for some time before installing the package, otherwise it might not install the freshly uploaded version
-      - name: Sleep for 4 minutes
-        run: sleep 240
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest toml numpy
-
-      - name: Run pypi_post_upload_test test with index 'test.pypi'
-        run: pytest pypi_post_upload_test --index test.pypi -v -s --log-level=WARNING --color=yes
-
-  pypi-post-upload:
+  post-upload-pypi:
     name: Test package installation and usage from PyPi
 
     needs: [upload-pypi]
@@ -220,5 +220,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest toml numpy
 
-      - name: Run pypi_post_upload_test test with index 'pypi'
+      - name: Run test with index 'pypi'
         run: pytest pypi_post_upload_test --index pypi -v -s --log-level=WARNING --color=yes
