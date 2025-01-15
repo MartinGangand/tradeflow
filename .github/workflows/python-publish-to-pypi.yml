@@ -1,4 +1,4 @@
-name: Upload Python Package
+name: Upload Python Package to PyPi
 
 on:
   pull_request:
@@ -49,95 +49,8 @@ jobs:
           name: cibw-sdist
           path: dist/*.tar.gz
 
-  upload-test-pypi:
-    needs: [build-wheels, build-sdist]
-
-    runs-on: ubuntu-latest
-
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/tradeflow
-
-    permissions:
-      id-token: write
-
-    if: github.event_name == 'release' && github.event.action == 'published'
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          # unpacks all CIBW artifacts into dist/
-          pattern: cibw-*
-          path: dist
-          merge-multiple: true
-
-      - name: Publish release distributions to Test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-
-  verify-test-pypi:
-    name: Run PyPi Verify script on index Test PyPi
-
-    needs: [upload-test-pypi]
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11.6'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r scripts-requirements.txt
-
-      - name: Add package directory to PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
-
-      - name: Run script
-        run: python scripts/pypi_verify.py test.pypi
-
-  post-upload-test-pypi:
-    name: Test package installation and usage from Test PyPi
-
-    needs: [upload-test-pypi]
-
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, macos-13, macos-latest, windows-2019, windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      # Wait for some time before installing the package, otherwise it might not install the freshly uploaded version
-      - name: Sleep for 4 minutes
-        run: sleep 240
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest toml numpy
-
-      - name: Run test with index 'test.pypi'
-        run: pytest pypi_post_upload_test --index test.pypi -v -s --log-level=WARNING --color=yes
-
   upload-pypi:
-    needs: [build-wheels, build-sdist, upload-test-pypi]
+    needs: [build-wheels, build-sdist]
 
     runs-on: ubuntu-latest
 
@@ -148,7 +61,7 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
+    #if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
         with:
