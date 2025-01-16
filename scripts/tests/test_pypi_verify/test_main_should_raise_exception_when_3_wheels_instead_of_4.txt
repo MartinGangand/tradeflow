@@ -1,2 +1,0 @@
-Starting pypi_verify.py script for index 'test.pypi' (url: https://test.pypi.org/project/package/0.0.1/#files)
-

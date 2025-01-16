@@ -5,9 +5,9 @@ import toml
 
 ROOT_REPOSITORY = Path(__file__).parent.parent
 
-package_data = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
-PACKAGE_NAME = package_data["name"]
-VERSION = package_data["version"]
+package_info = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
+PACKAGE_NAME = package_info["name"]
+VERSION = package_info["version"]
 
 MAIN_PACKAGE_DIRECTORY = ROOT_REPOSITORY.joinpath(PACKAGE_NAME)
 SUBPACKAGES_DIRECTORIES = [MAIN_PACKAGE_DIRECTORY.joinpath("common")]
