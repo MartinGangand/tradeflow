@@ -14,6 +14,8 @@ package_info = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
 PACKAGE_NAME = package_info["name"]
 VERSION = package_info["version"]
 
+INDEX_URL_TEST_PYPI = "https://test.pypi.org/simple/"
+
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
 
 
@@ -46,23 +48,27 @@ def test_package_installation_and_simulation_of_signs(index):
     ar_model.simulation_summary(plot=True, log_scale=True)
 
     # Uninstall package
-    subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {PACKAGE_NAME}"))
+    uninstall_package()
 
 
 def install_package(index: str) -> None:
     if index == "pypi":
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --no-cache-dir {PACKAGE_NAME}"))
     elif index == "test.pypi":
-        # Install dependencies separately and then install the package from test.pypi without dependencies
-        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME' does not work because it tries to install dependencies from index 'test.pypi' but some are not available
+        # Install package dependencies separately and then install the package from test.pypi without dependencies
+        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME' does not work because it tries to install the package and its dependencies from index 'test.pypi' but some dependencies are not available
         # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME --extra-index-url https://pypi.org/simple/' does not work because if the package is also available on index 'pypi', it will install it from there by default
 
         requirements_file = ROOT_REPOSITORY.joinpath("requirements.txt")
         assert requirements_file.is_file()
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
-        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url https://test.pypi.org/simple/ --no-deps --no-cache-dir {PACKAGE_NAME}"))
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {PACKAGE_NAME}"))
     else:
         raise Exception(f"Unknown index {index}")
+
+
+def uninstall_package() -> None:
+    subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {PACKAGE_NAME}"))
 
 
 def parse_command_line(command_line: str) -> List[str]:

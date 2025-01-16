@@ -140,12 +140,12 @@ class AR(TimeSeries):
         AR
             The AR instance.
         """
-        method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=True)
+        method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
         check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
 
         if method == FitMethodAR.YULE_WALKER:
-            self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=False)[0]
+            self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
         elif method == FitMethodAR.BURG:
             self._parameters, _ = burg(endog=self._signs, order=self._order, demean=True)
         elif method == FitMethodAR.OLS_WITH_CST:
@@ -212,26 +212,10 @@ class AR(TimeSeries):
         if seed is None:
             seed = np.random.randint(0, np.iinfo(np.int32).max)
 
-        # inverted_parameters = CArray.of(c_type_str="double", arr=self._parameters[::-1])
-        # last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
-        # self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
+        inverted_parameters = CArray.of(c_type_str="double", arr=self._parameters[::-1])
+        last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
+        self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
-        # cpp_lib = SharedLibrariesRegistry().find_shared_library(name=LIB_TRADEFLOW).load()
-        # cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
-        # return self._simulation[:]
-            
-        uniforms = np.random.uniform(low=0, high=1, size=size)
-        inverted_params = self._parameters[::-1]
-        last_signs = np.array(self._signs[-self._order:])
-        simulated_signs = []
-        h = []
-        for i in range(size):
-            next_sign_expected_value = self._constant_parameter + np.dot(a=inverted_params, b=last_signs)
-            next_sign_buy_proba = 0.5 * (1 + next_sign_expected_value)
-            next_sign = 1 if uniforms[i] <= next_sign_buy_proba else -1
-            h.append((next_sign_expected_value, next_sign_buy_proba, next_sign))
-            simulated_signs.append(next_sign)
-            last_signs[:-1] = last_signs[1:]
-            last_signs[-1] = next_sign
-        self._simulation = np.array(simulated_signs)
-        return h
+        cpp_lib = SharedLibrariesRegistry().find_shared_library(name=LIB_TRADEFLOW).load()
+        cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
+        return self._simulation[:]
