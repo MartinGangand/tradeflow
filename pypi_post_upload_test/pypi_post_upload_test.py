@@ -28,7 +28,7 @@ def test_package_installation_and_simulation_of_signs(index):
 
     # Check that the package is not already installed or can't be accessed
     with pytest.raises(ModuleNotFoundError) as ex:
-        pass
+        import tradeflow
     assert str(ex.value) == f"No module named '{PACKAGE_NAME}'"
 
     # Install package and check that the installed version corresponds to the freshly uploaded package

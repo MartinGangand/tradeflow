@@ -75,8 +75,8 @@ jobs:
         with:
           repository-url: https://upload.pypi.org/legacy/
 
-  verify-pypi:
-    name: Run PyPi Verify script on index PyPi
+  verify-uploaded-content-pypi:
+    name: Run script to verify the uploaded content on PyPi
 
     needs: [upload-pypi]
 
@@ -99,8 +99,8 @@ jobs:
       - name: Add package directory to PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
 
-      - name: Run script
-        run: python scripts/pypi_verify.py pypi
+      - name: Run script on index 'pypi'
+        run: python scripts/pypi_verify_uploaded_content.py pypi
 
   post-upload-pypi:
     name: Test package installation and usage from PyPi
@@ -124,7 +124,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Wait for some time before installing the package, otherwise it might not install the freshly uploaded version
+      # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
       - name: Sleep for 4 minutes
         run: sleep 240
 
