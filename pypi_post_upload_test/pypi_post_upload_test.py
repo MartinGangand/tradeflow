@@ -12,7 +12,6 @@ ROOT_REPOSITORY = Path(__file__).parent.parent
 
 package_info = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
 PACKAGE_NAME = package_info["name"]
-VERSION = package_info["version"]
 
 INDEX_URL_TEST_PYPI = "https://test.pypi.org/simple/"
 
@@ -24,7 +23,18 @@ def index(request):
     return request.config.getoption("--index")
 
 
-def test_package_installation_and_simulation_of_signs(index):
+@pytest.fixture
+def expected_package_version(request):
+    return request.config.getoption("--package_version")
+
+
+@pytest.fixture(scope="function", autouse=True)
+def uninstall_package():
+    yield
+    subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {PACKAGE_NAME}"))
+
+
+def test_package_installation_and_simulation_of_signs(index, expected_package_version):
     # Remove tradeflow from the module search path
     sys.path[:] = [path for path in sys.path if PACKAGE_NAME not in path]
 
@@ -35,8 +45,8 @@ def test_package_installation_and_simulation_of_signs(index):
 
     # Install package and check that the installed version corresponds to the freshly uploaded package
     install_package(index=index)
-    installed_version = importlib.metadata.version(PACKAGE_NAME)
-    assert installed_version == VERSION
+    installed_package_version = importlib.metadata.version(PACKAGE_NAME)
+    assert installed_package_version == expected_package_version
 
     signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
 
@@ -46,9 +56,6 @@ def test_package_installation_and_simulation_of_signs(index):
     ar_model = ar_model.fit(method="burg", significance_level=0.05, check_residuals=True)
     ar_model.simulate(size=1_000_000, seed=1)
     ar_model.simulation_summary(plot=True, log_scale=True)
-
-    # Uninstall package
-    uninstall_package()
 
 
 def install_package(index: str) -> None:
@@ -64,11 +71,7 @@ def install_package(index: str) -> None:
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {PACKAGE_NAME}"))
     else:
-        raise Exception(f"Unknown index {index}")
-
-
-def uninstall_package() -> None:
-    subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {PACKAGE_NAME}"))
+        raise Exception(f"Unknown index {index}.")
 
 
 def parse_command_line(command_line: str) -> List[str]:
