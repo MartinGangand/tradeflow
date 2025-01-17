@@ -326,7 +326,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Verify the content of the uploaded package to PyPi or Test PyPi")
-    parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index on which to validate the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance")
+    parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index on which to validate the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.")
     args = parser.parse_args()
 
     try:

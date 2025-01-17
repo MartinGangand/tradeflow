@@ -23,4 +23,4 @@ jobs:
           pip install -r scripts-requirements.txt
 
       - name: Run tests scripts
-        run: pytest scripts -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
+        run: pytest scripts -v -s --doctest-modules --cov=scripts --log-level=WARNING --color=yes

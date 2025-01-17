@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from scripts.pypi_verify import verify_source_url, \
+from scripts.pypi_verify_uploaded_content import verify_source_url, \
     verify_wheel_url, expected_wheel_shared_libraries_extension, \
     verify_source, verify_wheel, compare_expected_vs_actual_files, display_name, main
 from scripts.tests.test_utils import mock_response_with_source, mock_response_with_wheel, \
