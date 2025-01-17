@@ -283,7 +283,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     """
     nb_errors = 0
     package_url = f"https://{index}.org/project/{package_name}/{version}/#files"
-    log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' (url: {package_url})\n")
+    log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' and package version {version} (url: {package_url})\n")
 
     pypi_html_page = html_page_as_string(url=package_url)
     source_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=FileExtension.SOURCE_EXTENSION)
@@ -327,12 +327,13 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Verify the content of the uploaded package to PyPi or Test PyPi")
     parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index on which to validate the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.")
+    parser.add_argument("package_version", type=str, help="Specify the package version.")
     args = parser.parse_args()
 
     try:
         exit_status = main(index=args.index,
                            package_name=config.PACKAGE_NAME,
-                           version=config.VERSION,
+                           version=args.package_version,
                            expected_nb_wheels=config.EXPECTED_NB_WHEELS,
                            expected_shared_libraries=config.EXPECTED_SHARED_LIBRARIES,
                            root_repository=config.ROOT_REPOSITORY,

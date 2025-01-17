@@ -1,7 +1,7 @@
 name: Upload Python Package to PyPi
 
 on:
-  pull_request:
+#  pull_request:
   workflow_dispatch:
   release:
     types:
@@ -11,11 +11,54 @@ permissions:
   contents: read
 
 jobs:
+  update-version-number:
+    name: Update version number
+    runs-on: ubuntu-latest
+
+    outputs:
+      NEW_VERSION: ${{ steps.update_version.outputs.NEW_VERSION }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update version number in pyproject.toml
+        id: update_version
+        run: |
+          # Get the current version from pyproject.toml
+          OLD_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
+          echo "Old version: $OLD_VERSION"
+
+          # Parse the current version
+          IFS='.' read -r major minor patch <<< "$OLD_VERSION"
+          
+          # Increment the patch version
+          patch=$((patch + 1))
+
+          # Construct the new version
+          NEW_VERSION="$major.$minor.$patch"
+          echo "New version: $NEW_VERSION"
+
+          # Replace the version in pyproject.toml
+          sed -i "s+version = \"$OLD_VERSION\"+version = \"$NEW_VERSION\"+g" pyproject.toml
+          
+          # Set the new version as an output variable for later steps
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # Save the updated pyproject.toml as an artifact
+          mkdir -p .github/artifacts
+          cp pyproject.toml .github/artifacts/pyproject.toml
+
+      - name: Upload updated pyproject.toml as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyproject-toml
+          path: .github/artifacts/pyproject.toml
+
   build-wheels:
     name: Build wheels on ${{ matrix.os }}
-
+    needs: [update-version-number]
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         os: [ubuntu-latest, macos-13, macos-14, windows-latest]
@@ -23,6 +66,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download updated pyproject.toml
+        uses: actions/download-artifact@v4
+        with:
+          name: pyproject-toml
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20.0
@@ -35,11 +83,17 @@ jobs:
 
   build-sdist:
     name: Build source distribution
-
+    needs: [update-version-number]
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download updated pyproject.toml artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pyproject-toml
 
       - name: Build sdist
         run: pipx run build --sdist
@@ -50,8 +104,8 @@ jobs:
           path: dist/*.tar.gz
 
   upload-pypi:
+    name: Upload Package to PyPi
     needs: [build-wheels, build-sdist]
-
     runs-on: ubuntu-latest
 
     environment:
@@ -61,11 +115,11 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
+#    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Unpacks all CIBW artifacts into dist/
+        uses: actions/download-artifact@v4
         with:
-          # unpacks all CIBW artifacts into dist/
           pattern: cibw-*
           path: dist
           merge-multiple: true
@@ -77,10 +131,10 @@ jobs:
 
   verify-uploaded-content-pypi:
     name: Run script to verify the uploaded content on PyPi
-
-    needs: [upload-pypi]
-
+    needs: [update-version-number, upload-pypi]
     runs-on: ubuntu-latest
+    env:
+      NEW_VERSION: ${{ needs.update-version-number.outputs.NEW_VERSION }}
 
     steps:
       - name: Checkout code
@@ -99,16 +153,15 @@ jobs:
       - name: Add package directory to PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
 
-      - name: Run script on index 'pypi'
-        run: python scripts/pypi_verify_uploaded_content.py pypi
+      - name: Run script with index 'pypi'
+        run: python scripts/pypi_verify_uploaded_content.py pypi $NEW_VERSION
 
   post-upload-pypi:
     name: Test package installation and usage from PyPi
-
-    needs: [upload-pypi]
-
+    needs: [update-version-number, upload-pypi]
     runs-on: ${{ matrix.os }}
-
+    env:
+      NEW_VERSION: ${{ needs.update-version-number.outputs.NEW_VERSION }}
     strategy:
       fail-fast: false
       matrix:
@@ -134,4 +187,30 @@ jobs:
           pip install pytest toml numpy
 
       - name: Run test with index 'pypi'
-        run: pytest pypi_post_upload_test --index pypi -v -s --log-level=WARNING --color=yes
+        run: pytest pypi_post_upload_test --index pypi --package_version $NEW_VERSION -v -s --log-level=WARNING --color=yes
+        shell: bash
+
+  push-new-version:
+    name:  Push new version to main branch
+    needs: [update-version-number, upload-pypi]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.BOT_ACCESS_TOKEN }}
+
+      - name: Download updated pyproject.toml artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pyproject-toml
+
+      - name: Push new version
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add pyproject.toml
+          git commit -m "Update version to ${{ needs.update-version-number.outputs.NEW_VERSION }}"
+          git status
+          git push origin HEAD:update-project-version-automatically-after-upload-to-pypi
