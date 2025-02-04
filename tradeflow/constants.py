@@ -9,9 +9,17 @@ class OrderSelectionMethodAR(Enum):
 
 
 class FitMethodAR(Enum):
-    YULE_WALKER = "yule_walker"
-    BURG = "burg"
-    OLS_WITH_CST = "ols_with_cst"
+    YULE_WALKER = ("yule_walker", False)
+    BURG = ("burg", False)
+    OLS_WITH_CST = ("ols_with_cst", True)
+    MLE_WITHOUT_CST = ("mle_without_cst", False)
+    MLE_WITH_CST = ("mle_with_cst", True)
+
+    def __new__(cls, name: str, has_cst_parameter: bool):
+        obj = object.__new__(cls)
+        obj._value_ = name
+        obj.has_cst_parameter = has_cst_parameter
+        return obj
 
     def __str__(self) -> str:
         return self._value_

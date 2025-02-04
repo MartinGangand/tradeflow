@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 import toml
 
+from tradeflow.constants import FitMethodAR
+
 ROOT_REPOSITORY = Path(__file__).parent.parent
 
 package_info = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
@@ -34,7 +36,8 @@ def uninstall_package():
     subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {PACKAGE_NAME}"))
 
 
-def test_package_installation_and_simulation_of_signs(index, expected_package_version):
+@pytest.mark.parametrize("method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG, FitMethodAR.OLS_WITH_CST, FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST])
+def test_package_installation_and_simulation_of_signs(method, index, expected_package_version):
     # Remove tradeflow from the module search path
     sys.path[:] = [path for path in sys.path if PACKAGE_NAME not in path]
 
@@ -53,7 +56,7 @@ def test_package_installation_and_simulation_of_signs(index, expected_package_ve
     # Check package usage
     import tradeflow
     ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
-    ar_model = ar_model.fit(method="burg", significance_level=0.05, check_residuals=True)
+    ar_model = ar_model.fit(method=method.value, significance_level=0.05, check_residuals=True)
     ar_model.simulate(size=1_000_000, seed=1)
     ar_model.simulation_summary(plot=True, log_scale=True)
 
