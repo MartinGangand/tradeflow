@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, Tuple, Any
 
 import numpy as np
+from numpy.linalg import slogdet
+from statsmodels.base.optimizer import Optimizer
 from statsmodels.regression import yule_walker
 from statsmodels.regression.linear_model import burg
+from statsmodels.tools import add_constant
 from statsmodels.tools.typing import ArrayLike1D
-from statsmodels.tsa.ar_model import AutoReg
+from statsmodels.tsa.ar_model import AutoReg, sumofsq
 from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
@@ -109,7 +112,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "burg", "ols_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
+    def fit(self, method: Literal["yule_walker", "burg", "ols_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -140,7 +143,7 @@ class AR(TimeSeries):
         AR
             The AR instance.
         """
-        method = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
+        method: FitMethodAR = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
         check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
 
@@ -151,6 +154,23 @@ class AR(TimeSeries):
         elif method == FitMethodAR.OLS_WITH_CST:
             ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
             self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
+        elif method == FitMethodAR.MLE_WITHOUT_CST or method == FitMethodAR.MLE_WITH_CST:
+            self._x, self._y = self._get_model_x_y(has_cst_parameter=method.has_cst_parameter)
+            self._start_idx = 1 if method.has_cst_parameter else 0
+            start_params = self._compute_start_params(has_cst_parameter=method.has_cst_parameter)
+
+            def f(parameters: np.ndarray) -> float:
+                return -self._ar_log_likelihood(parameters=parameters) / len(self._signs)
+
+            optimizer = Optimizer()
+            kwargs = {"pgtol": 1e-8, "factr": 1e2, "m": 12, "approx_grad": True}
+            optimal_parameters, retvals, optim_settings = optimizer._fit(f, None, start_params, (), kwargs, hessian=None,
+                                                                         method="lbfgs", disp=False, maxiter=35, callback=None,
+                                                                         retall=False, full_output=True)
+            if method.has_cst_parameter:
+                self._constant_parameter, self._parameters = optimal_parameters[0], optimal_parameters[1:]
+            else:
+                self._parameters = optimal_parameters
         else:
             raise IllegalValueException(
                 f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
@@ -164,6 +184,18 @@ class AR(TimeSeries):
 
         logger.info(f"The AR({self._order}) model has been fitted with method '{method}'.")
         return self
+
+    def _get_model_x_y(self, has_cst_parameter: bool) -> tuple[np.ndarray, np.ndarray]:
+        x, y = lagmat(x=self._signs, maxlag=self._order, trim="both", original="sep", use_pandas=False)
+        if has_cst_parameter:
+            x = add_constant(data=x, prepend=True, has_constant="raise")
+        return x, y
+
+    def _compute_start_params(self, has_cst_parameter: bool) -> np.ndarray:
+        if has_cst_parameter:
+            return AutoReg(endog=self._signs, lags=self._order, trend="c").fit().params
+        else:
+            return yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
 
     def _select_order(self) -> None:
         if self._order_selection_method is None:
@@ -188,6 +220,32 @@ class AR(TimeSeries):
                 f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
 
         logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, time series length: {len(self._signs)}).")
+
+    def _ar_log_likelihood(self, parameters: np.ndarray) -> float:
+        # Vector filled with the mean value
+        c = 0
+        if self._start_idx != 0:
+            c = parameters[0]
+        mu_p = np.full(shape=(self._order, 1), fill_value=c / (1 - np.sum(parameters[self._start_idx:])), dtype=float)
+
+        # first order observations
+        y_p = self._signs[:self._order].reshape((self._order, 1))
+
+        diff_p = y_p - mu_p
+
+        vp_inv = self._calculate_vp_inv(parameters=parameters.copy())
+
+        large_term = np.dot((np.dot(diff_p.T, vp_inv)), diff_p).item()
+
+        pred = np.dot(self._x, parameters)
+        sum_square_residuals = sumofsq(self._y.squeeze() - pred)
+
+        sigma2 = 1.0 / self._nb_signs * (large_term + sum_square_residuals)
+
+        log_determinant_vp_inv = slogdet(vp_inv)[1]
+        log_likelihood = (-1 / 2.0) * (self._nb_signs * (np.log(2 * np.pi) + np.log(
+            sigma2)) - log_determinant_vp_inv + large_term / sigma2 + sum_square_residuals / sigma2)
+        return log_likelihood
 
     def simulate(self, size: int, seed: Optional[int] = None) -> np.ndarray:
         """
@@ -219,3 +277,14 @@ class AR(TimeSeries):
         cpp_lib = SharedLibrariesRegistry().find_shared_library(name=LIB_TRADEFLOW).load()
         cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
         return self._simulation[:]
+
+    def _calculate_vp_inv(self, parameters: np.ndarray) -> np.ndarray:
+        parameters = np.r_[-1, parameters[self._start_idx:]]
+        vp_inv = np.zeros(shape=(self._order, self._order), dtype=float)
+
+        for i in range(1, self._order + 1):
+            vp_inv[i - 1, i - 1:] = np.correlate(parameters, parameters[:i])[:-1]
+            vp_inv[i - 1, i - 1:] -= np.correlate(parameters[-i:], parameters)[:-1]
+
+        vp_inv = vp_inv + vp_inv.T - np.diag(vp_inv.diagonal())
+        return vp_inv
