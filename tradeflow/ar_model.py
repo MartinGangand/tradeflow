@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional, Tuple, Any
+from typing import Literal, Optional
 
 import numpy as np
 from numpy.linalg import slogdet
@@ -105,10 +105,10 @@ class AR(TimeSeries):
     def _init_max_order(self, max_order: Optional[int]) -> int:
         if max_order is None:
             # Schwert (1989)
-            max_order = int(np.ceil(12.0 * np.power(len(self._signs) / 100.0, 1 / 4.0)))
+            max_order = int(np.ceil(12.0 * np.power(self._nb_signs / 100.0, 1 / 4.0)))
 
-        check_condition(condition=1 <= max_order < len(self._signs) // 2,
-                        exception=IllegalNbLagsException(f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< {len(self._signs) // 2})."))
+        check_condition(condition=1 <= max_order < self._nb_signs // 2,
+                        exception=IllegalNbLagsException(f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< {self._nb_signs // 2})."))
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
@@ -160,7 +160,7 @@ class AR(TimeSeries):
             start_params = self._compute_start_params(has_cst_parameter=method.has_cst_parameter)
 
             def f(parameters: np.ndarray) -> float:
-                return -self._ar_log_likelihood(parameters=parameters) / len(self._signs)
+                return -self._ar_log_likelihood(parameters=parameters) / self._nb_signs
 
             optimizer = Optimizer()
             kwargs = {"pgtol": 1e-8, "factr": 1e2, "m": 12, "approx_grad": True}
@@ -219,7 +219,7 @@ class AR(TimeSeries):
             raise IllegalValueException(
                 f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
 
-        logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, time series length: {len(self._signs)}).")
+        logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, time series length: {self._nb_signs}).")
 
     def _ar_log_likelihood(self, parameters: np.ndarray) -> float:
         # Vector filled with the mean value
