@@ -7,8 +7,8 @@ from tradeflow.ar_model import AR
 from tradeflow.common.exceptions import EnumValueException
 from tradeflow.common.general_utils import get_enum_values
 from tradeflow.common.shared_libraries_registry import Singleton
-from tradeflow.constants import FitMethodAR
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
+from tradeflow.enums import FitMethodAR
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, ModelNotFittedException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException
 from tradeflow.tests.test_time_series import generate_autoregressive, generate_white_noise
@@ -128,6 +128,15 @@ class TestFit:
             default_tolerance=dict(atol=1e-7, rtol=0)
         )
 
+    @pytest.mark.parametrize("method", [FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST])
+    def test_fit_with_mle_should_raise_exception_when_did_not_converge(self, mocker, ar_model_with_max_order_6, method):
+        mocker.patch("scipy.optimize.fmin_l_bfgs_b", return_value=(None, None, {"warnflag": 1}))
+
+        with pytest.raises(Exception) as ex:
+            ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+
+        assert str(ex.value) == "lbfgs method did not succeed to find optimal parameters, you may try to use another method."
+
     @pytest.mark.parametrize("method", ["invalid_method", None])
     def test_fit_should_raise_exception_when_invalid_method(self, ar_model_with_max_order_6, method):
         expected_exception_message = f"The value '{method}' for method is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)} or None if it is valid."
@@ -197,8 +206,8 @@ class TestGetModelXY:
                                  [6.],
                                  [7.],
                                  [8.]])
-        assert_array_equal(x=actual_x, y=expected_x, strict=True)
-        assert_array_equal(x=actual_y, y=expected_y, strict=True)
+        assert_array_equal(actual_x, expected_x, strict=True)
+        assert_array_equal(actual_y, expected_y, strict=True)
 
     def test_get_model_x_y_with_cst_parameter(self):
         ar_model = AR(signs=[1, 2, 3, 4, 5, 6, 7, 8], max_order=3, order_selection_method=None)
@@ -215,8 +224,8 @@ class TestGetModelXY:
                                  [6.],
                                  [7.],
                                  [8.]])
-        assert_array_equal(x=actual_x, y=expected_x, strict=True)
-        assert_array_equal(x=actual_y, y=expected_y, strict=True)
+        assert_array_equal(actual_x, expected_x, strict=True)
+        assert_array_equal(actual_y, expected_y, strict=True)
 
 
 class TestLogLikelihood:

@@ -37,7 +37,9 @@ class TimeSeries(ABC):
         self._signs = signs
         self._nb_signs = len(signs)
 
+        # Will be set in fit()
         self._order = None
+        
         self._x = None
         self._y = None
         self._start_idx = None

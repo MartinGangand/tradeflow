@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Literal, Optional
 
 import numpy as np
+import scipy.optimize as optimize
 from numpy.linalg import slogdet
-from statsmodels.base.optimizer import Optimizer
 from statsmodels.regression import yule_walker
 from statsmodels.regression.linear_model import burg
 from statsmodels.tools import add_constant
@@ -18,7 +18,7 @@ from tradeflow.common.general_utils import check_condition, check_enum_value_is_
     is_value_within_interval_exclusive
 from tradeflow.common.shared_libraries_registry import SharedLibrariesRegistry
 from tradeflow.config import LIB_TRADEFLOW
-from tradeflow.constants import OrderSelectionMethodAR, FitMethodAR
+from tradeflow.enums import OrderSelectionMethodAR, FitMethodAR
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException
 from tradeflow.time_series import TimeSeries
@@ -118,20 +118,24 @@ class AR(TimeSeries):
 
         Parameters
         ----------
-        method : {'yule_walker', 'ols_with_cst'}
+        method : {'yule_walker', 'burg', 'ols_with_cst', 'mle_without_cst', 'mle_with_cst'}
             The method to use for estimating parameters.
 
+            If the method estimates a constant term, the percentage of buy signs in the time series generated with
+            these parameters will be close to the one from the training time series ('ols_with_cst', 'mle_with_cst').
+
+            Otherwise, the percentage of buy signs in the time series generated with these parameters
+            will be close to 50% ('yule_walker', 'burg', 'mle_without_cst').
+
             * 'yule_walker' - Use the Yule Walker equations to estimate model parameters.
-              There will be no constant term, thus the percentage of buy signs
-              in the time series generated with these parameters will be close to 50%.
 
             * 'burg' - Use Burg's method to estimate model parameters.
-              There will be no constant term, thus the percentage of buy signs
-              in the time series generated with these parameters will be close to 50%.
 
-            * 'ols_with_cst' - Use OLS to estimate model parameters.
-              There will be a constant term, thus the percentage of buy signs in the time series
-              generated with these parameters will be close to the one from the training time series.
+            * 'ols_with_cst' - Use OLS with a constant term  to estimate model parameters.
+
+            * 'mle_without_cst' - Use maximum likelihood estimation with a constant term to estimate model parameters.
+
+            * 'mle_with_cst' - Use OLS to estimate model parameters.
         significance_level : float, default 0.05
             The significance level for stationarity and residual autocorrelation (if `check_residuals` is `True`) tests.
         check_residuals : bool, default True
@@ -162,11 +166,12 @@ class AR(TimeSeries):
             def f(parameters: np.ndarray) -> float:
                 return -self._ar_log_likelihood(parameters=parameters) / self._nb_signs
 
-            optimizer = Optimizer()
-            kwargs = {"pgtol": 1e-8, "factr": 1e2, "m": 12, "approx_grad": True}
-            optimal_parameters, retvals, optim_settings = optimizer._fit(f, None, start_params, (), kwargs, hessian=None,
-                                                                         method="lbfgs", disp=False, maxiter=35, callback=None,
-                                                                         retall=False, full_output=True)
+            optimal_parameters, _, res = optimize.fmin_l_bfgs_b(func=f, x0=start_params, approx_grad=True, factr=1e2, pgtol=1e-8)
+
+            if res["warnflag"] != 0:
+                raise Exception("lbfgs method did not succeed to find optimal parameters, you may try to use another method.")
+
+            logger.info(f"Found optimal parameters for MLE using lbfgs in {res['nit']} iterations")
             if method.has_cst_parameter:
                 self._constant_parameter, self._parameters = optimal_parameters[0], optimal_parameters[1:]
             else:

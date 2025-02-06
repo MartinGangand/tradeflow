@@ -28,10 +28,10 @@ tradeflow.config module
    :undoc-members:
    :show-inheritance:
 
-tradeflow.constants module
+tradeflow.enums module
 --------------------------
 
-.. automodule:: tradeflow.constants
+.. automodule:: tradeflow.enums
    :members:
    :undoc-members:
    :show-inheritance:
