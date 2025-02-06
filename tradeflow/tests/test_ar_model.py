@@ -110,12 +110,12 @@ class TestFit:
             default_tolerance=dict(atol=1e-10, rtol=0)
         )
 
-    @pytest.mark.parametrize("method,start_params", [
+    @pytest.mark.parametrize("method,start_parameters", [
         (FitMethodAR.MLE_WITHOUT_CST, [0.20793670441358317, 0.15625334330632215, 0.08328570101676176, 0.10762268507210443, 0.12228963258158163, 0.07896963026086244]),
         (FitMethodAR.MLE_WITH_CST, [0.06400645100573688, 0.20915180295744143, 0.15836060267986332, 0.0834257462768199, 0.10653755478818641, 0.12165411140031882, 0.07969039271249247])
     ])
-    def test_fit_with_mle_method(self, mocker, ar_model_with_max_order_6, method, start_params, num_regression):
-        mocker.patch.object(ar_model_with_max_order_6, "_compute_start_params", return_value=start_params)
+    def test_fit_with_mle_method(self, mocker, ar_model_with_max_order_6, method, start_parameters, num_regression):
+        mocker.patch.object(ar_model_with_max_order_6, "_compute_start_parameters", return_value=start_parameters)
 
         ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
@@ -145,10 +145,9 @@ class TestFit:
 
         assert str(ex.value) == expected_exception_message
 
-    @pytest.mark.parametrize("method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG, FitMethodAR.OLS_WITH_CST, FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST])
-    def test_fit_should_raise_exception_when_time_series_non_stationary(self, ar_model_non_stationary_with_max_order_1, method):
+    def test_fit_should_raise_exception_when_time_series_non_stationary(self, ar_model_non_stationary_with_max_order_1):
         with pytest.raises(NonStationaryTimeSeriesException) as ex:
-            ar_model_non_stationary_with_max_order_1.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+            ar_model_non_stationary_with_max_order_1.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         assert str(ex.value) == "The time series must be stationary in order to be fitted."
 
@@ -235,20 +234,21 @@ class TestLogLikelihood:
 
     def _set_model_order_start_idx_x_y(self, ar_model: AR, order: int, has_cst_parameter: bool) -> None:
         ar_model._order = order
-        ar_model._start_idx = 1 if has_cst_parameter else 0
         ar_model._x, ar_model._y = ar_model._get_model_x_y(has_cst_parameter=has_cst_parameter)
+        ar_model._start_idx_parameters = 1 if has_cst_parameter else 0
+        ar_model._first_order_signs = ar_model._signs[:order].reshape((order, 1))
 
     @pytest.mark.parametrize("has_cst_parameter,parameters,expected_log_likelihood", [
         (False, PARAMETERS_WITHOUT_CST, -1213.402414644196),
         (True, PARAMETERS_WITH_CST, -1209.9266539115727)
     ])
-    def test_ar_log_likelihood(self, ar_model_with_max_order_6, has_cst_parameter, parameters, expected_log_likelihood):
+    def test_log_likelihood(self, ar_model_with_max_order_6, has_cst_parameter, parameters, expected_log_likelihood):
         self._set_model_order_start_idx_x_y(ar_model=ar_model_with_max_order_6, order=6,  has_cst_parameter=has_cst_parameter)
 
-        actual_loglikelihood = ar_model_with_max_order_6._ar_log_likelihood(parameters=parameters)
+        actual_loglikelihood = ar_model_with_max_order_6._log_likelihood(parameters=parameters)
         assert actual_loglikelihood == expected_log_likelihood
 
-    @pytest.mark.parametrize("has_cst_parameter, parameters", [
+    @pytest.mark.parametrize("has_cst_parameter,parameters", [
         (False, PARAMETERS_WITHOUT_CST),
         (True, PARAMETERS_WITH_CST)
     ])

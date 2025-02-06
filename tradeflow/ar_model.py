@@ -131,11 +131,11 @@ class AR(TimeSeries):
 
             * 'burg' - Use Burg's method to estimate model parameters.
 
-            * 'ols_with_cst' - Use OLS with a constant term  to estimate model parameters.
+            * 'ols_with_cst' - Use OLS with a constant term to estimate model parameters.
 
-            * 'mle_without_cst' - Use maximum likelihood estimation with a constant term to estimate model parameters.
+            * 'mle_without_cst' - Use maximum likelihood estimation without constant term to estimate model parameters.
 
-            * 'mle_with_cst' - Use OLS to estimate model parameters.
+            * 'mle_with_cst' - Use maximum likelihood estimation with a constant term to estimate model parameters.
         significance_level : float, default 0.05
             The significance level for stationarity and residual autocorrelation (if `check_residuals` is `True`) tests.
         check_residuals : bool, default True
@@ -158,20 +158,21 @@ class AR(TimeSeries):
         elif method == FitMethodAR.OLS_WITH_CST:
             ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
             self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
-        elif method == FitMethodAR.MLE_WITHOUT_CST or method == FitMethodAR.MLE_WITH_CST:
+        elif method in (FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST):
             self._x, self._y = self._get_model_x_y(has_cst_parameter=method.has_cst_parameter)
-            self._start_idx = 1 if method.has_cst_parameter else 0
-            start_params = self._compute_start_params(has_cst_parameter=method.has_cst_parameter)
+            self._start_idx_parameters = 1 if method.has_cst_parameter else 0
+            self._first_order_signs = self._signs[:self._order].reshape((self._order, 1))
+            start_parameters = self._compute_start_parameters(has_cst_parameter=method.has_cst_parameter)
 
             def f(parameters: np.ndarray) -> float:
-                return -self._ar_log_likelihood(parameters=parameters) / self._nb_signs
+                return -self._log_likelihood(parameters=parameters) / self._nb_signs
 
-            optimal_parameters, _, res = optimize.fmin_l_bfgs_b(func=f, x0=start_params, approx_grad=True, factr=1e2, pgtol=1e-8)
+            optimal_parameters, _, res = optimize.fmin_l_bfgs_b(func=f, x0=start_parameters, approx_grad=True, factr=1e2, pgtol=1e-8)
 
             if res["warnflag"] != 0:
                 raise Exception("lbfgs method did not succeed to find optimal parameters, you may try to use another method.")
 
-            logger.info(f"Found optimal parameters for MLE using lbfgs in {res['nit']} iterations")
+            logger.info(f"Found optimal parameters for MLE using lbfgs in {res['nit']} iterations.")
             if method.has_cst_parameter:
                 self._constant_parameter, self._parameters = optimal_parameters[0], optimal_parameters[1:]
             else:
@@ -196,7 +197,7 @@ class AR(TimeSeries):
             x = add_constant(data=x, prepend=True, has_constant="raise")
         return x, y
 
-    def _compute_start_params(self, has_cst_parameter: bool) -> np.ndarray:
+    def _compute_start_parameters(self, has_cst_parameter: bool) -> np.ndarray:
         if has_cst_parameter:
             return AutoReg(endog=self._signs, lags=self._order, trend="c").fit().params
         else:
@@ -226,31 +227,42 @@ class AR(TimeSeries):
 
         logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, time series length: {self._nb_signs}).")
 
-    def _ar_log_likelihood(self, parameters: np.ndarray) -> float:
+    def _log_likelihood(self, parameters: np.ndarray) -> float:
+        # Time Series Analysis - Hamilton, J.D, [5.3.6, p. 124].
+
         # Vector filled with the mean value
-        c = 0
-        if self._start_idx != 0:
-            c = parameters[0]
-        mu_p = np.full(shape=(self._order, 1), fill_value=c / (1 - np.sum(parameters[self._start_idx:])), dtype=float)
+        constant_parameter = 0
+        if self._start_idx_parameters != 0:
+            constant_parameter = parameters[0]
 
-        # first order observations
-        y_p = self._signs[:self._order].reshape((self._order, 1))
+        mu = constant_parameter / (1 - np.sum(parameters[self._start_idx_parameters:]))
+        mu_p = np.full(shape=(self._order, 1), fill_value=mu, dtype=float)
 
-        diff_p = y_p - mu_p
+        # Difference between first order observations and mu
+        diff_p = self._first_order_signs - mu_p
 
         vp_inv = self._calculate_vp_inv(parameters=parameters.copy())
-
-        large_term = np.dot((np.dot(diff_p.T, vp_inv)), diff_p).item()
+        diff_p_vp_inv = np.dot((np.dot(diff_p.T, vp_inv)), diff_p).item()
 
         pred = np.dot(self._x, parameters)
         sum_square_residuals = sumofsq(self._y.squeeze() - pred)
-
-        sigma2 = 1.0 / self._nb_signs * (large_term + sum_square_residuals)
+        sigma2 = 1.0 / self._nb_signs * (diff_p_vp_inv + sum_square_residuals)
 
         log_determinant_vp_inv = slogdet(vp_inv)[1]
-        log_likelihood = (-1 / 2.0) * (self._nb_signs * (np.log(2 * np.pi) + np.log(
-            sigma2)) - log_determinant_vp_inv + large_term / sigma2 + sum_square_residuals / sigma2)
+        log_likelihood = (-1 / 2.0) * (self._nb_signs * (np.log(2 * np.pi) + np.log(sigma2)) - log_determinant_vp_inv + diff_p_vp_inv / sigma2 + sum_square_residuals / sigma2)
         return log_likelihood
+
+    def _calculate_vp_inv(self, parameters: np.ndarray) -> np.ndarray:
+        # Time Series Analysis - Hamilton, J.D, [5.3.7, p. 125].
+        parameters = np.r_[-1, parameters[self._start_idx_parameters:]]
+        vp_inv = np.zeros(shape=(self._order, self._order), dtype=float)
+
+        for i in range(1, self._order + 1):
+            vp_inv[i - 1, i - 1:] = np.correlate(parameters, parameters[:i])[:-1]
+            vp_inv[i - 1, i - 1:] -= np.correlate(parameters[-i:], parameters)[:-1]
+
+        vp_inv = vp_inv + vp_inv.T - np.diag(vp_inv.diagonal())
+        return vp_inv
 
     def simulate(self, size: int, seed: Optional[int] = None) -> np.ndarray:
         """
@@ -282,14 +294,3 @@ class AR(TimeSeries):
         cpp_lib = SharedLibrariesRegistry().find_shared_library(name=LIB_TRADEFLOW).load()
         cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
         return self._simulation[:]
-
-    def _calculate_vp_inv(self, parameters: np.ndarray) -> np.ndarray:
-        parameters = np.r_[-1, parameters[self._start_idx:]]
-        vp_inv = np.zeros(shape=(self._order, self._order), dtype=float)
-
-        for i in range(1, self._order + 1):
-            vp_inv[i - 1, i - 1:] = np.correlate(parameters, parameters[:i])[:-1]
-            vp_inv[i - 1, i - 1:] -= np.correlate(parameters[-i:], parameters)[:-1]
-
-        vp_inv = vp_inv + vp_inv.T - np.diag(vp_inv.diagonal())
-        return vp_inv

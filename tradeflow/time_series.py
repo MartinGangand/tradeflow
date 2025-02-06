@@ -42,7 +42,8 @@ class TimeSeries(ABC):
         
         self._x = None
         self._y = None
-        self._start_idx = None
+        self._first_order_signs = None
+        self._start_idx_parameters = None
 
         # Will be set in simulate()
         self._simulation = None
