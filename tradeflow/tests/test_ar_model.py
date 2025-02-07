@@ -135,7 +135,7 @@ class TestFit:
         with pytest.raises(Exception) as ex:
             ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
-        assert str(ex.value) == "lbfgs method did not succeed to find optimal parameters, you may try to use another method."
+        assert str(ex.value) == "lbfgs method failed to find optimal parameters, you may try to use another method."
 
     @pytest.mark.parametrize("method", ["invalid_method", None])
     def test_fit_should_raise_exception_when_invalid_method(self, ar_model_with_max_order_6, method):
@@ -157,7 +157,7 @@ class TestFit:
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
         with pytest.raises(AutocorrelatedResidualsException) as ex:
-            ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+            ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         assert str(ex.value) == "The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is 0.0129), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."
         spy_breusch_godfrey_test.assert_called_once_with(autocorrelated_resid)
@@ -170,7 +170,7 @@ class TestFit:
         mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=white_noise_resid)
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
-        ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         spy_breusch_godfrey_test.assert_called_once_with(white_noise_resid)
         actual_lagrange_multiplier, actual_p_value = spy_breusch_godfrey_test.spy_return
@@ -182,7 +182,7 @@ class TestFit:
         mock_resid = mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=autocorrelated_resid)
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
-        ar_model_with_max_order_6.fit(method="yule_walker", significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
 
         mock_resid.assert_not_called()
         spy_breusch_godfrey_test.assert_not_called()

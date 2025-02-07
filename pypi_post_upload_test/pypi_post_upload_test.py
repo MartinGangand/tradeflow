@@ -34,7 +34,7 @@ def uninstall_package():
     subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {PACKAGE_NAME}"))
 
 
-@pytest.mark.parametrize("fit_method", [("yule_walker", "burg", "ols_with_cst", "mle_without_cst", "mle_with_cst")])
+@pytest.mark.parametrize("fit_method", ["yule_walker", "burg", "ols_with_cst", "mle_without_cst", "mle_with_cst"])
 def test_package_installation_and_simulation_of_signs(index, expected_package_version, fit_method):
     # Remove tradeflow from the module search path
     sys.path[:] = [path for path in sys.path if PACKAGE_NAME not in path]

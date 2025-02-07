@@ -10,6 +10,6 @@ from tradeflow.enums import FitMethodAR
     (FitMethodAR.MLE_WITHOUT_CST, "mle_without_cst", False),
     (FitMethodAR.MLE_WITH_CST, "mle_with_cst", True)
 ])
-def test_ar_fit_method(fit_ar_method, expected_name, expected_has_cst_parameter):
+def test_fit_method_ar_properties(fit_ar_method, expected_name, expected_has_cst_parameter):
     assert fit_ar_method.value == expected_name
     assert fit_ar_method.has_cst_parameter == expected_has_cst_parameter

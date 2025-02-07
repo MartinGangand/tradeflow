@@ -24,6 +24,7 @@ from tradeflow.exceptions import IllegalValueException, ModelNotFittedException,
 from tradeflow.time_series import TimeSeries
 
 logger = logger_utils.get_logger(__name__)
+LOG_2_PI = np.log(2 * np.pi)
 
 
 class AR(TimeSeries):
@@ -116,16 +117,16 @@ class AR(TimeSeries):
         """
         Estimate the model parameters.
 
+        If the chosen method estimates a constant term, the percentage of buy signs in the time series generated with
+        these parameters will be close to the one from the training time series ('ols_with_cst', 'mle_with_cst').
+
+        Otherwise, the percentage of buy signs in the time series generated with these parameters
+        will be close to 50% ('yule_walker', 'burg', 'mle_without_cst').
+
         Parameters
         ----------
         method : {'yule_walker', 'burg', 'ols_with_cst', 'mle_without_cst', 'mle_with_cst'}
             The method to use for estimating parameters.
-
-            If the method estimates a constant term, the percentage of buy signs in the time series generated with
-            these parameters will be close to the one from the training time series ('ols_with_cst', 'mle_with_cst').
-
-            Otherwise, the percentage of buy signs in the time series generated with these parameters
-            will be close to 50% ('yule_walker', 'burg', 'mle_without_cst').
 
             * 'yule_walker' - Use the Yule Walker equations to estimate model parameters.
 
@@ -162,15 +163,15 @@ class AR(TimeSeries):
             self._x, self._y = self._get_model_x_y(has_cst_parameter=method.has_cst_parameter)
             self._start_idx_parameters = 1 if method.has_cst_parameter else 0
             self._first_order_signs = self._signs[:self._order].reshape((self._order, 1))
-            start_parameters = self._compute_start_parameters(has_cst_parameter=method.has_cst_parameter)
 
             def f(parameters: np.ndarray) -> float:
                 return -self._log_likelihood(parameters=parameters) / self._nb_signs
 
+            start_parameters = self._compute_start_parameters(has_cst_parameter=method.has_cst_parameter)
             optimal_parameters, _, res = optimize.fmin_l_bfgs_b(func=f, x0=start_parameters, approx_grad=True, factr=1e2, pgtol=1e-8)
 
             if res["warnflag"] != 0:
-                raise Exception("lbfgs method did not succeed to find optimal parameters, you may try to use another method.")
+                raise Exception("lbfgs method failed to find optimal parameters, you may try to use another method.")
 
             logger.info(f"Found optimal parameters for MLE using lbfgs in {res['nit']} iterations.")
             if method.has_cst_parameter:
@@ -228,13 +229,12 @@ class AR(TimeSeries):
         logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, time series length: {self._nb_signs}).")
 
     def _log_likelihood(self, parameters: np.ndarray) -> float:
-        # Time Series Analysis - Hamilton, J.D, [5.3.6, p. 124].
-
-        # Vector filled with the mean value
+        # Time Series Analysis - Hamilton, J.D, (5.3.6, p. 124).
         constant_parameter = 0
         if self._start_idx_parameters != 0:
             constant_parameter = parameters[0]
 
+        # Vector filled with the mean value
         mu = constant_parameter / (1 - np.sum(parameters[self._start_idx_parameters:]))
         mu_p = np.full(shape=(self._order, 1), fill_value=mu, dtype=float)
 
@@ -249,17 +249,16 @@ class AR(TimeSeries):
         sigma2 = 1.0 / self._nb_signs * (diff_p_vp_inv + sum_square_residuals)
 
         log_determinant_vp_inv = slogdet(vp_inv)[1]
-        log_likelihood = (-1 / 2.0) * (self._nb_signs * (np.log(2 * np.pi) + np.log(sigma2)) - log_determinant_vp_inv + diff_p_vp_inv / sigma2 + sum_square_residuals / sigma2)
+        log_likelihood = -0.5 * (self._nb_signs * (LOG_2_PI + np.log(sigma2)) - log_determinant_vp_inv + diff_p_vp_inv / sigma2 + sum_square_residuals / sigma2)
         return log_likelihood
 
     def _calculate_vp_inv(self, parameters: np.ndarray) -> np.ndarray:
-        # Time Series Analysis - Hamilton, J.D, [5.3.7, p. 125].
+        # Time Series Analysis - Hamilton, J.D, (5.3.7, p. 125).
         parameters = np.r_[-1, parameters[self._start_idx_parameters:]]
         vp_inv = np.zeros(shape=(self._order, self._order), dtype=float)
 
         for i in range(1, self._order + 1):
-            vp_inv[i - 1, i - 1:] = np.correlate(parameters, parameters[:i])[:-1]
-            vp_inv[i - 1, i - 1:] -= np.correlate(parameters[-i:], parameters)[:-1]
+            vp_inv[i - 1, i - 1:] = np.correlate(a=parameters, v=parameters[:i])[:-1] - np.correlate(a=parameters[-i:], v=parameters)[:-1]
 
         vp_inv = vp_inv + vp_inv.T - np.diag(vp_inv.diagonal())
         return vp_inv
