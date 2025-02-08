@@ -9,13 +9,14 @@ import pytest
 import toml
 
 ROOT_REPOSITORY = Path(__file__).parent.parent
+DATA_FOLDER = Path(__file__).parent.joinpath("data")
+
 
 package_info = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
 PACKAGE_NAME = package_info["name"]
 
 INDEX_URL_TEST_PYPI = "https://test.pypi.org/simple/"
-
-DATA_FOLDER = Path(__file__).parent.joinpath("data")
+FIT_METHODS_AR = ["yule_walker", "burg", "ols_with_cst", "mle_without_cst", "mle_with_cst"]
 
 
 @pytest.fixture
@@ -34,8 +35,7 @@ def uninstall_package():
     subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {PACKAGE_NAME}"))
 
 
-@pytest.mark.parametrize("fit_method", ["yule_walker", "burg", "ols_with_cst", "mle_without_cst", "mle_with_cst"])
-def test_package_installation_and_simulation_of_signs(index, expected_package_version, fit_method):
+def test_package_installation_and_simulation_of_signs(index, expected_package_version):
     # Remove tradeflow from the module search path
     sys.path[:] = [path for path in sys.path if PACKAGE_NAME not in path]
 
@@ -49,14 +49,15 @@ def test_package_installation_and_simulation_of_signs(index, expected_package_ve
     installed_package_version = importlib.metadata.version(PACKAGE_NAME)
     assert installed_package_version == expected_package_version
 
-    signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
+    for fit_method in FIT_METHODS_AR:
+        signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
 
-    # Check package usage
-    import tradeflow
-    ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
-    ar_model = ar_model.fit(method=fit_method, significance_level=0.05, check_residuals=True)
-    ar_model.simulate(size=1_000_000, seed=1)
-    ar_model.simulation_summary(plot=True, log_scale=True)
+        # Check package usage
+        import tradeflow
+        ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
+        ar_model = ar_model.fit(method=fit_method, significance_level=0.05, check_residuals=True)
+        ar_model.simulate(size=1_000_000, seed=1)
+        ar_model.simulation_summary(plot=True, log_scale=True)
 
 
 def install_package(index: str) -> None:
