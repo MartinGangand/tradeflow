@@ -169,8 +169,8 @@ jobs:
           # Parse package version
           IFS='.' read -r major minor patch <<< "$PACKAGE_VERSION"
           
-          # Increment patch version
-          patch=$((patch + 1))
+          # Increment minor version
+          minor=$((minor + 1))
 
           NEW_PACKAGE_VERSION="$major.$minor.$patch"
           echo "New package version: $NEW_PACKAGE_VERSION"

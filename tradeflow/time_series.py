@@ -35,8 +35,18 @@ class TimeSeries(ABC):
 
     def __init__(self, signs: ArrayLike1D) -> None:
         self._signs = signs
+        self._nb_signs = len(signs)
+
+        # Will be set in fit()
         self._order = None
-        self._simulation = None  # Will be set in simulate()
+        
+        self._x = None
+        self._y = None
+        self._first_order_signs = None
+        self._start_idx_parameters = None
+
+        # Will be set in simulate()
+        self._simulation = None
 
     @abstractmethod
     def resid(self) -> np.ndarray:
