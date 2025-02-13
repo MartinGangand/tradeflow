@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_almost_equal, assert_allclose, assert_array_almost_equal, \
     assert_array_equal
+from pytest_regressions.num_regression import NumericRegressionFixture
 
 from tradeflow.ar_model import AR
 from tradeflow.common.exceptions import EnumValueException
@@ -10,7 +11,7 @@ from tradeflow.common.shared_libraries_registry import Singleton
 from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.enums import FitMethodAR
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, ModelNotFittedException, \
-    NonStationaryTimeSeriesException, AutocorrelatedResidualsException
+    NonStationaryTimeSeriesException, AutocorrelatedResidualsException, NoConvergenceException
 from tradeflow.tests.test_time_series import generate_autoregressive, generate_white_noise
 
 SIGNIFICANCE_LEVEL = 0.05
@@ -29,6 +30,13 @@ def signs_btcusdt():
 @pytest.fixture
 def ar_model_with_max_order_6(signs_sample):
     ar_model = AR(signs=signs_sample, max_order=6, order_selection_method=None)
+    return ar_model
+
+
+@pytest.fixture
+def ar_model_with_order_3(signs_sample):
+    ar_model = AR(signs=signs_sample, max_order=63, order_selection_method=None)
+    ar_model._order = 3
     return ar_model
 
 
@@ -97,18 +105,21 @@ class TestInitMaxOrder:
 
 class TestFit:
 
-    @pytest.mark.parametrize("method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG, FitMethodAR.OLS_WITH_CST])
+    def _check_fitted_parameters(self, ar_model: AR, num_regression: NumericRegressionFixture, absolute_tolerance: float) -> None:
+        num_regression.check(
+            {
+                "parameters": ar_model._parameters,
+                "constant_parameter": [ar_model._constant_parameter]
+            },
+            default_tolerance=dict(atol=absolute_tolerance, rtol=0)
+        )
+
+    @pytest.mark.parametrize("method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG])
     def test_fit(self, ar_model_with_max_order_6, method, num_regression):
         ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         # Results are from statsmodels.
-        num_regression.check(
-            {
-                "parameters": ar_model_with_max_order_6._parameters,
-                "constant_parameter": [ar_model_with_max_order_6._constant_parameter]
-            },
-            default_tolerance=dict(atol=1e-10, rtol=0)
-        )
+        self._check_fitted_parameters(ar_model=ar_model_with_max_order_6, num_regression=num_regression, absolute_tolerance=1e-10)
 
     @pytest.mark.parametrize("method,start_parameters", [
         (FitMethodAR.MLE_WITHOUT_CST, [0.20793670441358317, 0.15625334330632215, 0.08328570101676176, 0.10762268507210443, 0.12228963258158163, 0.07896963026086244]),
@@ -120,19 +131,20 @@ class TestFit:
         ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         # Results are from statsmodels.
-        num_regression.check(
-            {
-                "parameters": ar_model_with_max_order_6._parameters,
-                "constant_parameter": [ar_model_with_max_order_6._constant_parameter]
-            },
-            default_tolerance=dict(atol=1e-7, rtol=0)
-        )
+        self._check_fitted_parameters(ar_model=ar_model_with_max_order_6, num_regression=num_regression, absolute_tolerance=1e-7)
+
+    @pytest.mark.parametrize("method", [FitMethodAR.CMLE_WITHOUT_CST, FitMethodAR.CMLE_WITH_CST])
+    def test_fit_with_cmle_method(self, ar_model_with_max_order_6, method, num_regression):
+        ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+
+        # Results are from statsmodels.
+        self._check_fitted_parameters(ar_model=ar_model_with_max_order_6, num_regression=num_regression, absolute_tolerance=1e-10)
 
     @pytest.mark.parametrize("method", [FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST])
     def test_fit_with_mle_should_raise_exception_when_did_not_converge(self, mocker, ar_model_with_max_order_6, method):
         mocker.patch("scipy.optimize.fmin_l_bfgs_b", return_value=(None, None, {"warnflag": 1}))
 
-        with pytest.raises(Exception) as ex:
+        with pytest.raises(NoConvergenceException) as ex:
             ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
 
         assert str(ex.value) == "lbfgs method failed to find optimal parameters, you may try to use another method."
@@ -292,6 +304,32 @@ class TestSelectOrder:
         assert ar_model._order == expected_order == ar_model._max_order
 
 
+class TestSetParameters:
+
+    @pytest.mark.parametrize("parameters,has_cst_parameter,expected_parameters,expected_constant_parameter", [
+        (np.asarray([0.21, 0.12, 0.04]), False, np.asarray([0.21, 0.12, 0.04]), 0),
+        (np.asarray([0.035, 0.21, 0.12, 0.04]), True, np.asarray([0.21, 0.12, 0.04]), 0.035)
+    ])
+    def test_set_parameters(self, ar_model_with_order_3, parameters, has_cst_parameter, expected_parameters, expected_constant_parameter):
+        ar_model_with_order_3._set_parameters(parameters=parameters, has_cst_parameter=has_cst_parameter)
+        assert_array_equal(ar_model_with_order_3._parameters, expected_parameters)
+        assert ar_model_with_order_3._constant_parameter == expected_constant_parameter
+
+    @pytest.mark.parametrize("parameters,has_cst_parameter,expected_exception_message", [
+        (None, False, "Can't set parameters to None."),
+        (None, True, "Can't set parameters to None."),
+        (np.asarray([0.035, 0.21, 0.12, 0.04]), False, "Expected 3 parameters, but got 4."),
+        (np.asarray([0.035, 0.21, 0.12, 0.04, 0.01]), True,  "Expected 4 parameters (including constant term), but got 5."),
+        (np.asarray([0.21, 0.12, 0.04]), True, "Expected 4 parameters (including constant term), but got 3.")
+
+    ])
+    def test_set_parameters_should_raise_exception(self, ar_model_with_order_3, parameters, has_cst_parameter, expected_exception_message):
+        with pytest.raises(Exception) as ex:
+            ar_model_with_order_3._set_parameters(parameters=parameters, has_cst_parameter=has_cst_parameter)
+
+        assert str(ex.value) == expected_exception_message
+
+
 class TestSimulate:
 
     @pytest.fixture(scope="function", autouse=True)
@@ -351,7 +389,7 @@ class TestSimulationSummary:
         yield
         Singleton._instances.clear()
 
-    @pytest.mark.parametrize("fit_method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG, FitMethodAR.OLS_WITH_CST, FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST])
+    @pytest.mark.parametrize("fit_method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG, FitMethodAR.CMLE_WITHOUT_CST, FitMethodAR.CMLE_WITH_CST, FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST])
     def test_simulation_summary(self, signs_btcusdt, fit_method):
         simulation_size = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")
