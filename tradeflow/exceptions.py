@@ -26,3 +26,8 @@ class NonStationaryTimeSeriesException(Exception):
 class AutocorrelatedResidualsException(Exception):
     """Raised when the residuals are autocorrelated, based on the result of a hypothesis test"""
     pass
+
+
+class NoConvergenceException(Exception):
+    """Raised when the method used to estimate model parameters failed to converge"""
+    pass

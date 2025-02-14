@@ -16,7 +16,7 @@ package_info = toml.load(ROOT_REPOSITORY.joinpath("pyproject.toml"))["project"]
 PACKAGE_NAME = package_info["name"]
 
 INDEX_URL_TEST_PYPI = "https://test.pypi.org/simple/"
-FIT_METHODS_AR = ["yule_walker", "burg", "ols_with_cst", "mle_without_cst", "mle_with_cst"]
+FIT_METHODS_AR = ["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"]
 
 
 @pytest.fixture

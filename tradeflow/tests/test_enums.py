@@ -6,7 +6,8 @@ from tradeflow.enums import FitMethodAR
 @pytest.mark.parametrize("fit_ar_method, expected_name, expected_has_cst_parameter", [
     (FitMethodAR.YULE_WALKER, "yule_walker", False),
     (FitMethodAR.BURG, "burg", False),
-    (FitMethodAR.OLS_WITH_CST, "ols_with_cst", True),
+    (FitMethodAR.CMLE_WITHOUT_CST, "cmle_without_cst", False),
+    (FitMethodAR.CMLE_WITH_CST, "cmle_with_cst", True),
     (FitMethodAR.MLE_WITHOUT_CST, "mle_without_cst", False),
     (FitMethodAR.MLE_WITH_CST, "mle_with_cst", True)
 ])
