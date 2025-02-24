@@ -1,0 +1,215 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tradeflow.common.general_utils &mdash; tradeflow 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=bbaf98b3"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            tradeflow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">tradeflow</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">tradeflow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">tradeflow.common.general_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for tradeflow.common.general_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradeflow.common.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">EnumValueException</span>
+
+
+<div class="viewcode-block" id="check_condition">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.general_utils.check_condition">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">exception</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raise an exception if a condition is false, otherwise do nothing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    condition : bool</span>
+<span class="sd">        The condition to check.</span>
+<span class="sd">    exception : Exception</span>
+<span class="sd">        The exception to raise if the condition is false.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    Exception</span>
+<span class="sd">        If the condition is false.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">condition</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">exception</span></div>
+
+
+
+<div class="viewcode-block" id="get_enum_values">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.general_utils.get_enum_values">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_enum_values</span><span class="p">(</span><span class="n">enum_obj</span><span class="p">:</span> <span class="n">enum</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a list containing the values of an enum.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    enum_obj : enum.EnumType</span>
+<span class="sd">        The enum for which the values will be retrieved.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of any</span>
+<span class="sd">        The values of the enum.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">enum_object</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">enum_object</span> <span class="ow">in</span> <span class="n">enum_obj</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="check_enum_value_is_valid">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.general_utils.check_enum_value_is_valid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_enum_value_is_valid</span><span class="p">(</span><span class="n">enum_obj</span><span class="p">:</span> <span class="n">enum</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">],</span> <span class="n">is_none_valid</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raise an EnumValueException if a value is not within an enum.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    enum_obj : enum.EnumType</span>
+<span class="sd">        The enum to check the value against.</span>
+<span class="sd">    value : object or None</span>
+<span class="sd">        The value to verify.</span>
+<span class="sd">    is_none_valid : bool</span>
+<span class="sd">        Flag indicating whether None is allowed.</span>
+<span class="sd">    parameter_name : str</span>
+<span class="sd">        Variable name for exceptions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    enum.Enum or None</span>
+<span class="sd">        Enum associated to the passed value or None if the value is None and is_none_valid is true.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    EnumValueException</span>
+<span class="sd">        If the value does not exist withing the enum or if the value is None and `is_none_valid` is false.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">exception_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;The value &#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; for </span><span class="si">{</span><span class="n">parameter_name</span><span class="si">}</span><span class="s2"> is not valid, it must be among </span><span class="si">{</span><span class="n">get_enum_values</span><span class="p">(</span><span class="n">enum_obj</span><span class="o">=</span><span class="n">enum_obj</span><span class="p">)</span><span class="si">}</span><span class="s2"> or None if it is valid.&quot;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_none_valid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">EnumValueException</span><span class="p">(</span><span class="n">exception_message</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">enum_obj</span> <span class="o">=</span> <span class="n">enum_obj</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">EnumValueException</span><span class="p">(</span><span class="n">exception_message</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">enum_obj</span></div>
+
+
+
+<div class="viewcode-block" id="is_value_within_interval_exclusive">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.general_utils.is_value_within_interval_exclusive">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_value_within_interval_exclusive</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return whether a value is strictly within an interval or not.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value : int or float</span>
+<span class="sd">        The value to check.</span>
+<span class="sd">    lower_bound : int or float</span>
+<span class="sd">        The strict lower bound of the interval.</span>
+<span class="sd">    upper_bound : int or float</span>
+<span class="sd">        The strict upper bound of the interval</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if the value is strictly within the interval, false otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">lower_bound</span> <span class="o">&lt;</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="n">upper_bound</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Martin Gangand.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
