@@ -11,7 +11,8 @@ class OrderSelectionMethodAR(Enum):
 class FitMethodAR(Enum):
     YULE_WALKER = ("yule_walker", False)
     BURG = ("burg", False)
-    OLS_WITH_CST = ("ols_with_cst", True)
+    CMLE_WITHOUT_CST = ("cmle_without_cst", False)
+    CMLE_WITH_CST = ("cmle_with_cst", True)
     MLE_WITHOUT_CST = ("mle_without_cst", False)
     MLE_WITH_CST = ("mle_with_cst", True)
 
