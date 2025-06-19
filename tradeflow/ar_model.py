@@ -6,7 +6,7 @@ import numpy as np
 import scipy.optimize as optimize
 from numpy.linalg import slogdet
 from statsmodels.regression import yule_walker
-from statsmodels.regression.linear_model import burg
+from statsmodels.regression.linear_model import burg, OLS
 from statsmodels.tools import add_constant
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tsa.ar_model import AutoReg, sumofsq
@@ -20,7 +20,7 @@ from tradeflow.common.shared_libraries_registry import SharedLibrariesRegistry
 from tradeflow.config import LIB_TRADEFLOW
 from tradeflow.enums import OrderSelectionMethodAR, FitMethodAR
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
-    NonStationaryTimeSeriesException, AutocorrelatedResidualsException
+    NonStationaryTimeSeriesException, AutocorrelatedResidualsException, NoConvergenceException
 from tradeflow.time_series import TimeSeries
 
 logger = logger_utils.get_logger(__name__)
@@ -113,7 +113,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "burg", "ols_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
+    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -132,7 +132,11 @@ class AR(TimeSeries):
 
             * 'burg' - Use Burg's method to estimate model parameters.
 
-            * 'ols_with_cst' - Use OLS with a constant term to estimate model parameters.
+            * 'cmle_without_cst' - Use conditional maximum likelihood estimation without constant term to estimate model parameters.
+            It can be solved with an OLS.
+
+            * 'cmle_with_cst' - Use conditional maximum likelihood estimation with a constant term to estimate model parameters.
+            It can be solved with an OLS.
 
             * 'mle_without_cst' - Use maximum likelihood estimation without constant term to estimate model parameters.
 
@@ -152,42 +156,43 @@ class AR(TimeSeries):
         self._select_order()
         check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
 
+        parameters = None
         if method == FitMethodAR.YULE_WALKER:
-            self._parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
+            parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
         elif method == FitMethodAR.BURG:
-            self._parameters, _ = burg(endog=self._signs, order=self._order, demean=True)
-        elif method == FitMethodAR.OLS_WITH_CST:
-            ar_model = AutoReg(endog=self._signs, lags=self._order, trend="c").fit()
-            self._constant_parameter, self._parameters = ar_model.params[0], ar_model.params[1:]
+            parameters, _ = burg(endog=self._signs, order=self._order, demean=True)
+        elif method in (FitMethodAR.CMLE_WITHOUT_CST, FitMethodAR.CMLE_WITH_CST):
+            self._x, self._y = self._get_model_x_y(has_cst_parameter=method.has_cst_parameter)
+            ols = OLS(endog=self._y, exog=self._x, missing="raise", hasconst=method.has_cst_parameter).fit()
+            parameters = ols.params
         elif method in (FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST):
             self._x, self._y = self._get_model_x_y(has_cst_parameter=method.has_cst_parameter)
             self._start_idx_parameters = 1 if method.has_cst_parameter else 0
             self._first_order_signs = self._signs[:self._order].reshape((self._order, 1))
 
-            def f(parameters: np.ndarray) -> float:
-                return -self._log_likelihood(parameters=parameters) / self._nb_signs
+            def f(params: np.ndarray) -> float:
+                return -self._log_likelihood(parameters=params) / self._nb_signs
 
             start_parameters = self._compute_start_parameters(has_cst_parameter=method.has_cst_parameter)
-            optimal_parameters, _, res = optimize.fmin_l_bfgs_b(func=f, x0=start_parameters, approx_grad=True, factr=1e2, pgtol=1e-8)
+            parameters, _, res = optimize.fmin_l_bfgs_b(func=f, x0=start_parameters, approx_grad=True, factr=1e2, pgtol=1e-8)
 
             if res["warnflag"] != 0:
-                raise Exception("lbfgs method failed to find optimal parameters, you may try to use another method.")
+                raise NoConvergenceException("lbfgs method failed to find optimal parameters, you may try to use another method.")
 
             logger.info(f"Found optimal parameters for MLE using lbfgs in {res['nit']} iterations.")
-            if method.has_cst_parameter:
-                self._constant_parameter, self._parameters = optimal_parameters[0], optimal_parameters[1:]
-            else:
-                self._parameters = optimal_parameters
         else:
             raise IllegalValueException(
                 f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
+
+        self._set_parameters(parameters=parameters, has_cst_parameter=method.has_cst_parameter)
 
         if check_residuals:
             _, p_value = self.breusch_godfrey_test(resid=self.resid(seed=1))
             # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
             logger.info(f"Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}")
             check_condition(condition=p_value > significance_level,
-                            exception=AutocorrelatedResidualsException(f"The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is {round(p_value, 4)}), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
+                            exception=AutocorrelatedResidualsException(f"The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is {round(p_value, 4)}), "
+                                                                       f"you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
 
         logger.info(f"The AR({self._order}) model has been fitted with method '{method}'.")
         return self
@@ -200,7 +205,8 @@ class AR(TimeSeries):
 
     def _compute_start_parameters(self, has_cst_parameter: bool) -> np.ndarray:
         if has_cst_parameter:
-            return AutoReg(endog=self._signs, lags=self._order, trend="c").fit().params
+            ols = OLS(endog=self._y, exog=self._x, missing="raise", hasconst=has_cst_parameter).fit()
+            return ols.params
         else:
             return yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
 
@@ -262,6 +268,19 @@ class AR(TimeSeries):
 
         vp_inv = vp_inv + vp_inv.T - np.diag(vp_inv.diagonal())
         return vp_inv
+
+    def _set_parameters(self, parameters: np.ndarray, has_cst_parameter: bool) -> None:
+        if parameters is None:
+            raise Exception("Can't set parameters to None.")
+
+        if has_cst_parameter:
+            if len(parameters) != self._order + 1:
+                raise Exception(f"Expected {self._order + 1} parameters (including constant term), but got {len(parameters)}.")
+            self._constant_parameter, self._parameters = parameters[0], parameters[1:]
+        else:
+            if len(parameters) != self._order:
+                raise Exception(f"Expected {self._order} parameters, but got {len(parameters)}.")
+            self._parameters = parameters
 
     def simulate(self, size: int, seed: Optional[int] = None) -> np.ndarray:
         """
