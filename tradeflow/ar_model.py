@@ -9,7 +9,7 @@ from statsmodels.regression import yule_walker
 from statsmodels.regression.linear_model import burg, OLS
 from statsmodels.tools import add_constant
 from statsmodels.tools.typing import ArrayLike1D
-from statsmodels.tsa.ar_model import AutoReg, sumofsq
+from statsmodels.tsa.ar_model import sumofsq
 from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
@@ -113,7 +113,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
+    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_stationarity: bool = True, check_residuals: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -143,6 +143,9 @@ class AR(TimeSeries):
             * 'mle_with_cst' - Use maximum likelihood estimation with a constant term to estimate model parameters.
         significance_level : float, default 0.05
             The significance level for stationarity and residual autocorrelation (if `check_residuals` is `True`) tests.
+        check_stationarity : bool, default True
+            If `True`, performs a stationarity check on the time series using the Augmented Dickey-Fuller unit root test.
+            Raises an exception if the time series is not stationary according to the test.
         check_residuals : bool, default True
             If `True`, performs a residual autocorrelation check using the Breusch-Godfrey test.
             Raises an exception if residuals are autocorrelated.
@@ -154,7 +157,12 @@ class AR(TimeSeries):
         """
         method: FitMethodAR = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
-        check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
+
+        if check_stationarity:
+            check_condition(
+                condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"),
+                exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted. You can set 'check_stationarity' to False to disable this check.")
+            )
 
         parameters = None
         if method == FitMethodAR.YULE_WALKER:
