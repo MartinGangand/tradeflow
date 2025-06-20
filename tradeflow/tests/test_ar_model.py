@@ -164,7 +164,7 @@ class TestFit:
         assert str(ex.value) == "The time series must be stationary in order to be fitted. You can set 'check_stationarity' to False to disable this check."
 
     def test_fit_should_not_raise_exception_when_time_series_is_non_stationary_and_check_stationarity_is_false(self, mocker, ar_model_non_stationary_with_max_order_1):
-        spy_is_time_series_stationary = mocker.spy(ar_model_non_stationary_with_max_order_1, "_is_time_series_stationary")
+        spy_is_time_series_stationary = mocker.spy(ar_model_non_stationary_with_max_order_1, "is_time_series_stationary")
         ar_model_non_stationary_with_max_order_1.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=False, check_residuals=False)
         spy_is_time_series_stationary.assert_not_called()
 
@@ -174,7 +174,7 @@ class TestFit:
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
         with pytest.raises(AutocorrelatedResidualsException) as ex:
-            ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
+            ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=False, check_residuals=True)
 
         assert str(ex.value) == "The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is 0.0129), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."
         spy_breusch_godfrey_test.assert_called_once_with(autocorrelated_resid)
@@ -187,7 +187,7 @@ class TestFit:
         mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=white_noise_resid)
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
-        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
+        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=False, check_residuals=True)
 
         spy_breusch_godfrey_test.assert_called_once_with(white_noise_resid)
         actual_lagrange_multiplier, actual_p_value = spy_breusch_godfrey_test.spy_return
