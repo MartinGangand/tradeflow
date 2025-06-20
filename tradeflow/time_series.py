@@ -162,16 +162,58 @@ class TimeSeries(ABC):
 
         return statistics
 
-    def _is_time_series_stationary(self, significance_level: float = 0.05, regression: Literal["c", "ct", "ctt", "n"] = "c") -> bool:
-        df_test = stattools.adfuller(x=self._signs, maxlag=self._order, regression=regression, autolag=None)
+    @staticmethod
+    def is_time_series_stationary(time_series: ArrayLike1D, nb_lags: Optional[int] = None, significance_level: float = 0.05, regression: Literal["c", "ct", "ctt", "n"] = "c") -> bool:
+        """
+        Test whether a time series is stationary at a given significance level using the Augmented Dickey-Fuller test.
+
+        Parameters
+        ----------
+        time_series : array_like
+            The time series to test for stationarity.
+        nb_lags : int, default None
+            The number of lags to include in the test. If None, the default used by the test is applied.
+        significance_level : float, default 0.05
+            The significance level for the test. If the p-value is less than or equal to this value, the time series is considered stationary.
+        regression: {'c', 'ct', 'ctt', 'n'}, default 'c'
+            Constant and trend order to include in regression.
+
+            * "c" : constant only (default).
+            * "ct" : constant and trend.
+            * "ctt" : constant, and linear and quadratic trend.
+            * "n" : no constant, no trend.
+
+        Returns
+        -------
+        bool
+            True if the time series is stationary at the given significance level, False otherwise.
+        """
+        df_test = stattools.adfuller(x=time_series, maxlag=nb_lags, regression=regression, autolag=None)
         p_value = df_test[1]
 
         is_stationary = p_value <= significance_level
-        logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary (p-value: {np.round(p_value, decimals=6)}, number of lags used: {df_test[2]})")
+        logger.info(f"The time series of signs is {'non-' if not is_stationary else ''}stationary at the significance level {significance_level} (p-value: {np.round(p_value, decimals=6)}, number of lags used: {df_test[2]}).")
         return is_stationary
 
     @staticmethod
     def breusch_godfrey_test(resid: np.ndarray, nb_lags: Optional[int] = None) -> Tuple[float, float]:
+        """
+        Perform the Breusch-Godfrey test for residual autocorrelation.
+
+        Parameters
+        ----------
+        resid : np.ndarray
+            The residuals from a regression model. Must be a 1-dimensional array.
+        nb_lags : int, default None
+            The number of lags to include in the test. If None, defaults to min(10, len(resid) // 5).
+
+        Returns
+        -------
+        lagrange_multiplier : float
+            The value of the Lagrange Multiplier test statistic.
+        p_value : float
+            The p-value for the test statistic.
+        """
         resid = np.asarray(resid)
         if resid.ndim != 1:
             raise ValueError("Residuals must be a 1d array.")

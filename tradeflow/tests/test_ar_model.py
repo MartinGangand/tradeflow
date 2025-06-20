@@ -116,7 +116,7 @@ class TestFit:
 
     @pytest.mark.parametrize("method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG])
     def test_fit(self, ar_model_with_max_order_6, method, num_regression):
-        ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
 
         # Results are from statsmodels.
         self._check_fitted_parameters(ar_model=ar_model_with_max_order_6, num_regression=num_regression, absolute_tolerance=1e-10)
@@ -128,14 +128,14 @@ class TestFit:
     def test_fit_with_mle_method(self, mocker, ar_model_with_max_order_6, method, start_parameters, num_regression):
         mocker.patch.object(ar_model_with_max_order_6, "_compute_start_parameters", return_value=start_parameters)
 
-        ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
 
         # Results are from statsmodels.
         self._check_fitted_parameters(ar_model=ar_model_with_max_order_6, num_regression=num_regression, absolute_tolerance=1e-7)
 
     @pytest.mark.parametrize("method", [FitMethodAR.CMLE_WITHOUT_CST, FitMethodAR.CMLE_WITH_CST])
     def test_fit_with_cmle_method(self, ar_model_with_max_order_6, method, num_regression):
-        ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
 
         # Results are from statsmodels.
         self._check_fitted_parameters(ar_model=ar_model_with_max_order_6, num_regression=num_regression, absolute_tolerance=1e-10)
@@ -145,7 +145,7 @@ class TestFit:
         mocker.patch("scipy.optimize.fmin_l_bfgs_b", return_value=(None, None, {"warnflag": 1}))
 
         with pytest.raises(NoConvergenceException) as ex:
-            ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+            ar_model_with_max_order_6.fit(method=method.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
 
         assert str(ex.value) == "lbfgs method failed to find optimal parameters, you may try to use another method."
 
@@ -153,15 +153,20 @@ class TestFit:
     def test_fit_should_raise_exception_when_invalid_method(self, ar_model_with_max_order_6, method):
         expected_exception_message = f"The value '{method}' for method is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)} or None if it is valid."
         with pytest.raises(EnumValueException) as ex:
-            ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+            ar_model_with_max_order_6.fit(method=method, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
 
         assert str(ex.value) == expected_exception_message
 
-    def test_fit_should_raise_exception_when_time_series_non_stationary(self, ar_model_non_stationary_with_max_order_1):
+    def test_fit_should_raise_exception_when_time_series_is_non_stationary_and_check_stationarity_is_true(self, ar_model_non_stationary_with_max_order_1):
         with pytest.raises(NonStationaryTimeSeriesException) as ex:
-            ar_model_non_stationary_with_max_order_1.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+            ar_model_non_stationary_with_max_order_1.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=False)
 
-        assert str(ex.value) == "The time series must be stationary in order to be fitted."
+        assert str(ex.value) == "The time series must be stationary in order to be fitted. You can set 'check_stationarity' to False to disable this check."
+
+    def test_fit_should_not_raise_exception_when_time_series_is_non_stationary_and_check_stationarity_is_false(self, mocker, ar_model_non_stationary_with_max_order_1):
+        spy_is_time_series_stationary = mocker.spy(ar_model_non_stationary_with_max_order_1, "is_time_series_stationary")
+        ar_model_non_stationary_with_max_order_1.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=False, check_residuals=False)
+        spy_is_time_series_stationary.assert_not_called()
 
     def test_fit_should_raise_exception_when_residuals_are_autocorrelated_and_check_residuals_is_true(self, mocker, ar_model_with_max_order_6):
         autocorrelated_resid = generate_autoregressive(size=10_000, parameters=[0.04, 0.01], sigma=1, seed=1)
@@ -169,7 +174,7 @@ class TestFit:
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
         with pytest.raises(AutocorrelatedResidualsException) as ex:
-            ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+            ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=False, check_residuals=True)
 
         assert str(ex.value) == "The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is 0.0129), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."
         spy_breusch_godfrey_test.assert_called_once_with(autocorrelated_resid)
@@ -182,7 +187,7 @@ class TestFit:
         mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=white_noise_resid)
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
-        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=False, check_residuals=True)
 
         spy_breusch_godfrey_test.assert_called_once_with(white_noise_resid)
         actual_lagrange_multiplier, actual_p_value = spy_breusch_godfrey_test.spy_return
@@ -194,7 +199,7 @@ class TestFit:
         mock_resid = mocker.patch.object(ar_model_with_max_order_6, "resid", return_value=autocorrelated_resid)
         spy_breusch_godfrey_test = mocker.spy(ar_model_with_max_order_6, "breusch_godfrey_test")
 
-        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=False)
+        ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=False, check_residuals=False)
 
         mock_resid.assert_not_called()
         spy_breusch_godfrey_test.assert_not_called()
@@ -339,7 +344,7 @@ class TestSimulate:
 
     @pytest.fixture
     def fitted_model(self, ar_model_with_max_order_6):
-        return ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        return ar_model_with_max_order_6.fit(method=FitMethodAR.YULE_WALKER.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
 
     def test_simulate(self, fitted_model, num_regression):
         actual_simulation = fitted_model.simulate(size=1000, seed=1)
@@ -393,7 +398,7 @@ class TestSimulationSummary:
     def test_simulation_summary(self, signs_btcusdt, fit_method):
         simulation_size = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")
-        ar_model = ar_model.fit(method=fit_method.value, significance_level=SIGNIFICANCE_LEVEL, check_residuals=True)
+        ar_model = ar_model.fit(method=fit_method.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals=True)
         actual_simulation = ar_model.simulate(size=simulation_size, seed=1)
 
         summary_df = ar_model.simulation_summary(plot=False, percentiles=(50.0, 75.0, 95.0, 99.0))
