@@ -14,19 +14,16 @@ from tradeflow.tests.results.results_time_series import ResultsTimeSeries
 from tradeflow.time_series import TimeSeries
 
 
+@pytest.fixture(scope="class")
+def signs():
+    return trade_signs_sample.load()
+
+
 @pytest.fixture
-def time_series_signs():
+def time_series_signs(signs):
     TimeSeries.__abstractmethods__ = set()
-    time_series = TimeSeries(signs=trade_signs_sample.load())
+    time_series = TimeSeries(signs=signs)
     time_series._order = 6
-    return time_series
-
-
-@pytest.fixture
-def time_series_signs_non_stationary():
-    TimeSeries.__abstractmethods__ = set()
-    time_series = TimeSeries(signs=[-1] * 500 + [1] * 500)
-    time_series._order = 1
     return time_series
 
 
@@ -101,13 +98,15 @@ class TestCalculatePacf:
 
 class TestIsTimeSeriesStationary:
 
-    @pytest.mark.parametrize("regression", ["c", "ct", "ctt", "n"])
-    def test_time_series_should_be_stationary(self, time_series_signs, regression):
-        assert time_series_signs._is_time_series_stationary(significance_level=0.05, regression=regression)
+    @pytest.mark.parametrize("nb_lags", [6, None])
+    @pytest.mark.parametrize("regression", ["c", "ct", "n"])
+    def test_time_series_should_be_stationary(self, signs, nb_lags, regression):
+        assert TimeSeries.is_time_series_stationary(time_series=signs, nb_lags=nb_lags, significance_level=0.05, regression=regression)
 
     @pytest.mark.parametrize("regression", ["c", "ct", "ctt", "n"])
-    def test_time_series_should_be_non_stationary(self, time_series_signs_non_stationary, regression):
-        assert not time_series_signs_non_stationary._is_time_series_stationary(significance_level=0.05, regression=regression)
+    def test_time_series_should_be_non_stationary(self, regression):
+        non_stationary_time_series = [-1] * 500 + [1] * 500
+        assert not TimeSeries.is_time_series_stationary(time_series=non_stationary_time_series, nb_lags=1, significance_level=0.05, regression=regression)
 
 
 class TestBreuschGodfreyTest:

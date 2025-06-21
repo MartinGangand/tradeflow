@@ -60,7 +60,7 @@ def get_c_type_from_string(c_type_str: Literal["int", "double"]) -> Any:
 
     Parameters:
     -----------
-    c_type_str : Literal["int", "double"]
+    c_type_str : {'int', 'double'}
         A string indicating the desired C data type.
 
     Returns:

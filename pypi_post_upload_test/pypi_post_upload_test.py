@@ -55,7 +55,7 @@ def test_package_installation_and_simulation_of_signs(index, expected_package_ve
         # Check package usage
         import tradeflow
         ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
-        ar_model = ar_model.fit(method=fit_method, significance_level=0.05, check_residuals=True)
+        ar_model = ar_model.fit(method=fit_method, significance_level=0.05, check_stationarity=True, check_residuals=True)
         ar_model.simulate(size=1_000_000, seed=1)
         ar_model.simulation_summary(plot=True, log_scale=True)
 

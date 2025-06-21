@@ -254,8 +254,8 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
 
     Parameters
     ----------
-    index : {"pypi", "test.pypi"}
-        The name of the package index to check for package availability. Must be either "pypi" or "test.pypi".
+    index : {'pypi', 'test.pypi'}
+        The name of the package index to check for package availability. Must be either 'pypi' or 'test.pypi'.
     package_name : str
         The name of the package to validate.
     version : str

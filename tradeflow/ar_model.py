@@ -9,7 +9,7 @@ from statsmodels.regression import yule_walker
 from statsmodels.regression.linear_model import burg, OLS
 from statsmodels.tools import add_constant
 from statsmodels.tools.typing import ArrayLike1D
-from statsmodels.tsa.ar_model import AutoReg, sumofsq
+from statsmodels.tsa.ar_model import sumofsq
 from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
@@ -113,7 +113,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_residuals: bool = True) -> AR:
+    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_stationarity: bool = True, check_residuals: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -129,20 +129,18 @@ class AR(TimeSeries):
             The method to use for estimating parameters.
 
             * 'yule_walker' - Use the Yule Walker equations to estimate model parameters.
-
             * 'burg' - Use Burg's method to estimate model parameters.
-
             * 'cmle_without_cst' - Use conditional maximum likelihood estimation without constant term to estimate model parameters.
             It can be solved with an OLS.
-
             * 'cmle_with_cst' - Use conditional maximum likelihood estimation with a constant term to estimate model parameters.
             It can be solved with an OLS.
-
             * 'mle_without_cst' - Use maximum likelihood estimation without constant term to estimate model parameters.
-
             * 'mle_with_cst' - Use maximum likelihood estimation with a constant term to estimate model parameters.
         significance_level : float, default 0.05
-            The significance level for stationarity and residual autocorrelation (if `check_residuals` is `True`) tests.
+            The significance level for stationarity (if `check_stationarity` is `True`) and residual autocorrelation (if `check_residuals` is `True`) tests.
+        check_stationarity : bool, default True
+            If `True`, performs a stationarity check on the time series using the Augmented Dickey-Fuller unit root test.
+            Raises an exception if the time series is not stationary according to the test.
         check_residuals : bool, default True
             If `True`, performs a residual autocorrelation check using the Breusch-Godfrey test.
             Raises an exception if residuals are autocorrelated.
@@ -154,7 +152,12 @@ class AR(TimeSeries):
         """
         method: FitMethodAR = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
         self._select_order()
-        check_condition(condition=self._is_time_series_stationary(significance_level=significance_level, regression="n"), exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted."))
+
+        if check_stationarity:
+            check_condition(
+                condition=self.is_time_series_stationary(time_series=self._signs, nb_lags=self._order, significance_level=significance_level, regression="n"),
+                exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted. You can set 'check_stationarity' to False to disable this check.")
+            )
 
         parameters = None
         if method == FitMethodAR.YULE_WALKER:
@@ -189,7 +192,7 @@ class AR(TimeSeries):
         if check_residuals:
             _, p_value = self.breusch_godfrey_test(resid=self.resid(seed=1))
             # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
-            logger.info(f"Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}")
+            logger.info(f"Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}.")
             check_condition(condition=p_value > significance_level,
                             exception=AutocorrelatedResidualsException(f"The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is {round(p_value, 4)}), "
                                                                        f"you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
