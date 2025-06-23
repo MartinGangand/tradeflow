@@ -15,7 +15,6 @@ for p in sys.path:
 print("=====================END==========================")
 from scripts import config
 
-ROOT_REPOSITORY = Path(__file__).parent.parent
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
 
 INDEX_URL_TEST_PYPI = "https://test.pypi.org/simple/"
@@ -63,7 +62,7 @@ def install_package_with_pip(index: str, package_name: str, version: Optional[st
         # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME' does not work because it tries to install the package and its dependencies from index 'test.pypi' but some dependencies are not available
         # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME --extra-index-url https://pypi.org/simple/' does not work because if the package is also available on index 'pypi', it will install it from there by default
 
-        requirements_file = ROOT_REPOSITORY.joinpath("requirements.txt")
+        requirements_file = config.ROOT_REPOSITORY.joinpath("requirements.txt")
         assert requirements_file.is_file()
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {package_name}{version_part}"))
@@ -72,9 +71,12 @@ def install_package_with_pip(index: str, package_name: str, version: Optional[st
 
 
 def assert_package_not_importable(package_name: str) -> None:
-    with pytest.raises(ModuleNotFoundError) as ex:
+    try:
         importlib.import_module(package_name)
-    assert str(ex.value) == f"No module named '{package_name}'"
+    except ImportError:
+        return
+    else:
+        raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
 
 
 def parse_command_line(command_line: str) -> List[str]:

@@ -119,7 +119,7 @@ class TestVerifySourceUrl:
         "package2-0.0.1.tar.gz"
         "package-0.0.1",
         "0.0.1.tar.gz",
-        "package-0.0.1",
+        "package-0.0.1"
     ])
     def test_verify_source_url_should_raise_exception(self, source_name):
         source_url = f"{SOURCE_URL_START}/{source_name}"
