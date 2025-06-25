@@ -1,82 +1,71 @@
+from pathlib import Path
+from unittest.mock import call
+
 import pytest
-from unittest.mock import call, Mock
 
-from scripts.check_package_installation_and_usage import uninstall_package_with_pip, parse_command_line, \
-    install_package_with_pip, INDEX_URL_TEST_PYPI, config
+from scripts.check_package_installation_and_usage import main
 
 
-class TestUninstallPackageWithPip:
+class TestMain:
 
-    def test_uninstall_package_with_pip(self, mocker):
-        mocker.patch("sys.executable", new="python")
-        mock_check_call = mocker.patch("subprocess.check_call")
+    INDEX = "index"
+    PACKAGE_NAME = "package"
+    PACKAGE_VERSION = "1.1.2"
+    MAIN_PACKAGE_DIRECTORY = Path("main_package_directory")
 
-        uninstall_package_with_pip("test_package")
+    @pytest.fixture(scope="function", autouse=True)
+    def mock_dependencies(self, mocker):
+        self.mock_sys_path = mocker.patch("sys.path")
+        self.mock_install = mocker.patch("scripts.utils.install_package_with_pip")
+        self.mock_assert_not_importable = mocker.patch("scripts.utils.assert_package_not_importable")
+        self.mock_uninstall = mocker.patch("scripts.utils.uninstall_package_with_pip")
 
-        mock_check_call.assert_called_once_with(["python", "-m", "pip", "uninstall", "-y", "test_package"])
+    @pytest.mark.parametrize("install_default_version", [False, True])
+    def test_main_valid(self, mocker, install_default_version):
+        mocker.patch("importlib.metadata.version", return_value=self.PACKAGE_VERSION)
 
+        func_1 = mocker.Mock()
+        func_2 = mocker.Mock()
+        main(index=self.INDEX, package_name=self.PACKAGE_NAME, package_version=self.PACKAGE_VERSION, install_default_version=install_default_version, local_package_directory=self.MAIN_PACKAGE_DIRECTORY, func_list=[func_1, func_2])
 
-class TestParseCommandLine:
+        self.mock_sys_path.remove.assert_called_once_with(str(self.MAIN_PACKAGE_DIRECTORY.parent))
+        self.mock_assert_not_importable.assert_called_once_with(package_name=self.PACKAGE_NAME)
 
-    def test_parse_command_line(self):
-        actual = parse_command_line(command_line="python -m pip install package_name==1.0.0")
-        assert actual == ["python", "-m", "pip", "install", "package_name==1.0.0"]
+        # Check that the package is installed with the correct parameters
+        version = None if install_default_version else self.PACKAGE_VERSION
+        self.mock_install.assert_called_once_with(package_name=self.PACKAGE_NAME, index=self.INDEX, version=version)
 
+        # Check that the functions in func_list are called
+        func_1.assert_called_once_with()
+        func_2.assert_called_once_with()
 
-class TestInstallPackageWithPip:
+        # mock_uninstall is called twice: once before installation and once after uninstallation of the package
+        assert self.mock_uninstall.call_count == 2
+        self.mock_uninstall.assert_has_calls([call(package_name=self.PACKAGE_NAME), call(package_name=self.PACKAGE_NAME)])
 
-    # @pytest.mark.parametrize("index", ["pypi", "test.pypi"])
-    def test_install_package_with_pip(self, mocker):
-        mocker.patch("sys.executable", new="python")
-        mock_check_call = mocker.patch("subprocess.check_call")
+    @pytest.mark.parametrize("install_default_version", [False, True])
+    def test_main_should_raise_exception_when_incorrect_installed_version(self, mocker, install_default_version):
+        mocker.patch("importlib.metadata.version", return_value="1.0.0")
 
-        install_package_with_pip(index="pypi", package_name="test_package", version="1.0.0")
+        func_1 = mocker.Mock()
+        func_2 = mocker.Mock()
 
-        mock_check_call.assert_called_once_with(["python", "-m", "pip", "install", "--no-cache-dir", "test_package==1.0.0"])
+        with pytest.raises(Exception, match=f"Installed package version '1.0.0' does not match expected version '{self.PACKAGE_VERSION}'.") as ex:
+            main(index=self.INDEX, package_name=self.PACKAGE_NAME, package_version=self.PACKAGE_VERSION, install_default_version=install_default_version, local_package_directory=self.MAIN_PACKAGE_DIRECTORY, func_list=[func_1, func_2])
 
-    def test_install_package_with_pip_with_test_pypi(self, mocker):
-        mocker.patch("sys.executable", new="python")
-        # mocker.patch("scripts.config.ROOT_REPOSITORY", new="python")
-        mock_check_call = mocker.patch("subprocess.check_call")
+        assert str(ex.value) == f"Installed package version '1.0.0' does not match expected version '{self.PACKAGE_VERSION}'."
 
-        install_package_with_pip(index="test.pypi", package_name="test_package", version="1.0.0")
+        self.mock_sys_path.remove.assert_called_once_with(str(self.MAIN_PACKAGE_DIRECTORY.parent))
+        self.mock_assert_not_importable.assert_called_once_with(package_name=self.PACKAGE_NAME)
 
-        assert mock_check_call.call_count == 2
-        c1 = ["python", "-m", "pip", "install", "-r", str(config.ROOT_REPOSITORY.joinpath("requirements.txt"))]
-        c2 = ["python", "-m", "pip", "install", "--index-url", f"{INDEX_URL_TEST_PYPI}", "--no-deps", "--no-cache-dir", "test_package==1.0.0"]
-        mock_check_call.assert_has_calls([call(c1), call(c2)])
-        # mock_check_call.assert_called_once_with(["python", "-m", "pip", "install", "--index-url", f"{INDEX_URL_TEST_PYPI}", "--no-deps", "--no-cache-dir", "test_package==1.0.0"])
+        # Check that the package is installed with the correct parameters
+        version = None if install_default_version else self.PACKAGE_VERSION
+        self.mock_install.assert_called_once_with(package_name=self.PACKAGE_NAME, index=self.INDEX, version=version)
 
+        # Check that the functions in func_list are not called
+        func_1.assert_not_called()
+        func_2.assert_not_called()
 
-def test_install_package_with_pip_test_pypi(mocker):
-    package_name = "dummy_package"
-    version = "1.2.3"
-    version_part = f"=={version}"
-    requirements_file = "/fake/root/requirements.txt"
-    index = "test.pypi"
-
-    # Mock config.ROOT_REPOSITORY.joinpath().is_file() and __str__()
-    mock_root = mocker.Mock()
-    mock_requirements = mocker.Mock()
-    mock_requirements.is_file.return_value = True
-    # mocker.patch.object(mock_requirements, "__str__", lambda self=mock_requirements: requirements_file)
-    mock_requirements.__str__ = lambda self=mock_requirements: requirements_file
-    mock_root.joinpath.return_value = mock_requirements
-    mocker.patch("scripts.check_package_installation_and_usage.config.ROOT_REPOSITORY", new=mock_root)
-
-    # Mock sys.executable
-    mocker.patch("sys.executable", new="python")
-
-    # Mock subprocess.check_call
-    mock_check_call = mocker.patch("subprocess.check_call")
-
-    install_package_with_pip(index, package_name, version)
-
-    c1 = ["python", "-m", "pip", "install", "-r", requirements_file]
-    c2 = [
-        "python", "-m", "pip", "install",
-        "--index-url", f"{INDEX_URL_TEST_PYPI}",
-        "--no-deps", "--no-cache-dir", f"{package_name}{version_part}"
-    ]
-    mock_check_call.assert_has_calls([mocker.call(c1), mocker.call(c2)])
-    assert mock_check_call.call_count == 2
+        # mock_uninstall is called twice: once before installation and once after uninstallation of the package
+        assert self.mock_uninstall.call_count == 2
+        self.mock_uninstall.assert_has_calls([call(package_name=self.PACKAGE_NAME), call(package_name=self.PACKAGE_NAME)])

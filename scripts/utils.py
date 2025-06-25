@@ -1,16 +1,23 @@
+import importlib
 import io
 import os
 import re
+import subprocess
 import tarfile
+
+import sys
 import time
 import zipfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import requests
 from requests import Response
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+
+from scripts import config
+from scripts.config import INDEX_URL_TEST_PYPI
 
 ANY_VALID_STRING = r"[^'\"\s]+"
 DEFAULT_SLEEP_TIME_SECONDS = 5
@@ -236,3 +243,40 @@ def file_names_with_prefixes(file_names: List[str], *prefixes) -> List[str]:
 
 def paths_relative_to(paths: List[str] | List[Path], relative_to: str | Path) -> List[str]:
     return [str(Path(path).relative_to(relative_to)) for path in paths]
+
+
+def parse_command_line(command_line: str) -> List[str]:
+    return command_line.split()
+
+
+def uninstall_package_with_pip(package_name: str):
+    """Uninstall the package if it is installed."""
+    subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {package_name}"))
+
+
+def install_package_with_pip(index: str, package_name: str, version: Optional[str]) -> None:
+    version_part = f"=={version}" if version is not None else ""
+    if index == "pypi":
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --no-cache-dir {package_name}{version_part}"))
+    elif index == "test.pypi":
+        # Install package dependencies separately and then install the package from test.pypi without dependencies
+        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME' does not work because it tries to install the package and its dependencies from index 'test.pypi' but some dependencies are not available
+        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME --extra-index-url https://pypi.org/simple/' does not work because if the package is also available on index 'pypi', it will install it from there by default
+
+        requirements_file = config.ROOT_REPOSITORY.joinpath("requirements.txt")
+        assert requirements_file.is_file()
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {package_name}{version_part}"))
+    else:
+        raise Exception(f"Can't install package '{package_name}' version '{version}' from unknown index '{index}'.")
+
+
+# TODO: Test
+def assert_package_not_importable(package_name: str) -> None:
+    try:
+        importlib.import_module(package_name)
+    except ImportError:
+        return
+    else:
+        raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
+

@@ -5,15 +5,18 @@ import tarfile
 import zipfile
 from pathlib import Path
 from typing import Any, List
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 from numpy.testing import assert_equal
 from pytest_mock import MockerFixture
 
+from scripts import config
+from scripts.config import INDEX_URL_TEST_PYPI
 from scripts.utils import get_response, html_page_as_string, fetch_file_names_from_zip, \
     fetch_file_names_from_tar_gz, find_urls_in_html_page, find_file_names_with_given_extensions, \
-    find_files_in_directories, file_names_with_prefixes, paths_relative_to
+    find_files_in_directories, file_names_with_prefixes, paths_relative_to, parse_command_line, \
+    uninstall_package_with_pip, install_package_with_pip
 
 DATASETS_DIRECTORY = Path(__file__).parent.parent.joinpath("datasets").resolve()
 UTF_8 = "utf-8"
@@ -267,3 +270,60 @@ class TestPathsRelativeTo:
     def test(self, paths, relative_to, expected_paths):
         actual_paths = paths_relative_to(paths=paths, relative_to=relative_to)
         assert_equal(actual=actual_paths, desired=expected_paths)
+
+
+class TestParseCommandLine:
+
+    @pytest.mark.parametrize("command_line", [
+        "python -m pip install package_name==1.0.0",
+        " python  -m pip install   package_name==1.0.0     "
+    ])
+    def test_parse_command_line(self, command_line):
+        actual = parse_command_line(command_line=command_line)
+        assert actual == ["python", "-m", "pip", "install", "package_name==1.0.0"]
+
+
+class TestUninstallPackageWithPip:
+
+    def test_uninstall_package_with_pip(self, mocker):
+        mocker.patch("sys.executable", new="python")
+        mock_check_call = mocker.patch("subprocess.check_call")
+
+        uninstall_package_with_pip("test_package")
+
+        mock_check_call.assert_called_once_with(["python", "-m", "pip", "uninstall", "-y", "test_package"])
+
+
+class TestInstallPackageWithPip:
+
+    @pytest.mark.parametrize("version", ["1.0.0", None])
+    def test_install_package_with_pip_with_index_pypi(self, mocker, version):
+        mocker.patch("sys.executable", new="python")
+        mock_check_call = mocker.patch("subprocess.check_call")
+
+        install_package_with_pip(index="pypi", package_name="test_package", version=version)
+
+        version_part = f"=={version}" if version is not None else ""
+        mock_check_call.assert_called_once_with(["python", "-m", "pip", "install", "--no-cache-dir", f"test_package{version_part}"])
+
+    @pytest.mark.parametrize("version", ["0.2.0.2025.6.22.20.1.8", None])
+    def test_install_package_with_pip_with_index_test_pypi(self, mocker, version):
+        mocker.patch("sys.executable", new="python")
+        mock_check_call = mocker.patch("subprocess.check_call")
+
+        install_package_with_pip(index="test.pypi", package_name="test_package", version=version)
+
+        assert mock_check_call.call_count == 2
+        requirements_install_cmd = ["python", "-m", "pip", "install", "-r", str(config.ROOT_REPOSITORY.joinpath("requirements.txt"))]
+        version_part = f"=={version}" if version is not None else ""
+        package_install_cmd = ["python", "-m", "pip", "install", "--index-url", f"{INDEX_URL_TEST_PYPI}", "--no-deps", "--no-cache-dir", f"test_package{version_part}"]
+        mock_check_call.assert_has_calls([call(requirements_install_cmd), call(package_install_cmd)])
+
+    @pytest.mark.parametrize("version", ["1.0.15", None])
+    def test_install_package_with_pip_with_unknown_index(self, mocker, version):
+        mocker.patch("sys.executable", new="python")
+
+        with pytest.raises(Exception) as ex:
+            install_package_with_pip(index="unknown_index", package_name="test_package", version=version)
+
+        assert str(ex.value) == f"Can't install package 'test_package' version '{version}' from unknown index 'unknown_index'."

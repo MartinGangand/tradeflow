@@ -9,78 +9,18 @@ import numpy as np
 import pytest
 import sys
 
+import scripts
+from scripts.utils import uninstall_package_with_pip, assert_package_not_importable, install_package_with_pip
+
 print("=====================PATHS==========================")
 for p in sys.path:
     print(f"=== sys.path item: {p} ===")
 print("=====================END==========================")
-from scripts import config
+from scripts import config, utils
 
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
 
-INDEX_URL_TEST_PYPI = "https://test.pypi.org/simple/"
 FIT_METHODS_AR = ["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"]
-
-
-def uninstall_package_with_pip(package_name: str):
-    """Uninstall the package if it is installed."""
-    subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {package_name}"))
-
-
-def main(index: str, package_name: str, package_version: str, install_default_version: bool, local_package_directory: Path, func_list: List[Callable]) -> None:
-    try:
-        # Remove the root repository from the module search path to ensure that the package is not imported from the local repository
-        print("=====================PATHS==========================")
-        for p in sys.path:
-            print(f"=== sys.path item: {p} ===")
-        print("=====================END==========================")
-        print(f"????????? LOCAL_PACKAGE_DIRECTORY: {local_package_directory}?????????")
-        print(f"!!!!!!!!! REMOVING: {local_package_directory.parent}!!!!!!!!!")
-        sys.path.remove(str(local_package_directory.parent))
-
-        # Check that the package is not already installed or can't be accessed
-        uninstall_package_with_pip(package_name=package_name)
-        assert_package_not_importable(package_name=package_name)
-
-        # Install package and check that the installed version corresponds to the freshly uploaded package
-        version_to_install = None if install_default_version else package_version
-        install_package_with_pip(package_name=package_name, index=index, version=version_to_install)
-        installed_package_version = importlib.metadata.version(package_name)
-        assert installed_package_version == package_version, f"Installed package version '{installed_package_version}' does not match expected version '{package_version}'."
-
-        for func in func_list:
-            func()
-    finally:
-        uninstall_package_with_pip(package_name=package_name)
-
-
-def install_package_with_pip(index: str, package_name: str, version: Optional[str]) -> None:
-    version_part = f"=={version}" if version is not None else ""
-    if index == "pypi":
-        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --no-cache-dir {package_name}{version_part}"))
-    elif index == "test.pypi":
-        # Install package dependencies separately and then install the package from test.pypi without dependencies
-        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME' does not work because it tries to install the package and its dependencies from index 'test.pypi' but some dependencies are not available
-        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME --extra-index-url https://pypi.org/simple/' does not work because if the package is also available on index 'pypi', it will install it from there by default
-
-        requirements_file = config.ROOT_REPOSITORY.joinpath("requirements.txt")
-        assert requirements_file.is_file()
-        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
-        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {package_name}{version_part}"))
-    else:
-        raise Exception(f"Unknown index {index}.")
-
-
-def assert_package_not_importable(package_name: str) -> None:
-    try:
-        importlib.import_module(package_name)
-    except ImportError:
-        return
-    else:
-        raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
-
-
-def parse_command_line(command_line: str) -> List[str]:
-    return command_line.split()
 
 
 def basic_package_usage():
@@ -97,6 +37,30 @@ def basic_package_usage():
         ar_model.simulation_summary(plot=True, log_scale=True)
 
 
+def main(index: str, package_name: str, package_version: str, install_default_version: bool, local_package_directory: Path, func_list: List[Callable]) -> None:
+    try:
+        # Remove the local package directory from the module search path to ensure that the package is not imported from the local repository
+        sys.path.remove(str(local_package_directory.parent))
+
+        # Check that the package is not already installed or can't be accessed
+        utils.uninstall_package_with_pip(package_name=package_name)
+        utils.assert_package_not_importable(package_name=package_name)
+
+        # Install package
+        version_to_install = None if install_default_version else package_version
+        utils.install_package_with_pip(package_name=package_name, index=index, version=version_to_install)
+
+        # Check that the installed version corresponds to the expected version
+        installed_package_version = importlib.metadata.version(package_name)
+        if installed_package_version != package_version:
+            raise Exception(f"Installed package version '{installed_package_version}' does not match expected version '{package_version}'.")
+
+        for func in func_list:
+            func()
+    finally:
+        utils.uninstall_package_with_pip(package_name=package_name)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Install the specified or default version of the package from index PyPi or Test PyPi and check that the package can be used correctly.")
     parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index from which to install the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.")
@@ -111,8 +75,9 @@ if __name__ == "__main__":
              install_default_version=args.install_default_version,
              local_package_directory=config.MAIN_PACKAGE_DIRECTORY,
              func_list=[basic_package_usage])
+        print(f"Package '{config.PACKAGE_NAME}' version '{args.package_version}' installed successfully and basic usage test passed.")
         sys.exit(0)
     except Exception as e:
-        print(e)
+        print(f"An error occurred while checking the package installation and usage: {e}")
         sys.exit(1)
 
