@@ -9,7 +9,7 @@ import sys
 import time
 import zipfile
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Literal, Union
 
 import requests
 from requests import Response
@@ -241,20 +241,73 @@ def file_names_with_prefixes(file_names: List[str], *prefixes) -> List[str]:
     return [os.path.join(prefix, file_name) for file_name in file_names]
 
 
-def paths_relative_to(paths: List[str] | List[Path], relative_to: str | Path) -> List[str]:
+def paths_relative_to(paths: Union[List[str], List[Path]], relative_to: Union[str, Path]) -> List[str]:
+    """
+    Return a list of paths relative to a given base path.
+
+    Parameters
+    ----------
+    paths : list of str or list of Path
+        The list of paths to convert to relative paths.
+    relative_to : str or Path
+        The base path to which the paths should be made relative.
+
+    Returns
+    -------
+    list of str
+        The list of paths as strings, each relative to `relative_to`.
+    """
     return [str(Path(path).relative_to(relative_to)) for path in paths]
 
 
 def parse_command_line(command_line: str) -> List[str]:
+    """
+    Split a command line string into a list of arguments.
+
+    Parameters
+    ----------
+    command_line : str
+        The command line string to split.
+
+    Returns
+    -------
+    list of str
+        The list of command line arguments.
+    """
     return command_line.split()
 
 
-def uninstall_package_with_pip(package_name: str):
-    """Uninstall the package if it is installed."""
+def uninstall_package_with_pip(package_name: str) -> None:
+    """
+    Uninstall a package using pip.
+
+    Parameters
+    ----------
+    package_name : str
+        The name of the package to uninstall.
+
+    """
     subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {package_name}"))
 
 
-def install_package_with_pip(index: str, package_name: str, version: Optional[str]) -> None:
+def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: str, version: Optional[str]) -> None:
+    """
+    Install a package using pip from the specified index.
+
+    Parameters
+    ----------
+    index : {'pypi', 'test.pypi'}
+        The package index to use for installation. Supported values are 'pypi' and 'test.pypi'.
+    package_name : str
+        The name of the package to install.
+    version : str or None
+        The version of the package to install. If None, installs the latest version.
+
+    Raises
+    ------
+    Exception
+        If the index is unknown or installation fails.
+    """
     version_part = f"=={version}" if version is not None else ""
     if index == "pypi":
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --no-cache-dir {package_name}{version_part}"))
@@ -271,12 +324,23 @@ def install_package_with_pip(index: str, package_name: str, version: Optional[st
         raise Exception(f"Can't install package '{package_name}' version '{version}' from unknown index '{index}'.")
 
 
-# TODO: Test
 def assert_package_not_importable(package_name: str) -> None:
+    """
+    Assert that a package is not importable.
+
+    Parameters
+    ----------
+    package_name : str
+        The name of the package to check.
+
+    Raises
+    ------
+    RuntimeError
+        If the package is importable (i.e., already installed or accessible).
+    """
     try:
         importlib.import_module(package_name)
     except ImportError:
         return
     else:
         raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
-

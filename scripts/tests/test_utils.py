@@ -16,7 +16,7 @@ from scripts.config import INDEX_URL_TEST_PYPI
 from scripts.utils import get_response, html_page_as_string, fetch_file_names_from_zip, \
     fetch_file_names_from_tar_gz, find_urls_in_html_page, find_file_names_with_given_extensions, \
     find_files_in_directories, file_names_with_prefixes, paths_relative_to, parse_command_line, \
-    uninstall_package_with_pip, install_package_with_pip
+    uninstall_package_with_pip, install_package_with_pip, assert_package_not_importable
 
 DATASETS_DIRECTORY = Path(__file__).parent.parent.joinpath("datasets").resolve()
 UTF_8 = "utf-8"
@@ -327,3 +327,24 @@ class TestInstallPackageWithPip:
             install_package_with_pip(index="unknown_index", package_name="test_package", version=version)
 
         assert str(ex.value) == f"Can't install package 'test_package' version '{version}' from unknown index 'unknown_index'."
+
+
+class TestAssertPackageNotImportable:
+
+    PACKAGE_NAME = "package"
+
+    def test_assert_package_not_importable_should_not_raise_when_package_is_not_importable(self, mocker):
+        mock_import_module = mocker.patch("importlib.import_module", side_effect=ImportError)
+
+        assert assert_package_not_importable(package_name=self.PACKAGE_NAME) is None
+
+        mock_import_module.assert_called_once_with(self.PACKAGE_NAME)
+
+    def test_assert_package_not_importable_should_raise_when_package_is_importable(self, mocker):
+        mock_import_module = mocker.patch("importlib.import_module")
+
+        with pytest.raises(RuntimeError) as ex:
+            assert_package_not_importable(package_name=self.PACKAGE_NAME)
+
+        mock_import_module.assert_called_once_with(self.PACKAGE_NAME)
+        assert str(ex.value) == f"Package '{self.PACKAGE_NAME}' is already installed or accessible, but it should not be."

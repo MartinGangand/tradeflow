@@ -10,8 +10,8 @@ class TestMain:
 
     INDEX = "index"
     PACKAGE_NAME = "package"
-    PACKAGE_VERSION = "1.1.2"
-    MAIN_PACKAGE_DIRECTORY = Path("main_package_directory")
+    PACKAGE_VERSION = "1.1.6"
+    MAIN_PACKAGE_DIRECTORY = Path("dev").joinpath("package").joinpath("main_package_directory")
 
     @pytest.fixture(scope="function", autouse=True)
     def mock_dependencies(self, mocker):
