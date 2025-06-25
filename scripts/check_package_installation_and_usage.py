@@ -1,21 +1,11 @@
 import argparse
-import collections.abc
 import importlib.metadata
-import subprocess
 from pathlib import Path
-from typing import List, Optional, Callable
+from typing import List, Callable, Literal
 
 import numpy as np
-import pytest
 import sys
 
-import scripts
-from scripts.utils import uninstall_package_with_pip, assert_package_not_importable, install_package_with_pip
-
-print("=====================PATHS==========================")
-for p in sys.path:
-    print(f"=== sys.path item: {p} ===")
-print("=====================END==========================")
 from scripts import config, utils
 
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
@@ -23,9 +13,15 @@ DATA_FOLDER = Path(__file__).parent.joinpath("data")
 FIT_METHODS_AR = ["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"]
 
 
-def basic_package_usage():
+def basic_tradeflow_usage():
+    """
+    Run a basic usage test for the `tradeflow` package.
+
+    The function loads sample sign data, fits an AR model using a various methods, simulates signs, and generates a simulation summary plot.
+
+    This function is intended to verify that the core functionality of the `tradeflow` package works as expected after being uploaded to PyPi.
+    """
     import tradeflow
-    from tradeflow.common.general_utils import get_enum_values
 
     # for fit_method in get_enum_values(tradeflow.OrderSelectionMethodAR):
     for fit_method in FIT_METHODS_AR[:1]:
@@ -37,7 +33,25 @@ def basic_package_usage():
         ar_model.simulation_summary(plot=True, log_scale=True)
 
 
-def main(index: str, package_name: str, package_version: str, install_default_version: bool, local_package_directory: Path, func_list: List[Callable]) -> None:
+def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version: str, install_default_version: bool, local_package_directory: Path, func_list: List[Callable]) -> None:
+    """
+    Main function to install a package from PyPI or Test PyPI, verify its installation, and run a list of validation functions.
+
+    Parameters
+    ----------
+    index : {'pypi', 'test.pypi'}
+        The package index to use for installation ('pypi' or 'test.pypi').
+    package_name : str
+        The name of the package to install and validate.
+    package_version : str
+        The version of the package to install and validate.
+    install_default_version : bool
+        If True, install the default/latest version. Otherwise, install the specified version.
+    local_package_directory : Path
+        The local directory of the package (used to remove from sys.path).
+    func_list : list of Callable
+        A list of functions to execute after installation for validation.
+    """
     try:
         # Remove the local package directory from the module search path to ensure that the package is not imported from the local repository
         sys.path.remove(str(local_package_directory.parent))
@@ -74,7 +88,7 @@ if __name__ == "__main__":
              package_version=args.package_version,
              install_default_version=args.install_default_version,
              local_package_directory=config.MAIN_PACKAGE_DIRECTORY,
-             func_list=[basic_package_usage])
+             func_list=[basic_tradeflow_usage])
         print(f"Package '{config.PACKAGE_NAME}' version '{args.package_version}' installed successfully and basic usage test passed.")
         sys.exit(0)
     except Exception as e:

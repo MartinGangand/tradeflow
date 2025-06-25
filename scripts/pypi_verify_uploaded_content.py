@@ -4,7 +4,8 @@ import re
 import sys
 from pathlib import Path
 from typing import List, Literal
-
+for s in sys.path:
+    print(f"======={s}")
 from scripts import config
 from scripts.file_extensions import FileExtension
 from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
@@ -236,11 +237,11 @@ def log_message(message: str) -> None:
     print(f"{message}")
 
 
-def log_valid(name: str):
+def log_valid(name: str) -> None:
     log_message(f"{name}: {PASSED}\n")
 
 
-def log_error(name: str, exception: Exception):
+def log_error(name: str, exception: Exception) -> None:
     log_message(f"{name}: {exception}\n")
 
 
@@ -250,12 +251,12 @@ def log_indented_message(message: str) -> None:
 
 def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, main_package_directory: Path, subpackage_directories: List[Path]) -> int:
     """
-    Main function to validate package files against expected specifications on a given index.
+    Main function to validate package uploaded files against expected specifications on a given index.
 
     Parameters
     ----------
     index : {'pypi', 'test.pypi'}
-        The name of the package index to check for package availability. Must be either 'pypi' or 'test.pypi'.
+        The package index to check for package availability. Must be either 'pypi' or 'test.pypi'.
     package_name : str
         The name of the package to validate.
     version : str
