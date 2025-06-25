@@ -16,7 +16,8 @@ from scripts.config import INDEX_URL_TEST_PYPI
 from scripts.utils import get_response, html_page_as_string, fetch_file_names_from_zip, \
     fetch_file_names_from_tar_gz, find_urls_in_html_page, find_file_names_with_given_extensions, \
     find_files_in_directories, file_names_with_prefixes, paths_relative_to, parse_command_line, \
-    uninstall_package_with_pip, install_package_with_pip, assert_package_not_importable
+    uninstall_package_with_pip, install_package_with_pip, assert_package_not_importable, \
+    assert_installed_package_version
 
 DATASETS_DIRECTORY = Path(__file__).parent.parent.joinpath("datasets").resolve()
 UTF_8 = "utf-8"
@@ -333,14 +334,14 @@ class TestAssertPackageNotImportable:
 
     PACKAGE_NAME = "package"
 
-    def test_assert_package_not_importable_should_not_raise_when_package_is_not_importable(self, mocker):
+    def test_assert_package_not_importable_should_not_raise_exception_when_package_is_not_importable(self, mocker):
         mock_import_module = mocker.patch("importlib.import_module", side_effect=ImportError)
 
         assert assert_package_not_importable(package_name=self.PACKAGE_NAME) is None
 
         mock_import_module.assert_called_once_with(self.PACKAGE_NAME)
 
-    def test_assert_package_not_importable_should_raise_when_package_is_importable(self, mocker):
+    def test_assert_package_not_importable_should_raise_exception_when_package_is_importable(self, mocker):
         mock_import_module = mocker.patch("importlib.import_module")
 
         with pytest.raises(RuntimeError) as ex:
@@ -348,3 +349,23 @@ class TestAssertPackageNotImportable:
 
         mock_import_module.assert_called_once_with(self.PACKAGE_NAME)
         assert str(ex.value) == f"Package '{self.PACKAGE_NAME}' is already installed or accessible, but it should not be."
+
+
+class TestAssertInstalledPackageVersion:
+
+    PACKAGE_NAME = "package"
+    EXPECTED_VERSION = "1.2.1"
+
+    def test_assert_installed_package_version_should_not_raise_when_version_matches(self, mocker):
+        mocker.patch("importlib.metadata.version", return_value=self.EXPECTED_VERSION)
+        assert assert_installed_package_version(package_name=self.PACKAGE_NAME, expected_version=self.EXPECTED_VERSION) is None
+
+    def test_assert_installed_package_version_should_raise_when_version_does_not_match(self, mocker):
+        installed_version = "1.2.0"
+        mock_version = mocker.patch("importlib.metadata.version", return_value=installed_version)
+
+        with pytest.raises(Exception) as ex:
+            assert_installed_package_version(package_name=self.PACKAGE_NAME, expected_version=self.EXPECTED_VERSION)
+
+        mock_version.assert_called_once_with(self.PACKAGE_NAME)
+        assert str(ex.value) == f"Installed version '{installed_version}' of package '{self.PACKAGE_NAME}' does not match expected version '{self.EXPECTED_VERSION}'."

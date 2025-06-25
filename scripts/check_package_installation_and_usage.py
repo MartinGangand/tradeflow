@@ -23,8 +23,8 @@ def basic_tradeflow_usage():
     """
     import tradeflow
 
-    # for fit_method in get_enum_values(tradeflow.OrderSelectionMethodAR):
-    for fit_method in FIT_METHODS_AR[:1]:
+    for fit_method in tradeflow.FitMethodAR:
+    # for fit_method in FIT_METHODS_AR[:1]:
         signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
 
         ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
@@ -65,9 +65,9 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version
         utils.install_package_with_pip(package_name=package_name, index=index, version=version_to_install)
 
         # Check that the installed version corresponds to the expected version
-        installed_package_version = importlib.metadata.version(package_name)
-        if installed_package_version != package_version:
-            raise Exception(f"Installed package version '{installed_package_version}' does not match expected version '{package_version}'.")
+        # TODO: create function in utils.py to check that the package is installed with the correct version
+        # TODO:see if use version or package_version
+        utils.assert_installed_package_version(package_name=package_name, expected_version=package_version)
 
         for func in func_list:
             func()

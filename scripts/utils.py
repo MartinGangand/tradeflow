@@ -344,3 +344,24 @@ def assert_package_not_importable(package_name: str) -> None:
         return
     else:
         raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
+
+
+def assert_installed_package_version(package_name: str, expected_version: str) -> None:
+    """
+    Assert that the installed version of a package matches the expected version.
+
+    Parameters
+    ----------
+    package_name : str
+        The name of the package to check.
+    expected_version : str
+        The expected version of the package.
+
+    Raises
+    ------
+    Exception
+        If the installed version does not match the expected version.
+    """
+    installed_version = importlib.metadata.version(package_name)
+    if installed_version != expected_version:
+        raise Exception(f"Installed version '{installed_version}' of package '{package_name}' does not match expected version '{expected_version}'.")

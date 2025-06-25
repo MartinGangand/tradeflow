@@ -112,14 +112,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r scripts-requirements.txt
 
-      - name: Add package directory to PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
-
       - name: Run script with index 'pypi'
-        run: python scripts/pypi_verify_uploaded_content.py pypi ${{ needs.get-package-version.outputs.PACKAGE_VERSION }}
+        run: python -m scripts/pypi_verify_uploaded_content pypi ${{ needs.get-package-version.outputs.PACKAGE_VERSION }}
 
-  post-upload-pypi:
-    name: Test package installation and usage from PyPi
+  check-package-installation-and-usage-pypi:
+    name: Install package from Test PyPi and basic functionality
     needs: [get-package-version, upload-pypi]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -144,11 +141,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest toml numpy
+          pip install -r scripts-requirements.txt
 
-      - name: Run test with index 'pypi'
-        run: pytest pypi_post_upload_test --index pypi --package_version ${{ needs.get-package-version.outputs.PACKAGE_VERSION }} -v -s --log-level=WARNING --color=yes
-        shell: bash
+      - name: Run script with index 'pypi'
+        run: pytest -m scripts.check_package_installation_and_usage pypi ${{ needs.get-package-version.outputs.PACKAGE_VERSION }} --install_default_version
 
   increment-package-version:
     name: Increment package version

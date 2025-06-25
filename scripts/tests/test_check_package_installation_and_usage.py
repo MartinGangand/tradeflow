@@ -50,10 +50,10 @@ class TestMain:
         func_1 = mocker.Mock()
         func_2 = mocker.Mock()
 
-        with pytest.raises(Exception, match=f"Installed package version '1.0.0' does not match expected version '{self.PACKAGE_VERSION}'.") as ex:
+        with pytest.raises(Exception) as ex:
             main(index=self.INDEX, package_name=self.PACKAGE_NAME, package_version=self.PACKAGE_VERSION, install_default_version=install_default_version, local_package_directory=self.MAIN_PACKAGE_DIRECTORY, func_list=[func_1, func_2])
 
-        assert str(ex.value) == f"Installed package version '1.0.0' does not match expected version '{self.PACKAGE_VERSION}'."
+        assert str(ex.value) == f"Installed version '1.0.0' of package '{self.PACKAGE_NAME}' does not match expected version '{self.PACKAGE_VERSION}'."
 
         self.mock_sys_path.remove.assert_called_once_with(str(self.MAIN_PACKAGE_DIRECTORY.parent))
         self.mock_assert_not_importable.assert_called_once_with(package_name=self.PACKAGE_NAME)
