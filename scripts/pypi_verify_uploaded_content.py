@@ -256,7 +256,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     Parameters
     ----------
     index : {'pypi', 'test.pypi'}
-        The package index to check for package availability. Must be either 'pypi' or 'test.pypi'.
+        The package index to check for package availability ('pypi' or 'test.pypi').
     package_name : str
         The name of the package to validate.
     version : str
@@ -342,5 +342,4 @@ if __name__ == "__main__":
                            subpackage_directories=config.SUBPACKAGES_DIRECTORIES)
         sys.exit(exit_status)
     except Exception as e:
-        print(e)
-        sys.exit(1)
+        sys.exit(f"\nAn error occurred while verifying the content of the uploaded package (package: '{config.PACKAGE_NAME}', version: '{args.package_version}'):\nException: {e}")

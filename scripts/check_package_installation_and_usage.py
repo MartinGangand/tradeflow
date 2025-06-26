@@ -12,11 +12,9 @@ DATA_FOLDER = Path(__file__).parent.joinpath("data")
 
 def basic_tradeflow_usage():
     """
-    Run a basic usage test for the `tradeflow` package.
+    Run a basic usage verification for the `tradeflow` package to ensure that the core functionality of the package works as expected after being uploaded to PyPi (or Test PyPI).
 
-    The function loads sample sign data, fits an AR model using a various methods, simulates signs, and generates a simulation summary plot.
-
-    This function is intended to verify that the core functionality of the `tradeflow` package works as expected after being uploaded to PyPi.
+    The function loads sample sign data, fits an AR (autoregressive) model using various methods, simulates signs, and generates a simulation summary plot.
     """
     import tradeflow
 
@@ -46,7 +44,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version
     local_package_directory : Path
         The local directory of the package (used to remove from sys.path).
     func_list : list of Callable
-        A list of functions to execute after installation for validation.
+        A list of functions to execute after package installation for validation.
     """
     try:
         # Remove the local package directory from the module search path to ensure that the package is not imported from the local repository
@@ -63,6 +61,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version
         # Check that the installed version corresponds to the expected version
         utils.verify_installed_package_version(package_name=package_name, expected_version=package_version)
 
+        # Run the list of functions to validate the package usage
         for func in func_list:
             func()
     finally:
@@ -70,10 +69,10 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Install the specified or default version of the package from index PyPi or Test PyPi and check that the package can be used correctly.")
+    parser = argparse.ArgumentParser(description="Install the specified or default version of the package from PyPi or Test PyPi and check that the package can be used correctly.")
     parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index from which to install the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.")
     parser.add_argument("package_version", type=str, help="Specify the package version.")
-    parser.add_argument("--install_default_version", action="store_true", help="If True, don't specify any version to install (use default) and checks that the installed version is 'package_version'. If False, the specified version will be installed.")
+    parser.add_argument("--install_default_version", action="store_true", help="If True, don't specify any version to install (use default) and checks that the installed version is 'package_version'. If False, the specified version is installed.")
     args = parser.parse_args()
 
     try:
@@ -84,8 +83,6 @@ if __name__ == "__main__":
              local_package_directory=config.MAIN_PACKAGE_DIRECTORY,
              func_list=[basic_tradeflow_usage])
         print(f"Package '{config.PACKAGE_NAME}' version '{args.package_version}' installed successfully and basic usage test passed.")
-        sys.exit(1)
+        sys.exit(0)
     except Exception as e:
-        print(f"An error occurred while checking the package installation and usage: {e}")
-        sys.exit(1)
-
+        sys.exit(f"\nAn error occurred while checking the package installation and usage (package: '{config.PACKAGE_NAME}', version: '{args.package_version}'):\nException: {e}")

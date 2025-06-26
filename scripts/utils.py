@@ -4,14 +4,13 @@ import os
 import re
 import subprocess
 import tarfile
-
-import sys
-import time
 import zipfile
 from pathlib import Path
 from typing import List, Optional, Literal, Union
 
 import requests
+import sys
+import time
 from requests import Response
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -297,7 +296,7 @@ def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: 
     Parameters
     ----------
     index : {'pypi', 'test.pypi'}
-        The package index to use for installation. Supported values are 'pypi' and 'test.pypi'.
+        The package index to use for installation ('pypi' or 'test.pypi').
     package_name : str
         The name of the package to install.
     package_version : str or None
