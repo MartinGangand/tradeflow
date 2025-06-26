@@ -1,10 +1,6 @@
 name: CI Scripts
 
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - '**'
+on: [push, workflow_dispatch]
 
 jobs:
   run-tests:

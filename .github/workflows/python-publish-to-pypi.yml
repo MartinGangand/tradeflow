@@ -113,10 +113,10 @@ jobs:
           pip install -r scripts-requirements.txt
 
       - name: Run script with index 'pypi'
-        run: python -m scripts/pypi_verify_uploaded_content pypi ${{ needs.get-package-version.outputs.PACKAGE_VERSION }}
+        run: python -m scripts.pypi_verify_uploaded_content pypi ${{ needs.get-package-version.outputs.PACKAGE_VERSION }}
 
   check-package-installation-and-usage-pypi:
-    name: Install package from Test PyPi and basic functionality
+    name: Install package from Test PyPi and test basic functionality
     needs: [get-package-version, upload-pypi]
     runs-on: ${{ matrix.os }}
     strategy:

@@ -290,7 +290,7 @@ def uninstall_package_with_pip(package_name: str) -> None:
     subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {package_name}"))
 
 
-def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: str, version: Optional[str]) -> None:
+def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: str, package_version: Optional[str]) -> None:
     """
     Install a package using pip from the specified index.
 
@@ -300,7 +300,7 @@ def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: 
         The package index to use for installation. Supported values are 'pypi' and 'test.pypi'.
     package_name : str
         The name of the package to install.
-    version : str or None
+    package_version : str or None
         The version of the package to install. If None, installs the latest version.
 
     Raises
@@ -308,7 +308,7 @@ def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: 
     Exception
         If the index is unknown or installation fails.
     """
-    version_part = f"=={version}" if version is not None else ""
+    version_part = f"=={package_version}" if package_version is not None else ""
     if index == "pypi":
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --no-cache-dir {package_name}{version_part}"))
     elif index == "test.pypi":
@@ -321,7 +321,7 @@ def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: 
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {package_name}{version_part}"))
     else:
-        raise Exception(f"Can't install package '{package_name}' version '{version}' from unknown index '{index}'.")
+        raise Exception(f"Can't install package '{package_name}' version '{package_version}' from unknown index '{index}'.")
 
 
 def assert_package_not_importable(package_name: str) -> None:
@@ -346,7 +346,7 @@ def assert_package_not_importable(package_name: str) -> None:
         raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
 
 
-def assert_installed_package_version(package_name: str, expected_version: str) -> None:
+def verify_installed_package_version(package_name: str, expected_version: str) -> None:
     """
     Assert that the installed version of a package matches the expected version.
 

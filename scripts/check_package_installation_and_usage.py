@@ -1,5 +1,4 @@
 import argparse
-import importlib.metadata
 from pathlib import Path
 from typing import List, Callable, Literal
 
@@ -9,8 +8,6 @@ import sys
 from scripts import config, utils
 
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
-
-FIT_METHODS_AR = ["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"]
 
 
 def basic_tradeflow_usage():
@@ -24,11 +21,10 @@ def basic_tradeflow_usage():
     import tradeflow
 
     for fit_method in tradeflow.FitMethodAR:
-    # for fit_method in FIT_METHODS_AR[:1]:
         signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
 
         ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
-        ar_model = ar_model.fit(method=fit_method, significance_level=0.05, check_stationarity=True, check_residuals=True)
+        ar_model = ar_model.fit(method=fit_method.value, significance_level=0.05, check_stationarity=True, check_residuals=True)
         ar_model.simulate(size=1_000_000, seed=1)
         ar_model.simulation_summary(plot=True, log_scale=True)
 
@@ -62,12 +58,10 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version
 
         # Install package
         version_to_install = None if install_default_version else package_version
-        utils.install_package_with_pip(package_name=package_name, index=index, version=version_to_install)
+        utils.install_package_with_pip(package_name=package_name, index=index, package_version=version_to_install)
 
         # Check that the installed version corresponds to the expected version
-        # TODO: create function in utils.py to check that the package is installed with the correct version
-        # TODO:see if use version or package_version
-        utils.assert_installed_package_version(package_name=package_name, expected_version=package_version)
+        utils.verify_installed_package_version(package_name=package_name, expected_version=package_version)
 
         for func in func_list:
             func()
@@ -90,7 +84,7 @@ if __name__ == "__main__":
              local_package_directory=config.MAIN_PACKAGE_DIRECTORY,
              func_list=[basic_tradeflow_usage])
         print(f"Package '{config.PACKAGE_NAME}' version '{args.package_version}' installed successfully and basic usage test passed.")
-        sys.exit(0)
+        sys.exit(1)
     except Exception as e:
         print(f"An error occurred while checking the package installation and usage: {e}")
         sys.exit(1)

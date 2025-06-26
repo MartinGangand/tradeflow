@@ -1,11 +1,11 @@
 import argparse
 import os
 import re
-import sys
 from pathlib import Path
 from typing import List, Literal
-for s in sys.path:
-    print(f"======={s}")
+
+import sys
+
 from scripts import config
 from scripts.file_extensions import FileExtension
 from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
@@ -251,7 +251,7 @@ def log_indented_message(message: str) -> None:
 
 def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, main_package_directory: Path, subpackage_directories: List[Path]) -> int:
     """
-    Main function to validate package uploaded files against expected specifications on a given index.
+    Main function to validate uploaded package files against expected specifications on a given index.
 
     Parameters
     ----------
