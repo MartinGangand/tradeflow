@@ -284,7 +284,6 @@ def uninstall_package_with_pip(package_name: str) -> None:
     ----------
     package_name : str
         The name of the package to uninstall.
-
     """
     subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {package_name}"))
 
@@ -312,12 +311,15 @@ def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: 
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --no-cache-dir {package_name}{version_part}"))
     elif index == "test.pypi":
         # Install package dependencies separately and then install the package from test.pypi without dependencies
-        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME' does not work because it tries to install the package and its dependencies from index 'test.pypi' but some dependencies are not available
-        # 'pip install --index-url https://test.pypi.org/simple/ PACKAGE_NAME --extra-index-url https://pypi.org/simple/' does not work because if the package is also available on index 'pypi', it will install it from there by default
+        # 'pip install --index-url https://test.pypi.org/simple/ package_name' does not work because it tries to install the package and its dependencies from index 'test.pypi' but some dependencies are not available
+        # 'pip install --index-url https://test.pypi.org/simple/ package_name --extra-index-url https://pypi.org/simple/' does not work because if the package 'package_name' is also available on index 'pypi', it will install it from there by default
 
+        # Install dependencies from pypi
         requirements_file = config.ROOT_REPOSITORY.joinpath("requirements.txt")
         assert requirements_file.is_file()
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
+
+        # Install the package from test.pypi without dependencies
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {package_name}{version_part}"))
     else:
         raise Exception(f"Can't install package '{package_name}' version '{package_version}' from unknown index '{index}'.")
@@ -335,17 +337,19 @@ def assert_package_not_importable(package_name: str) -> None:
     Raises
     ------
     RuntimeError
-        If the package is importable (i.e., already installed or accessible).
+        If the package is importable (i.e., already installed or accessible from the local repository).
     """
     try:
         importlib.import_module(package_name)
     except ImportError:
+        # ImportError is raised if the package is not installed or not accessible
         return
     else:
+        # If we reach this point, the package is importable
         raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
 
 
-def verify_installed_package_version(package_name: str, expected_version: str) -> None:
+def verify_installed_package_version(package_name: str, expected_package_version: str) -> None:
     """
     Assert that the installed version of a package matches the expected version.
 
@@ -353,7 +357,7 @@ def verify_installed_package_version(package_name: str, expected_version: str) -
     ----------
     package_name : str
         The name of the package to check.
-    expected_version : str
+    expected_package_version : str
         The expected version of the package.
 
     Raises
@@ -362,5 +366,5 @@ def verify_installed_package_version(package_name: str, expected_version: str) -
         If the installed version does not match the expected version.
     """
     installed_version = importlib.metadata.version(package_name)
-    if installed_version != expected_version:
-        raise Exception(f"Installed version '{installed_version}' of package '{package_name}' does not match expected version '{expected_version}'.")
+    if installed_version != expected_package_version:
+        raise Exception(f"Installed version '{installed_version}' of package '{package_name}' does not match expected version '{expected_package_version}'.")

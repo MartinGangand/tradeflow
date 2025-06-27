@@ -88,7 +88,7 @@ class TestVerifySource:
         (["package/time_series.py", "package/ar_model.py", "lib/cpp/package/simulation.cpp"],
          ["package/time_series.py", "package/ar_model.py"],
          ["lib/cpp/package/simulation.cpp", "lib/cpp/package/simulation.h"],
-         ['lib/cpp/package/simulation.cpp']),
+         ['lib/cpp/package/simulation.cpp'])
     ])
     def test_verify_source_should_raise_exception_when_incorrect_cpp_files(self, mocker, file_names, expected_python_files, expected_cpp_files, expected_matched_cpp_files):
         file_names_with_setup = [os.path.join("package-0.0.1", file_name) for file_name in file_names] + [os.path.join(f"package-0.0.1", "setup.py")]

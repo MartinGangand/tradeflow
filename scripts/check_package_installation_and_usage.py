@@ -59,7 +59,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version
         utils.install_package_with_pip(package_name=package_name, index=index, package_version=version_to_install)
 
         # Check that the installed version corresponds to the expected version
-        utils.verify_installed_package_version(package_name=package_name, expected_version=package_version)
+        utils.verify_installed_package_version(package_name=package_name, expected_package_version=package_version)
 
         # Run the list of functions to validate the package usage
         for func in func_list:

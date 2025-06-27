@@ -2,7 +2,6 @@ name: Upload Python Package to Test PyPi
 
 on:
   workflow_dispatch:
-  push:
 
 permissions:
   contents: read

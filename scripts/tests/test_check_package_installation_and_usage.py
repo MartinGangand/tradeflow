@@ -3,6 +3,7 @@ from unittest.mock import call
 
 import pytest
 
+import scripts
 from scripts.check_package_installation_and_usage import main
 
 
@@ -16,9 +17,10 @@ class TestMain:
     @pytest.fixture(scope="function", autouse=True)
     def mock_dependencies(self, mocker):
         self.mock_sys_path = mocker.patch("sys.path")
+        self.mock_uninstall = mocker.patch("scripts.utils.uninstall_package_with_pip")
         self.mock_install = mocker.patch("scripts.utils.install_package_with_pip")
         self.mock_assert_not_importable = mocker.patch("scripts.utils.assert_package_not_importable")
-        self.mock_uninstall = mocker.patch("scripts.utils.uninstall_package_with_pip")
+        self.mock_verify_installed_package_version = mocker.spy(scripts.utils, "verify_installed_package_version")
 
     @pytest.mark.parametrize("install_default_version", [False, True])
     def test_main_valid(self, mocker, install_default_version):
@@ -35,11 +37,14 @@ class TestMain:
         package_version = None if install_default_version else self.PACKAGE_VERSION
         self.mock_install.assert_called_once_with(package_name=self.PACKAGE_NAME, index=self.INDEX, package_version=package_version)
 
+        # Check that the installed version corresponds to the expected version
+        self.mock_verify_installed_package_version.assert_called_once_with(package_name=self.PACKAGE_NAME, expected_package_version=self.PACKAGE_VERSION)
+
         # Check that the functions in func_list are called
         func_1.assert_called_once_with()
         func_2.assert_called_once_with()
 
-        # mock_uninstall is called twice: once before installation and once after uninstallation of the package
+        # mock_uninstall is called twice: once before installation and once at the end of the main function
         assert self.mock_uninstall.call_count == 2
         self.mock_uninstall.assert_has_calls([call(package_name=self.PACKAGE_NAME), call(package_name=self.PACKAGE_NAME)])
 
@@ -62,10 +67,13 @@ class TestMain:
         version = None if install_default_version else self.PACKAGE_VERSION
         self.mock_install.assert_called_once_with(package_name=self.PACKAGE_NAME, index=self.INDEX, package_version=version)
 
+        # Check that the installed version does not correspond to the expected version
+        self.mock_verify_installed_package_version.assert_called_once_with(package_name=self.PACKAGE_NAME, expected_package_version=self.PACKAGE_VERSION)
+
         # Check that the functions in func_list are not called
         func_1.assert_not_called()
         func_2.assert_not_called()
 
-        # mock_uninstall is called twice: once before installation and once after uninstallation of the package
+        # mock_uninstall is called twice: once before installation and once at the end of the main function
         assert self.mock_uninstall.call_count == 2
         self.mock_uninstall.assert_has_calls([call(package_name=self.PACKAGE_NAME), call(package_name=self.PACKAGE_NAME)])

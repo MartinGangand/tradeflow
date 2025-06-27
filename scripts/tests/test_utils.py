@@ -266,7 +266,7 @@ class TestPathsRelativeTo:
         (["A/B/file1.py", "A/B/file2.py"], Path("A"), ["B/file1.py", "B/file2.py"]),
         ([Path("A").joinpath("B").joinpath("file1.py"), Path("A").joinpath("B").joinpath("file2.py")], "A", ["B/file1.py", "B/file2.py"]),
         (["A/B/file1.py", "A/B/file2.py"], "A/B", ["file1.py", "file2.py"]),
-        (["A/B/file1.py", "A/B/file2.py"], "", ["A/B/file1.py", "A/B/file2.py"]),
+        (["A/B/file1.py", "A/B/file2.py"], "", ["A/B/file1.py", "A/B/file2.py"])
     ])
     def test(self, paths, relative_to, expected_paths):
         actual_paths = paths_relative_to(paths=paths, relative_to=relative_to)
@@ -280,8 +280,7 @@ class TestParseCommandLine:
         " python  -m pip install   package_name==1.0.0     "
     ])
     def test_parse_command_line(self, command_line):
-        actual = parse_command_line(command_line=command_line)
-        assert actual == ["python", "-m", "pip", "install", "package_name==1.0.0"]
+        assert parse_command_line(command_line=command_line) == ["python", "-m", "pip", "install", "package_name==1.0.0"]
 
 
 class TestUninstallPackageWithPip:
@@ -290,34 +289,36 @@ class TestUninstallPackageWithPip:
         mocker.patch("sys.executable", new="python")
         mock_check_call = mocker.patch("subprocess.check_call")
 
-        uninstall_package_with_pip(package_name="test_package")
+        uninstall_package_with_pip(package_name="package")
 
-        mock_check_call.assert_called_once_with(["python", "-m", "pip", "uninstall", "-y", "test_package"])
+        mock_check_call.assert_called_once_with(["python", "-m", "pip", "uninstall", "-y", "package"])
 
 
 class TestInstallPackageWithPip:
+
+    PACKAGE_NAME = "package"
 
     @pytest.mark.parametrize("package_version", ["1.0.0", None])
     def test_install_package_with_pip_with_index_pypi(self, mocker, package_version):
         mocker.patch("sys.executable", new="python")
         mock_check_call = mocker.patch("subprocess.check_call")
 
-        install_package_with_pip(index="pypi", package_name="test_package", package_version=package_version)
+        install_package_with_pip(index="pypi", package_name=self.PACKAGE_NAME, package_version=package_version)
 
-        version_part = f"=={package_version}" if package_version is not None else ""
-        mock_check_call.assert_called_once_with(["python", "-m", "pip", "install", "--no-cache-dir", f"test_package{version_part}"])
+        expected_version_part = f"=={package_version}" if package_version is not None else ""
+        mock_check_call.assert_called_once_with(["python", "-m", "pip", "install", "--no-cache-dir", f"{self.PACKAGE_NAME}{expected_version_part}"])
 
     @pytest.mark.parametrize("package_version", ["0.2.0.2025.6.22.20.1.8", None])
     def test_install_package_with_pip_with_index_test_pypi(self, mocker, package_version):
         mocker.patch("sys.executable", new="python")
         mock_check_call = mocker.patch("subprocess.check_call")
 
-        install_package_with_pip(index="test.pypi", package_name="test_package", package_version=package_version)
+        install_package_with_pip(index="test.pypi", package_name=self.PACKAGE_NAME, package_version=package_version)
 
         assert mock_check_call.call_count == 2
         requirements_install_cmd = ["python", "-m", "pip", "install", "-r", str(config.ROOT_REPOSITORY.joinpath("requirements.txt"))]
-        version_part = f"=={package_version}" if package_version is not None else ""
-        package_install_cmd = ["python", "-m", "pip", "install", "--index-url", f"{INDEX_URL_TEST_PYPI}", "--no-deps", "--no-cache-dir", f"test_package{version_part}"]
+        expected_version_part = f"=={package_version}" if package_version is not None else ""
+        package_install_cmd = ["python", "-m", "pip", "install", "--index-url", f"{INDEX_URL_TEST_PYPI}", "--no-deps", "--no-cache-dir", f"{self.PACKAGE_NAME}{expected_version_part}"]
         mock_check_call.assert_has_calls([call(requirements_install_cmd), call(package_install_cmd)])
 
     @pytest.mark.parametrize("package_version", ["1.0.15", None])
@@ -325,9 +326,9 @@ class TestInstallPackageWithPip:
         mocker.patch("sys.executable", new="python")
 
         with pytest.raises(Exception) as ex:
-            install_package_with_pip(index="unknown_index", package_name="test_package", package_version=package_version)
+            install_package_with_pip(index="unknown_index", package_name=self.PACKAGE_NAME, package_version=package_version)
 
-        assert str(ex.value) == f"Can't install package 'test_package' version '{package_version}' from unknown index 'unknown_index'."
+        assert str(ex.value) == f"Can't install package '{self.PACKAGE_NAME}' version '{package_version}' from unknown index 'unknown_index'."
 
 
 class TestAssertPackageNotImportable:
@@ -336,9 +337,7 @@ class TestAssertPackageNotImportable:
 
     def test_assert_package_not_importable_should_not_raise_exception_when_package_is_not_importable(self, mocker):
         mock_import_module = mocker.patch("importlib.import_module", side_effect=ImportError)
-
         assert assert_package_not_importable(package_name=self.PACKAGE_NAME) is None
-
         mock_import_module.assert_called_once_with(self.PACKAGE_NAME)
 
     def test_assert_package_not_importable_should_raise_exception_when_package_is_importable(self, mocker):
@@ -356,16 +355,16 @@ class TestVerifyInstalledPackageVersion:
     PACKAGE_NAME = "package"
     EXPECTED_PACKAGE_VERSION = "1.2.1"
 
-    def test_verify_installed_package_version_should_not_raise_when_version_matches(self, mocker):
+    def test_verify_installed_package_version_should_not_raise_exception_when_version_matches(self, mocker):
         mocker.patch("importlib.metadata.version", return_value=self.EXPECTED_PACKAGE_VERSION)
-        assert verify_installed_package_version(package_name=self.PACKAGE_NAME, expected_version=self.EXPECTED_PACKAGE_VERSION) is None
+        assert verify_installed_package_version(package_name=self.PACKAGE_NAME, expected_package_version=self.EXPECTED_PACKAGE_VERSION) is None
 
-    def test_verify_installed_package_version_should_raise_when_version_does_not_match(self, mocker):
+    def test_verify_installed_package_version_should_raise_exception_when_version_does_not_match(self, mocker):
         installed_package_version = "1.2.0"
         mock_version = mocker.patch("importlib.metadata.version", return_value=installed_package_version)
 
         with pytest.raises(Exception) as ex:
-            verify_installed_package_version(package_name=self.PACKAGE_NAME, expected_version=self.EXPECTED_PACKAGE_VERSION)
+            verify_installed_package_version(package_name=self.PACKAGE_NAME, expected_package_version=self.EXPECTED_PACKAGE_VERSION)
 
         mock_version.assert_called_once_with(self.PACKAGE_NAME)
         assert str(ex.value) == f"Installed version '{installed_package_version}' of package '{self.PACKAGE_NAME}' does not match expected version '{self.EXPECTED_PACKAGE_VERSION}'."
