@@ -1,9 +1,10 @@
 import argparse
 import os
 import re
-import sys
 from pathlib import Path
 from typing import List, Literal
+
+import sys
 
 from scripts import config
 from scripts.file_extensions import FileExtension
@@ -236,11 +237,11 @@ def log_message(message: str) -> None:
     print(f"{message}")
 
 
-def log_valid(name: str):
+def log_valid(name: str) -> None:
     log_message(f"{name}: {PASSED}\n")
 
 
-def log_error(name: str, exception: Exception):
+def log_error(name: str, exception: Exception) -> None:
     log_message(f"{name}: {exception}\n")
 
 
@@ -250,12 +251,12 @@ def log_indented_message(message: str) -> None:
 
 def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, main_package_directory: Path, subpackage_directories: List[Path]) -> int:
     """
-    Main function to validate package files against expected specifications on a given index.
+    Main function to validate uploaded package files against expected specifications on a given index.
 
     Parameters
     ----------
     index : {'pypi', 'test.pypi'}
-        The name of the package index to check for package availability. Must be either 'pypi' or 'test.pypi'.
+        The package index to check for package availability ('pypi' or 'test.pypi').
     package_name : str
         The name of the package to validate.
     version : str
@@ -341,5 +342,4 @@ if __name__ == "__main__":
                            subpackage_directories=config.SUBPACKAGES_DIRECTORIES)
         sys.exit(exit_status)
     except Exception as e:
-        print(e)
-        sys.exit(1)
+        sys.exit(f"\nAn error occurred while verifying the content of the uploaded package (package: '{config.PACKAGE_NAME}', version: '{args.package_version}'):\nException: {e}")

@@ -29,8 +29,8 @@ jobs:
 
       - name: Construct snapshot version
         id: construct-snapshot-version
-        run: |        
-          CURRENT_DATE_TIME=$(date +"%Y.%-m.%-d.%-H.%-M.%-S")          
+        run: |
+          CURRENT_DATE_TIME=$(date +"%Y.%-m.%-d.%-H.%-M.%-S")
           SNAPSHOT_VERSION="${{ steps.get-package-version.outputs.PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
           echo "Snapshot version: $SNAPSHOT_VERSION"
 
@@ -139,14 +139,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r scripts-requirements.txt
 
-      - name: Add package directory to PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
-
       - name: Run script with index 'test.pypi'
-        run: python scripts/pypi_verify_uploaded_content.py test.pypi ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
+        run: python -m scripts.pypi_verify_uploaded_content test.pypi ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
 
-  post-upload-test-pypi:
-    name: Test package installation and usage from Test PyPi
+  check-package-installation-and-usage-test-pypi:
+    name: Install package from Test PyPi and test basic functionality
     needs: [update-package-version, upload-test-pypi]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -171,8 +168,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest toml numpy
+          pip install -r scripts-requirements.txt
 
-      - name: Run test with index 'test.pypi'
-        run: pytest pypi_post_upload_test --index test.pypi --package_version ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }} -v -s --log-level=WARNING --color=yes
-        shell: bash
+      - name: Run script with index 'test.pypi'
+        run: python -m scripts.check_package_installation_and_usage test.pypi ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }} --install_default_version
