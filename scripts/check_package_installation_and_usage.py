@@ -10,7 +10,7 @@ from scripts import config, utils
 DATA_FOLDER = Path(__file__).parent.joinpath("data")
 
 
-def basic_tradeflow_usage():
+def basic_tradeflow_usage() -> None:
     """
     Run a basic usage verification for the `tradeflow` package to ensure that the core functionality of the package works as expected after being uploaded to PyPi (or Test PyPI).
 
