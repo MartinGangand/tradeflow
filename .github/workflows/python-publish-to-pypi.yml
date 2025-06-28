@@ -79,7 +79,7 @@ jobs:
     permissions:
       id-token: write
 
-    if: github.event_name == 'release' && github.event.action == 'published'
+#    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - name: Unpacks all CIBW artifacts into dist/
         uses: actions/download-artifact@v4
@@ -146,42 +146,42 @@ jobs:
       - name: Run script with index 'pypi'
         run: pytest -m scripts.check_package_installation_and_usage pypi ${{ needs.get-package-version.outputs.PACKAGE_VERSION }} --install_default_version
 
-  increment-package-version:
-    name: Increment package version
-    needs: [get-package-version, upload-pypi]
-    runs-on: ubuntu-latest
-    env:
-      PACKAGE_VERSION: ${{ needs.get-package-version.outputs.PACKAGE_VERSION }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.BOT_ACCESS_TOKEN }}
-
-      - name: Construct new package version
-        id: construct-new-package-version
-        run: |
-          # Parse package version
-          IFS='.' read -r major minor patch <<< "$PACKAGE_VERSION"
-          
-          # Increment minor version
-          minor=$((minor + 1))
-
-          NEW_PACKAGE_VERSION="$major.$minor.$patch"
-          echo "New package version: $NEW_PACKAGE_VERSION"
-          
-          # Set new package version as output variable
-          echo "NEW_PACKAGE_VERSION=$NEW_PACKAGE_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Replace package version in pyproject.toml
-        run: |
-          sed -i "s+version = \"$PACKAGE_VERSION\"+version = \"${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}\"+g" pyproject.toml
-
-      - name: Push new version
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add pyproject.toml
-          git commit -m "Increment package version to ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
-          git push origin HEAD:main
+#  increment-package-version:
+#    name: Increment package version
+#    needs: [get-package-version, upload-pypi]
+#    runs-on: ubuntu-latest
+#    env:
+#      PACKAGE_VERSION: ${{ needs.get-package-version.outputs.PACKAGE_VERSION }}
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#        with:
+#          ssh-key: ${{ secrets.BOT_ACCESS_TOKEN }}
+#
+#      - name: Construct new package version
+#        id: construct-new-package-version
+#        run: |
+#          # Parse package version
+#          IFS='.' read -r major minor patch <<< "$PACKAGE_VERSION"
+#
+#          # Increment minor version
+#          minor=$((minor + 1))
+#
+#          NEW_PACKAGE_VERSION="$major.$minor.$patch"
+#          echo "New package version: $NEW_PACKAGE_VERSION"
+#
+#          # Set new package version as output variable
+#          echo "NEW_PACKAGE_VERSION=$NEW_PACKAGE_VERSION" >> $GITHUB_OUTPUT
+#
+#      - name: Replace package version in pyproject.toml
+#        run: |
+#          sed -i "s+version = \"$PACKAGE_VERSION\"+version = \"${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}\"+g" pyproject.toml
+#
+#      - name: Push new version
+#        run: |
+#          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+#          git config --local user.name "github-actions[bot]"
+#          git add pyproject.toml
+#          git commit -m "Increment package version to ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
+#          git push origin HEAD:main
