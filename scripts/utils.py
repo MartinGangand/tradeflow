@@ -1,16 +1,22 @@
+import importlib
 import io
 import os
 import re
+import subprocess
 import tarfile
-import time
 import zipfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Literal, Union
 
 import requests
+import sys
+import time
 from requests import Response
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+
+from scripts import config
+from scripts.config import INDEX_URL_TEST_PYPI
 
 ANY_VALID_STRING = r"[^'\"\s]+"
 DEFAULT_SLEEP_TIME_SECONDS = 5
@@ -234,5 +240,131 @@ def file_names_with_prefixes(file_names: List[str], *prefixes) -> List[str]:
     return [os.path.join(prefix, file_name) for file_name in file_names]
 
 
-def paths_relative_to(paths: List[str] | List[Path], relative_to: str | Path) -> List[str]:
+def paths_relative_to(paths: Union[List[str], List[Path]], relative_to: Union[str, Path]) -> List[str]:
+    """
+    Return a list of paths relative to a given base path.
+
+    Parameters
+    ----------
+    paths : list of str or list of Path
+        The list of paths to convert to relative paths.
+    relative_to : str or Path
+        The base path to which the paths should be made relative.
+
+    Returns
+    -------
+    list of str
+        The list of paths as strings, each relative to `relative_to`.
+    """
     return [str(Path(path).relative_to(relative_to)) for path in paths]
+
+
+def parse_command_line(command_line: str) -> List[str]:
+    """
+    Split a command line string into a list of arguments.
+
+    Parameters
+    ----------
+    command_line : str
+        The command line string to split.
+
+    Returns
+    -------
+    list of str
+        The list of command line arguments.
+    """
+    return command_line.split()
+
+
+def uninstall_package_with_pip(package_name: str) -> None:
+    """
+    Uninstall a package using pip.
+
+    Parameters
+    ----------
+    package_name : str
+        The name of the package to uninstall.
+    """
+    subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {package_name}"))
+
+
+def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: str, package_version: Optional[str]) -> None:
+    """
+    Install a package using pip from the specified index.
+
+    Parameters
+    ----------
+    index : {'pypi', 'test.pypi'}
+        The package index to use for installation ('pypi' or 'test.pypi').
+    package_name : str
+        The name of the package to install.
+    package_version : str or None
+        The version of the package to install. If None, installs the latest version.
+
+    Raises
+    ------
+    Exception
+        If the index is unknown or installation fails.
+    """
+    version_part = f"=={package_version}" if package_version is not None else ""
+    if index == "pypi":
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --no-cache-dir {package_name}{version_part}"))
+    elif index == "test.pypi":
+        # Install package dependencies separately and then install the package from test.pypi without dependencies
+        # 'pip install --index-url https://test.pypi.org/simple/ package_name' does not work because it tries to install the package and its dependencies from index 'test.pypi' but some dependencies are not available
+        # 'pip install --index-url https://test.pypi.org/simple/ package_name --extra-index-url https://pypi.org/simple/' does not work because if the package 'package_name' is also available on index 'pypi', it will install it from there by default
+
+        # Install dependencies from pypi
+        requirements_file = config.ROOT_REPOSITORY.joinpath("requirements.txt")
+        assert requirements_file.is_file()
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install -r {str(requirements_file)}"))
+
+        # Install the package from test.pypi without dependencies
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {package_name}{version_part}"))
+    else:
+        raise Exception(f"Can't install package '{package_name}' version '{package_version}' from unknown index '{index}'.")
+
+
+def assert_package_not_importable(package_name: str) -> None:
+    """
+    Assert that a package is not importable.
+
+    Parameters
+    ----------
+    package_name : str
+        The name of the package to check.
+
+    Raises
+    ------
+    RuntimeError
+        If the package is importable (i.e., already installed or accessible from the local repository).
+    """
+    try:
+        importlib.import_module(package_name)
+    except ImportError:
+        # ImportError is raised if the package is not installed or not accessible
+        return
+    else:
+        # If we reach this point, the package is importable
+        raise RuntimeError(f"Package '{package_name}' is already installed or accessible, but it should not be.")
+
+
+def verify_installed_package_version(package_name: str, expected_package_version: str) -> None:
+    """
+    Assert that the installed version of a package matches the expected version.
+
+    Parameters
+    ----------
+    package_name : str
+        The name of the package to check.
+    expected_package_version : str
+        The expected version of the package.
+
+    Raises
+    ------
+    Exception
+        If the installed version does not match the expected version.
+    """
+    installed_version = importlib.metadata.version(package_name)
+    if installed_version != expected_package_version:
+        raise Exception(f"Installed version '{installed_version}' of package '{package_name}' does not match expected version '{expected_package_version}'.")
