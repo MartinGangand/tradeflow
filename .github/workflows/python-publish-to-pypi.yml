@@ -185,7 +185,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git checkout -b bump-version-${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}
           git add pyproject.toml
-          git commit -m "Increment package version to ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
+          git commit -m "Increment package version to ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
           git push --set-upstream origin bump-version-${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}
           git fetch
           git checkout main
