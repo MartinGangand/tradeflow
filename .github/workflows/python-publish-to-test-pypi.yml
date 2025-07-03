@@ -53,7 +53,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-13, macos-14, windows-latest]
+        os: [macos-13]
 
     steps:
       - name: Checkout code
@@ -123,10 +123,17 @@ jobs:
   verify-uploaded-content-test-pypi:
     name: Verify Uploaded Package Content on Test PyPi
     needs: [update-package-version, upload-test-pypi]
-    uses: ./.github/workflows/verify-uploaded-package-content.yml
-    with:
-      package-index: test.pypi
-      package-version: ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run script
+        uses: ./.github/actions/verify-uploaded-content
+        with:
+          package-index: test.pypi
+          package-version: ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
 
   wait-before-check:
       # Wait some time before installing the package, otherwise it might not install the freshly uploaded version

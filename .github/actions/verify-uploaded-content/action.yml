@@ -1,0 +1,26 @@
+name: Verify Uploaded Package Content
+description: 'Greet someone'
+inputs:
+  package-index:
+    description: 'Package index'
+    required: true
+  package-version:
+    description: 'Package version'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11.6'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r scripts-requirements.txt
+      shell: bash
+
+    - name: Run script
+      run: python -m scripts.pypi_verify_uploaded_content ${{ inputs.package-index }} ${{ inputs.package-version }}
+      shell: bash
