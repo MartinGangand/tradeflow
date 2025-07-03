@@ -30,7 +30,7 @@ jobs:
       - name: Construct snapshot version
         id: construct-snapshot-version
         run: |
-          CURRENT_DATE_TIME=$(date +"%Y.%-m.%-d.%-H.%-M.%-S")
+          CURRENT_DATE_TIME=$(date +"%Y%m%d.%H%M%S")
           SNAPSHOT_VERSION="${{ steps.get-package-version.outputs.PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
           echo "Snapshot version: $SNAPSHOT_VERSION"
 
@@ -128,33 +128,20 @@ jobs:
       package-index: test.pypi
       package-version: ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
 
-  check-package-installation-and-usage-test-pypi:
-    name: Install package from Test PyPi and test basic functionality
-    needs: [update-package-version, upload-test-pypi]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, macos-13, macos-latest, windows-2019, windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
+  wait-before-check:
       # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
+    name: Wait before checking package installation
+    needs: [update-package-version, upload-test-pypi]
+    runs-on: ubuntu-latest
+    steps:
       - name: Sleep for 4 minutes
         run: sleep 240
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r scripts-requirements.txt
-
-      - name: Run script with index 'test.pypi'
-        run: python -m scripts.check_package_installation_and_usage test.pypi ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }} --install_default_version
+  check-package-installation-and-usage-test-pypi:
+    name: Install package from Test PyPi and test basic functionality
+    needs: [update-package-version, upload-test-pypi, wait-before-check]
+    uses: ./.github/workflows/check-package-installation-and-usage.yml
+    with:
+      package-index: test.pypi
+      package-version: ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
+      install-default-version: false
