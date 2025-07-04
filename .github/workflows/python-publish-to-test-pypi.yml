@@ -30,7 +30,7 @@ jobs:
       - name: Construct snapshot version
         id: construct-snapshot-version
         run: |
-          CURRENT_DATE_TIME=$(date +"%Y%m%d.%H%M%S")
+          CURRENT_DATE_TIME=$(date +"%Y.%-m.%-d.%-H.%-M.%-S")
           SNAPSHOT_VERSION="${{ steps.get-package-version.outputs.PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
           echo "Snapshot version: $SNAPSHOT_VERSION"
 
@@ -53,7 +53,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-13, macos-14, windows-latest]
+        os: [ubuntu-latest]
 
     steps:
       - name: Checkout code
@@ -65,7 +65,7 @@ jobs:
           name: pyproject-toml
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
+        uses: pypa/cibuildwheel@v3.0.0
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4

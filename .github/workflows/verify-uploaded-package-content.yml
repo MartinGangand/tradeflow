@@ -1,19 +1,6 @@
 name: Verify Uploaded Package Content
 
 on:
-  workflow_dispatch:
-    inputs:
-      package-index:
-        description: 'Package index'
-        required: true
-        type: choice
-        options:
-          - pypi
-          - test.pypi
-      package-version:
-        description: 'Package version'
-        required: true
-        type: string
   workflow_call:
     inputs:
       package-index:
