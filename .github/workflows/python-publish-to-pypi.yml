@@ -3,12 +3,20 @@ name: Upload Python Package to PyPi
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      increment-type:
+        type: choice
+        description: Increment type
+        options:
+          - major
+          - minor
+          - patch
   release:
     types:
       - published
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   get-package-version:
@@ -25,7 +33,8 @@ jobs:
       - name: Get package version from pyproject.toml
         id: get-package-version
         run: |
-          PACKAGE_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
+          PACKAGE_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2 )
+          PACKAGE_VERSION=${PACKAGE_VERSION%.dev}
           echo "Package version: $PACKAGE_VERSION"
 
           # Set package version as output variable
@@ -92,6 +101,21 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://upload.pypi.org/legacy/
+
+  release:
+    name: Create Release
+    needs: [get-package-version, upload-pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          gh release create "release-${{ needs.get-package-version.outputs.PACKAGE_VERSION }}" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="release-${{ needs.get-package-version.outputs.PACKAGE_VERSION }}" \
+              --generate-notes
 
   verify-uploaded-content-pypi:
     name: Run script to verify the uploaded content on PyPi
@@ -164,24 +188,34 @@ jobs:
         run: |
           # Parse package version
           IFS='.' read -r major minor patch <<< "$PACKAGE_VERSION"
-          
-          # Increment minor version
-          minor=$((minor + 1))
 
+          # Increment version
+          if [ "${{ github.event.inputs.increment-type }}" = "major" ]; then
+            major=$((major + 1))
+          fi
+
+          if [ "${{ github.event.inputs.increment-type }}" = "minor" ]; then
+            minor=$((minor + 1))
+          fi
+
+          if [ "${{ github.event.inputs.increment-type }}" = "patch" ]; then
+            patch=$((patch + 1))
+          fi
+          
           NEW_PACKAGE_VERSION="$major.$minor.$patch"
           echo "New package version: $NEW_PACKAGE_VERSION"
-          
+
           # Set new package version as output variable
           echo "NEW_PACKAGE_VERSION=$NEW_PACKAGE_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Replace package version in pyproject.toml
-        run: |
-          sed -i "s+version = \"$PACKAGE_VERSION\"+version = \"${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}\"+g" pyproject.toml
-
-      - name: Push new version
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add pyproject.toml
-          git commit -m "Increment package version to ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
-          git push origin HEAD:main
+#
+#      - name: Replace package version in pyproject.toml
+#        run: |
+#          sed -i "s+version = \"$PACKAGE_VERSION\"+version = \"${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}\"+g" pyproject.toml
+#
+#      - name: Push new version
+#        run: |
+#          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+#          git config --local user.name "github-actions[bot]"
+#          git add pyproject.toml
+#          git commit -m "Increment package version to ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
+#          git push origin HEAD:main

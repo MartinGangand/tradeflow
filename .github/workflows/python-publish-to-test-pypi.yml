@@ -40,6 +40,10 @@ jobs:
       - name: Replace package version in pyproject.toml
         run: |
           sed -i "s+version = \"${{ steps.get-package-version.outputs.PACKAGE_VERSION }}\"+version = \"${{ steps.construct-snapshot-version.outputs.SNAPSHOT_VERSION }}\"+g" pyproject.toml
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add pyproject.toml
+          git commit -m "Increment package version to ${{ steps.get-package-version.outputs.PACKAGE_VERSION }} [skip ci]"
 
       - name: Upload updated pyproject.toml as artifact
         uses: actions/upload-artifact@v4
@@ -47,62 +51,14 @@ jobs:
           name: pyproject-toml
           path: pyproject.toml
 
-#  build-wheels:
-#    name: Build wheels on ${{ matrix.os }}
-#    needs: [update-package-version]
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest]
-#
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Download updated pyproject.toml
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: pyproject-toml
-#
-#      - name: Build wheels
-#        uses: pypa/cibuildwheel@v3.0.0
-#
-#      - name: Upload distributions
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
-#          path: ./wheelhouse/*.whl
-
-  build-sdist:
+  build-distribution-package:
     name: Build source distribution
     needs: [update-package-version]
-    uses: ./.github/workflows/build.yml
-
-#  build-sdistp:
-#    name: Build source distribution
-#    needs: [update-package-version]
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Download updated pyproject.toml artifact
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: pyproject-toml
-#
-#      - name: Build sdist
-#        run: pipx run build --sdist
-#
-#      - uses: actions/upload-artifact@v4
-#        with:
-#          name: cibw-sdist
-#          path: dist/*.tar.gz
+    uses: ./.github/workflows/build-distribution-package.yml
 
   upload-test-pypi:
     name: Upload Package to Test PyPi
-    needs: [build-sdist]
+    needs: [build-distribution-package]
     runs-on: ubuntu-latest
 
     environment:
@@ -136,7 +92,7 @@ jobs:
   wait-before-check:
       # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
     name: Wait before checking package installation
-    needs: [update-package-version, upload-test-pypi]
+    needs: [upload-test-pypi]
     runs-on: ubuntu-latest
     steps:
       - name: Sleep for 4 minutes
