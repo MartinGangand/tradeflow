@@ -40,10 +40,6 @@ jobs:
       - name: Replace package version in pyproject.toml
         run: |
           sed -i "s+version = \"${{ steps.get-package-version.outputs.PACKAGE_VERSION }}\"+version = \"${{ steps.construct-snapshot-version.outputs.SNAPSHOT_VERSION }}\"+g" pyproject.toml
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add pyproject.toml
-          git commit -m "Increment package version to ${{ steps.get-package-version.outputs.PACKAGE_VERSION }} [skip ci]"
 
       - name: Upload updated pyproject.toml as artifact
         uses: actions/upload-artifact@v4
@@ -52,7 +48,7 @@ jobs:
           path: pyproject.toml
 
   build-distribution-package:
-    name: Build source distribution
+    name: Build distribution package
     needs: [update-package-version]
     uses: ./.github/workflows/build-distribution-package.yml
 
@@ -90,7 +86,7 @@ jobs:
       package-version: ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
 
   wait-before-check:
-      # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
+    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
     name: Wait before checking package installation
     needs: [upload-test-pypi]
     runs-on: ubuntu-latest
