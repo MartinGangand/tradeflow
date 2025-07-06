@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
+      PACKAGE_VERSION: ${{ steps.get-package-version.outputs.PACKAGE_VERSION }}
       NEW_PACKAGE_VERSION: ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}
 
     steps:
@@ -32,12 +33,7 @@ jobs:
 
       - name: Get package version from pyproject.toml
         id: get-package-version
-        run: |
-          PACKAGE_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
-          echo "Package version: $PACKAGE_VERSION"
-
-          # Set package version as output variable
-          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+        uses: ./.github/actions/get-package-version
 
       - name: Construct new package version
         id: construct-new-package-version
@@ -106,6 +102,7 @@ jobs:
         with:
           repository-url: https://upload.pypi.org/legacy/
 
+#TODO: use --notes-from-tag to the current package version (previous upload)? (https://cli.github.com/manual/gh_release_create)
   release:
     name: Create Release
     needs: [update-package-version, upload-pypi]
@@ -116,9 +113,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
         run: |
-          gh release create "release-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
+          gh release create "v${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
               --repo="$GITHUB_REPOSITORY" \
-              --title="release-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
+              --title="Release ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
               --generate-notes
 
 #  TODO: use reusable workflow for this
@@ -178,10 +175,10 @@ jobs:
 
   increment-package-version:
     name: Increment package version
-    needs: [update-package-version, upload-pypi]
+    needs: [release]
     runs-on: ubuntu-latest
     env:
-      PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+      PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -197,8 +194,8 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add pyproject.toml
           git checkout -b "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
+          git add pyproject.toml
           git commit -m "Increment package version to ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
           git push origin --set-upstream "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
 #          git push origin HEAD:main

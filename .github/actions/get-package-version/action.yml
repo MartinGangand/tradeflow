@@ -1,0 +1,18 @@
+name: 'Get package version'
+description: 'Get the package version from pyproject.toml and set it as an output variable'
+outputs:
+  PACKAGE_VERSION:
+    description: "The package version extracted from pyproject.toml"
+    value: ${{ steps.get-package-version.outputs.PACKAGE_VERSION }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get package version from pyproject.toml
+      id: get-package-version
+      run: |
+        PACKAGE_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
+        echo "Package version: $PACKAGE_VERSION"
+
+        # Set package version as output variable
+        echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+      shell: bash
