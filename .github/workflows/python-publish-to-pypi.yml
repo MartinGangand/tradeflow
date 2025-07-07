@@ -147,7 +147,7 @@ jobs:
           git checkout -b "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
           git add pyproject.toml
           git commit -m "Increment package version to ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
-          git push origin --set-upstream "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
+#          git push origin --set-upstream "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
 #          git push origin HEAD:main
 
 #TODO: use --notes-from-tag to the current package version (previous upload)? (https://cli.github.com/manual/gh_release_create)
@@ -170,8 +170,8 @@ jobs:
           gh release create "v${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
               --repo="$GITHUB_REPOSITORY" \
               --title="Release ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
-              --notes-start-tag "v${{ needs.update-package-version.outputs.PACKAGE_VERSION }}" \
-              --notes-from-tag
+              --generate-notes
+#              --notes-start-tag "v${{ needs.update-package-version.outputs.PACKAGE_VERSION }}" \
 #              --generate-notes
 
 #  check-package-installation-and-usage-pypi:
