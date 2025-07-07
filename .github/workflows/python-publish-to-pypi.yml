@@ -129,6 +129,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -138,7 +139,7 @@ jobs:
 
       - name: Replace package version in pyproject.toml
         run: |
-          sed -i "s+version = \"$PACKAGE_VERSION\"+version = \"${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}\"+g" pyproject.toml
+          sed -i "s+version = \"$PACKAGE_VERSION\"+version = \"$NEW_PACKAGE_VERSION\"+g" pyproject.toml
 
       - name: Push new version
         run: |
@@ -165,14 +166,13 @@ jobs:
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
+          PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
+          NEW_PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
         run: |
-          gh release create "v${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
+          gh release create "v$NEW_PACKAGE_VERSION" \
               --repo="$GITHUB_REPOSITORY" \
-              --title="Release ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
-              --notes-start-tag "v${{ needs.update-package-version.outputs.PACKAGE_VERSION }}"
-#              --generate-notes \
-#              --generate-notes
+              --title="Release $NEW_PACKAGE_VERSION" \
+              --notes-start-tag "v$PACKAGE_VERSION"
 
 #  check-package-installation-and-usage-pypi:
 #    name: Install package from PyPi and test basic functionality
