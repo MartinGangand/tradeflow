@@ -60,72 +60,60 @@ jobs:
           # Set new package version as output variable
           echo "NEW_PACKAGE_VERSION=$NEW_PACKAGE_VERSION" >> $GITHUB_OUTPUT
 
-#      - name: Replace package version in pyproject.toml
-#        run: |
-#          sed -i "s+version = \"${{ steps.get-package-version.outputs.PACKAGE_VERSION }}\"+version = \"${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}\"+g" pyproject.toml
-#
-#      #TODO: REMOVE AND MOVE TO BUILD-DISTRIBUTION-PACKAGE?
-#      - name: Upload updated pyproject.toml as artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: pyproject-toml
-#          path: pyproject.toml
+  build-distribution-package:
+    name: Build distribution package
+    needs: [update-package-version]
+    uses: ./.github/workflows/build-distribution-package.yml
+    with:
+      PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
 
-#  build-distribution-package:
-#    name: Build distribution package
-#    needs: [update-package-version]
-#    uses: ./.github/workflows/build-distribution-package.yml
-#    with:
-#      PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
-#      NEW_PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
-#
-#  upload-pypi:
-#    name: Upload package to PyPi
-#    needs: [build-distribution-package]
-#    runs-on: ubuntu-latest
-#
-#    environment:
-#      name: pypi
-#      url: https://pypi.org/p/tradeflow
-#
-#    permissions:
-#      id-token: write
-#
-##    if: github.event_name == 'release' && github.event.action == 'published'
-#    steps:
-#      - name: Unpacks all CIBW artifacts into dist/
-#        uses: actions/download-artifact@v4
-#        with:
-#          pattern: cibw-*
-#          path: dist
-#          merge-multiple: true
-#
-#      - name: Publish release distributions to PyPI
-#        uses: pypa/gh-action-pypi-publish@release/v1
-#        with:
-#          repository-url: https://upload.pypi.org/legacy/
+  upload-pypi:
+    name: Upload package to PyPi
+    needs: [build-distribution-package]
+    runs-on: ubuntu-latest
 
-#  verify-uploaded-content-pypi:
-#    name: Verify Uploaded Package Content on PyPi
-#    needs: [update-package-version, upload-pypi]
-#    uses: ./.github/workflows/verify-uploaded-package-content.yml
-#    with:
-#      package-index: pypi
-#      package-version: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
-#
-#  wait-before-check:
-#    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
-#    name: Wait before checking package installation
-#    needs: [upload-pypi]
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Sleep for 4 minutes
-#        run: sleep 240
+    environment:
+      name: pypi
+      url: https://pypi.org/p/tradeflow
+
+    permissions:
+      id-token: write
+
+#    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - name: Unpacks all CIBW artifacts into dist/
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
+
+  verify-uploaded-content-pypi:
+    name: Verify Uploaded Package Content on PyPi
+    needs: [update-package-version, upload-pypi]
+    uses: ./.github/workflows/verify-uploaded-package-content.yml
+    with:
+      package-index: pypi
+      package-version: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+
+  wait-before-check:
+    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
+    name: Wait before checking package installation
+    needs: [upload-pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 4 minutes
+        run: sleep 240
 
   increment-package-version:
     name: Increment package version
-#    needs: [update-package-version, upload-pypi]
-    needs: [update-package-version]
+    needs: [update-package-version, upload-pypi]
     runs-on: ubuntu-latest
     env:
       PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
@@ -148,7 +136,7 @@ jobs:
           git checkout -b "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
           git add pyproject.toml
           git commit -m "Increment package version to ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
-#          git push origin --set-upstream "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
+          git push origin --set-upstream "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
 #          git push origin HEAD:main
 
   release:
@@ -166,15 +154,13 @@ jobs:
           gh release create "v$NEW_PACKAGE_VERSION" \
               --repo="$GITHUB_REPOSITORY" \
               --title="Release $NEW_PACKAGE_VERSION" \
-#              --generate-notes
-#              --notes-start-tag "v0.4.15" \
+              --generate-notes
 
-#  check-package-installation-and-usage-pypi:
-#    name: Install package from PyPi and test basic functionality
-#    needs: [update-package-version, wait-before-check]
-#    uses: ./.github/workflows/check-package-installation-and-usage.yml
-#    with:
-#      package-index: pypi
-#      package-version: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
-#      install-default-version: true
-
+  check-package-installation-and-usage-pypi:
+    name: Install package from PyPi and test basic functionality
+    needs: [update-package-version, wait-before-check]
+    uses: ./.github/workflows/check-package-installation-and-usage.yml
+    with:
+      package-index: pypi
+      package-version: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+      install-default-version: true
