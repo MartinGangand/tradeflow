@@ -180,3 +180,4 @@ jobs:
               --title="Release ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
               --notes-start-tag "v${{ needs.update-package-version.outputs.PACKAGE_VERSION }}" \
 #              --generate-notes
+
