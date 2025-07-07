@@ -171,7 +171,7 @@ jobs:
               --repo="$GITHUB_REPOSITORY" \
               --title="Release ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}" \
               --generate-notes
-              --notes-start-tag "v${{ needs.update-package-version.outputs.PACKAGE_VERSION }}" \
+#              --notes-start-tag "v${{ needs.update-package-version.outputs.PACKAGE_VERSION }}" \
 #              --generate-notes
 
 #  check-package-installation-and-usage-pypi:
