@@ -166,7 +166,7 @@ jobs:
           gh release create "v$NEW_PACKAGE_VERSION" \
               --repo="$GITHUB_REPOSITORY" \
               --title="Release $NEW_PACKAGE_VERSION" \
-              --generate-notes
+#              --generate-notes
 #              --notes-start-tag "v0.4.15" \
 
 #  check-package-installation-and-usage-pypi:
