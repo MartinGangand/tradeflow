@@ -21,7 +21,7 @@ jobs:
 
     outputs:
       PACKAGE_VERSION: ${{ steps.get-package-version.outputs.PACKAGE_VERSION }}
-      NEW_PACKAGE_VERSION: ${{ steps.generate-next-package-version.outputs.NEW_PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ steps.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -32,7 +32,7 @@ jobs:
         uses: ./.github/actions/get-package-version
 
       - name: Generate new package version
-        id: generate-next-package-version
+        id: generate-new-package-version
         run: |
           # Parse package version
           IFS='.' read -r major minor patch <<< "${{ steps.get-package-version.outputs.PACKAGE_VERSION }}"
@@ -128,10 +128,10 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git checkout -b "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
           git add pyproject.toml
           git commit -m "Increment package version to ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
-          git push origin --set-upstream "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
+#          git checkout -b "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
+#          git push origin --set-upstream "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
 #          git push origin HEAD:main
 
   release:

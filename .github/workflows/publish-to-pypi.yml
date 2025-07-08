@@ -1,0 +1,40 @@
+name: Upload Python Package to PyPi
+
+on:
+  workflow_call:
+    inputs:
+      package-index:
+        description: 'Package index'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  upload-pypi:
+    name: Upload package to PyPi
+    needs: [build-distribution-package]
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/tradeflow
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Unpacks all CIBW artifacts into dist/
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
+        if: ${{ github.event.inputs.package-index == 'pypi' }}
+
