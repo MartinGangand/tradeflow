@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  id-token: write
 
 jobs:
   generate-dev-package-version:
@@ -33,38 +34,46 @@ jobs:
           # Set dev package version as output variable
           echo "DEV_PACKAGE_VERSION=$DEV_PACKAGE_VERSION" >> $GITHUB_OUTPUT
 
-  build-distribution-package:
-    name: Build distribution package
+#  build-distribution-package:
+#    name: Build distribution package
+#    needs: [generate-dev-package-version]
+#    uses: ./.github/workflows/build-distribution-package.yml
+#    with:
+#      PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.PACKAGE_VERSION }}
+#      NEW_PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
+
+#  upload-test-pypi:
+#    name: Upload Package to Test PyPi
+#    needs: [build-distribution-package]
+#    runs-on: ubuntu-latest
+#
+#    environment:
+#      name: testpypi
+#      url: https://test.pypi.org/p/tradeflow
+#
+#    permissions:
+#      id-token: write
+#
+#    steps:
+#      - name: Unpacks all CIBW artifacts into dist/
+#        uses: actions/download-artifact@v4
+#        with:
+#          pattern: cibw-*
+#          path: dist
+#          merge-multiple: true
+#
+#      - name: Publish release distributions to Test PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          repository-url: https://test.pypi.org/legacy/
+  upload-test-pypi:
+    name: Upload package to Test PyPi
     needs: [generate-dev-package-version]
-    uses: ./.github/workflows/build-distribution-package.yml
+    uses: ./.github/workflows/publish-to-pypi.yml
     with:
       PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.PACKAGE_VERSION }}
-      NEW_PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
-
-  upload-test-pypi:
-    name: Upload Package to Test PyPi
-    needs: [build-distribution-package]
-    runs-on: ubuntu-latest
-
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/tradeflow
-
-    permissions:
-      id-token: write
-
-    steps:
-      - name: Unpacks all CIBW artifacts into dist/
-        uses: actions/download-artifact@v4
-        with:
-          pattern: cibw-*
-          path: dist
-          merge-multiple: true
-
-      - name: Publish release distributions to Test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+      NEW_PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.NEW_PACKAGE_VERSION }}
+      package-index: test.pypi
 
   verify-uploaded-content-test-pypi:
     name: Verify Uploaded Package Content on Test PyPi
