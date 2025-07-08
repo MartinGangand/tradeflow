@@ -1,7 +1,6 @@
 name: Upload Python Package to PyPi
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       increment-type:
@@ -11,21 +10,18 @@ on:
           - patch
           - minor
           - major
-  release:
-    types:
-      - published
 
 permissions:
   contents: write
 
 jobs:
-  update-package-version:
-    name: Update package version
+  generate-new-package-version:
+    name: Generate new package version
     runs-on: ubuntu-latest
 
     outputs:
       PACKAGE_VERSION: ${{ steps.get-package-version.outputs.PACKAGE_VERSION }}
-      NEW_PACKAGE_VERSION: ${{ steps.construct-new-package-version.outputs.NEW_PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ steps.generate-next-package-version.outputs.NEW_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -35,8 +31,8 @@ jobs:
         id: get-package-version
         uses: ./.github/actions/get-package-version
 
-      - name: Construct new package version
-        id: construct-new-package-version
+      - name: Generate new package version
+        id: generate-next-package-version
         run: |
           # Parse package version
           IFS='.' read -r major minor patch <<< "${{ steps.get-package-version.outputs.PACKAGE_VERSION }}"
@@ -62,11 +58,11 @@ jobs:
 
   build-distribution-package:
     name: Build distribution package
-    needs: [update-package-version]
+    needs: [generate-new-package-version]
     uses: ./.github/workflows/build-distribution-package.yml
     with:
-      PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
-      NEW_PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+      PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
 
   upload-pypi:
     name: Upload package to PyPi
@@ -80,7 +76,6 @@ jobs:
     permissions:
       id-token: write
 
-#    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - name: Unpacks all CIBW artifacts into dist/
         uses: actions/download-artifact@v4
@@ -96,11 +91,11 @@ jobs:
 
   verify-uploaded-content-pypi:
     name: Verify Uploaded Package Content on PyPi
-    needs: [update-package-version, upload-pypi]
+    needs: [generate-new-package-version, upload-pypi]
     uses: ./.github/workflows/verify-uploaded-package-content.yml
     with:
       package-index: pypi
-      package-version: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+      package-version: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
 
   wait-before-check:
     # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
@@ -113,11 +108,11 @@ jobs:
 
   increment-package-version:
     name: Increment package version
-    needs: [update-package-version, upload-pypi]
+    needs: [generate-new-package-version, upload-pypi]
     runs-on: ubuntu-latest
     env:
-      PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
-      NEW_PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+      PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -133,23 +128,23 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git checkout -b "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
+          git checkout -b "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
           git add pyproject.toml
-          git commit -m "Increment package version to ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
-          git push origin --set-upstream "increment-version-${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}"
+          git commit -m "Increment package version to ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
+          git push origin --set-upstream "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
 #          git push origin HEAD:main
 
   release:
     name: Create Release
-    needs: [update-package-version, increment-package-version]
+    needs: [generate-new-package-version, increment-package-version]
     runs-on: ubuntu-latest
 
     steps:
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PACKAGE_VERSION: ${{ needs.update-package-version.outputs.PACKAGE_VERSION }}
-          NEW_PACKAGE_VERSION: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+          PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.PACKAGE_VERSION }}
+          NEW_PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
         run: |
           gh release create "v$NEW_PACKAGE_VERSION" \
               --repo="$GITHUB_REPOSITORY" \
@@ -158,9 +153,9 @@ jobs:
 
   check-package-installation-and-usage-pypi:
     name: Install package from PyPi and test basic functionality
-    needs: [update-package-version, wait-before-check]
+    needs: [generate-new-package-version, wait-before-check]
     uses: ./.github/workflows/check-package-installation-and-usage.yml
     with:
       package-index: pypi
-      package-version: ${{ needs.update-package-version.outputs.NEW_PACKAGE_VERSION }}
+      package-version: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
       install-default-version: true

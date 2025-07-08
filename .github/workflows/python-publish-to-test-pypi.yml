@@ -7,12 +7,13 @@ permissions:
   contents: read
 
 jobs:
-  update-package-version:
-    name: Update package version
+  generate-dev-package-version:
+    name: Generate development package version
     runs-on: ubuntu-latest
 
     outputs:
-      SNAPSHOT_VERSION: ${{ steps.construct-snapshot-version.outputs.SNAPSHOT_VERSION }}
+      PACKAGE_VERSION: ${{ steps.get-package-version.outputs.PACKAGE_VERSION }}
+      DEV_PACKAGE_VERSION: ${{ steps.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -20,37 +21,25 @@ jobs:
 
       - name: Get package version from pyproject.toml
         id: get-package-version
-        run: |
-          PACKAGE_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
-          echo "Package version: $PACKAGE_VERSION"
+        uses: ./.github/actions/get-package-version
 
-          # Set package version as output variable
-          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Construct snapshot version
-        id: construct-snapshot-version
+      - name: Generate development package version
+        id: generate-dev-package-version
         run: |
           CURRENT_DATE_TIME=$(date +"%Y.%-m.%-d.%-H.%-M.%-S")
-          SNAPSHOT_VERSION="${{ steps.get-package-version.outputs.PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
-          echo "Snapshot version: $SNAPSHOT_VERSION"
+          DEV_PACKAGE_VERSION="${{ steps.get-package-version.outputs.PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
+          echo "Development package version: $DEV_PACKAGE_VERSION"
 
-          # Set snapshot version as output variable
-          echo "SNAPSHOT_VERSION=$SNAPSHOT_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Replace package version in pyproject.toml
-        run: |
-          sed -i "s+version = \"${{ steps.get-package-version.outputs.PACKAGE_VERSION }}\"+version = \"${{ steps.construct-snapshot-version.outputs.SNAPSHOT_VERSION }}\"+g" pyproject.toml
-
-      - name: Upload updated pyproject.toml as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pyproject-toml
-          path: pyproject.toml
+          # Set dev package version as output variable
+          echo "DEV_PACKAGE_VERSION=$DEV_PACKAGE_VERSION" >> $GITHUB_OUTPUT
 
   build-distribution-package:
     name: Build distribution package
-    needs: [update-package-version]
+    needs: [generate-dev-package-version]
     uses: ./.github/workflows/build-distribution-package.yml
+    with:
+      PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
 
   upload-test-pypi:
     name: Upload Package to Test PyPi
@@ -79,11 +68,11 @@ jobs:
 
   verify-uploaded-content-test-pypi:
     name: Verify Uploaded Package Content on Test PyPi
-    needs: [update-package-version, upload-test-pypi]
+    needs: [generate-dev-package-version, upload-test-pypi]
     uses: ./.github/workflows/verify-uploaded-package-content.yml
     with:
       package-index: test.pypi
-      package-version: ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
+      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
 
   wait-before-check:
     # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
@@ -96,9 +85,9 @@ jobs:
 
   check-package-installation-and-usage-test-pypi:
     name: Install package from Test PyPi and test basic functionality
-    needs: [update-package-version, upload-test-pypi, wait-before-check]
+    needs: [generate-dev-package-version, wait-before-check]
     uses: ./.github/workflows/check-package-installation-and-usage.yml
     with:
       package-index: test.pypi
-      package-version: ${{ needs.update-package-version.outputs.SNAPSHOT_VERSION }}
-      install-default-version: false
+      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
+      install-default-version: true
