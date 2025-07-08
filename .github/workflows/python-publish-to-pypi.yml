@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   generate-new-package-version:
@@ -64,37 +65,37 @@ jobs:
       PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.PACKAGE_VERSION }}
       NEW_PACKAGE_VERSION: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
 
+#  upload-pypi:
+#    name: Upload package to PyPi
+#    needs: [build-distribution-package]
+#    runs-on: ubuntu-latest
+#
+#    environment:
+#      name: pypi
+#      url: https://pypi.org/p/tradeflow
+#
+#    permissions:
+#      id-token: write
+#
+#    steps:
+#      - name: Unpacks all CIBW artifacts into dist/
+#        uses: actions/download-artifact@v4
+#        with:
+#          pattern: cibw-*
+#          path: dist
+#          merge-multiple: true
+#
+#      - name: Publish release distributions to PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          repository-url: https://upload.pypi.org/legacy/
+
   upload-pypi:
     name: Upload package to PyPi
     needs: [build-distribution-package]
-    runs-on: ubuntu-latest
-
-    environment:
-      name: pypi
-      url: https://pypi.org/p/tradeflow
-
-    permissions:
-      id-token: write
-
-    steps:
-      - name: Unpacks all CIBW artifacts into dist/
-        uses: actions/download-artifact@v4
-        with:
-          pattern: cibw-*
-          path: dist
-          merge-multiple: true
-
-      - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://upload.pypi.org/legacy/
-
-#  upload-pypi-2:
-#    name: Upload package to PyPi
-#    needs: [ build-distribution-package ]
-#    uses: ./.github/workflows/publish-to-pypi.yml
-#    with:
-#      package-index: pypi
+    uses: ./.github/workflows/publish-to-pypi.yml
+    with:
+      package-index: pypi
 
   verify-uploaded-content-pypi:
     name: Verify Uploaded Package Content on PyPi
