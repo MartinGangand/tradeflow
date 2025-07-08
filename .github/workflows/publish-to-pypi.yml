@@ -1,4 +1,4 @@
-name: Upload Python Package to PyPi
+name: Publish to PyPi
 
 on:
   workflow_call:
@@ -14,7 +14,6 @@ permissions:
 jobs:
   upload-pypi:
     name: Upload package to PyPi
-    needs: [build-distribution-package]
     runs-on: ubuntu-latest
 
     environment:
@@ -33,8 +32,13 @@ jobs:
           merge-multiple: true
 
       - name: Publish release distributions to PyPI
+        if: ${{ github.event.inputs.package-index == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://upload.pypi.org/legacy/
-        if: ${{ github.event.inputs.package-index == 'pypi' }}
 
+      - name: Publish release distributions to Test PyPI
+        if: ${{ github.event.inputs.package-index == 'test.pypi' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
