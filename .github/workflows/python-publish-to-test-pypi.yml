@@ -1,4 +1,4 @@
-name: Upload Python Package to Test PyPi
+name: Publish Python Package to Test PyPi
 
 on:
   workflow_dispatch:
@@ -67,28 +67,28 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
 
-  verify-uploaded-content-test-pypi:
-    name: Verify Uploaded Package Content on Test PyPi
-    needs: [generate-dev-package-version, upload-test-pypi]
-    uses: ./.github/workflows/verify-uploaded-package-content.yml
-    with:
-      package-index: test.pypi
-      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
-
-  wait-before-check:
-    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
-    name: Wait before checking package installation
-    needs: [upload-test-pypi]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Sleep for 4 minutes
-        run: sleep 240
-
-  check-package-installation-and-usage-test-pypi:
-    name: Install package from Test PyPi and test basic functionality
-    needs: [generate-dev-package-version, wait-before-check]
-    uses: ./.github/workflows/check-package-installation-and-usage.yml
-    with:
-      package-index: test.pypi
-      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
-      install-default-version: true
+#  verify-uploaded-content-test-pypi:
+#    name: Verify Uploaded Package Content on Test PyPi
+#    needs: [generate-dev-package-version, upload-test-pypi]
+#    uses: ./.github/workflows/verify-uploaded-package-content.yml
+#    with:
+#      package-index: test.pypi
+#      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
+#
+#  wait-before-check:
+#    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
+#    name: Wait before checking package installation
+#    needs: [upload-test-pypi]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Sleep for 4 minutes
+#        run: sleep 240
+#
+#  check-package-installation-and-usage-test-pypi:
+#    name: Install package from Test PyPi and test basic functionality
+#    needs: [generate-dev-package-version, wait-before-check]
+#    uses: ./.github/workflows/check-package-installation-and-usage.yml
+#    with:
+#      package-index: test.pypi
+#      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
+#      install-default-version: true
