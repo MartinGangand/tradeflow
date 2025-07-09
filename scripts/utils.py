@@ -321,7 +321,7 @@ def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: 
 
         # Install the package from test.pypi without dependencies
         # Install setuptools
-        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install setuptools<=72.1.0,>=61.0"))
+        subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install setuptools>=61.0,<72.1.0"))
         subprocess.check_call(parse_command_line(f"{sys.executable} -m pip install --index-url {INDEX_URL_TEST_PYPI} --no-deps --no-cache-dir {package_name}{version_part}"))
     else:
         raise Exception(f"Can't install package '{package_name}' version '{package_version}' from unknown index '{index}'.")
