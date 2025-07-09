@@ -33,32 +33,33 @@ jobs:
         with:
           name: pyproject-toml
           path: pyproject.toml
-
-  build-wheels:
-    name: Build wheels on ${{ matrix.os }}
-    needs: [update-pyproject-toml]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-13, macos-14, windows-2022, windows-11-arm]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download updated pyproject.toml
-        uses: actions/download-artifact@v4
-        with:
-          name: pyproject-toml
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
-
-      - name: Upload distributions
-        uses: actions/upload-artifact@v4
-        with:
-          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
+#
+#  build-wheels:
+#    name: Build wheels on ${{ matrix.os }}
+#    needs: [update-pyproject-toml]
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ubuntu-24.04]
+##        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-13, macos-14, windows-2022, windows-11-arm]
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - name: Download updated pyproject.toml
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: pyproject-toml
+#
+#      - name: Build wheels
+#        uses: pypa/cibuildwheel@v2.20.0
+#
+#      - name: Upload distributions
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+#          path: ./wheelhouse/*.whl
 
   build-sdist:
     name: Build source distribution
