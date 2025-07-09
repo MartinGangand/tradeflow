@@ -13,22 +13,22 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      PACKAGE_VERSION: ${{ steps.get-package-version.outputs.PACKAGE_VERSION }}
+      CURRENT_PACKAGE_VERSION: ${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}
       DEV_PACKAGE_VERSION: ${{ steps.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get package version from pyproject.toml
-        id: get-package-version
-        uses: ./.github/actions/get-package-version
+      - name: Get current package version from pyproject.toml
+        id: get-current-package-version
+        uses: ./.github/actions/get-current-package-version
 
       - name: Generate development package version
         id: generate-dev-package-version
         run: |
           CURRENT_DATE_TIME=$(date +"%Y.%-m.%-d.%-H.%-M.%-S")
-          DEV_PACKAGE_VERSION="${{ steps.get-package-version.outputs.PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
+          DEV_PACKAGE_VERSION="${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
           echo "Development package version: $DEV_PACKAGE_VERSION"
 
           # Set dev package version as output variable
@@ -39,7 +39,7 @@ jobs:
     needs: [generate-dev-package-version]
     uses: ./.github/workflows/build-distribution-package.yml
     with:
-      PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.PACKAGE_VERSION }}
+      CURRENT_PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.CURRENT_PACKAGE_VERSION }}
       NEW_PACKAGE_VERSION: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
 
   upload-test-pypi:
@@ -67,28 +67,28 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
 
-#  verify-uploaded-content-test-pypi:
-#    name: Verify Uploaded Package Content on Test PyPi
-#    needs: [generate-dev-package-version, upload-test-pypi]
-#    uses: ./.github/workflows/verify-uploaded-package-content.yml
-#    with:
-#      package-index: test.pypi
-#      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
-#
-#  wait-before-check:
-#    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
-#    name: Wait before checking package installation
-#    needs: [upload-test-pypi]
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Sleep for 4 minutes
-#        run: sleep 240
-#
-#  check-package-installation-and-usage-test-pypi:
-#    name: Install package from Test PyPi and test basic functionality
-#    needs: [generate-dev-package-version, wait-before-check]
-#    uses: ./.github/workflows/check-package-installation-and-usage.yml
-#    with:
-#      package-index: test.pypi
-#      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
-#      install-default-version: true
+  verify-uploaded-content-test-pypi:
+    name: Verify Uploaded Package Content on Test PyPi
+    needs: [generate-dev-package-version, upload-test-pypi]
+    uses: ./.github/workflows/verify-uploaded-package-content.yml
+    with:
+      package-index: test.pypi
+      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
+
+  wait-before-check:
+    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
+    name: Wait before checking package installation
+    needs: [upload-test-pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 4 minutes
+        run: sleep 240
+
+  check-package-installation-and-usage-test-pypi:
+    name: Install package from Test PyPi and test basic functionality
+    needs: [generate-dev-package-version, wait-before-check]
+    uses: ./.github/workflows/check-package-installation-and-usage.yml
+    with:
+      package-index: test.pypi
+      package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
+      install-default-version: true
