@@ -74,21 +74,12 @@ jobs:
       package-index: test.pypi
       package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
 
-  wait-before-check:
-    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
-    name: Wait before checking package installation
-    needs: [upload-test-pypi]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Sleep for 6 minutes
-        run: sleep 360
-
   check-package-installation-and-usage-test-pypi:
     name: Install package from Test PyPi and test basic functionality
-    needs: [generate-dev-package-version, wait-before-check]
+    needs: [generate-dev-package-version, upload-test-pypi]
     uses: ./.github/workflows/check-package-installation-and-usage.yml
     with:
       package-index: test.pypi
       package-version: ${{ needs.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
       install-default-version: true
+      delay-before-check: 6

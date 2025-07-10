@@ -34,10 +34,10 @@ jobs:
           pip install -r requirements.txt
           pip install -r test-requirements.txt
 
-      - name: "Configure CMake Build System"
+      - name: Configure CMake Build System
         run: cmake -S . -B build -DMY_PROJECT_SOURCE_DIR="." -DCMAKE_BUILD_TYPE=Debug
 
-      - name: "Build Project"
+      - name: Build Project
         run: cmake --build build --config Debug
 
       - name: Run tests

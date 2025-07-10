@@ -15,10 +15,24 @@ on:
         description: 'If true, install the default version of the package, otherwise install the specified version'
         required: true
         type: boolean
+      delay-before-check:
+        description: 'Wait some time (in minutes) before installing the package, otherwise it might not install the freshly uploaded version'
+        required: false
+        type: number
+        default: 0
 
 jobs:
+  wait-before-check:
+    name: Wait before checking package installation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sleep for ${{ inputs.delay-before-check }} minutes
+        run: sleep ${{ inputs.delay-before-check }}m
+
   run-script:
     name: Run script
+    needs: [wait-before-check]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

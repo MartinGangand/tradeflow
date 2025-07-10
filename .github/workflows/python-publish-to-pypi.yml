@@ -88,25 +88,7 @@ jobs:
         with:
           repository-url: https://upload.pypi.org/legacy/
 
-  verify-uploaded-content-pypi:
-    name: Verify uploaded package content on PyPi
-    needs: [generate-new-package-version, upload-pypi]
-    uses: ./.github/workflows/verify-uploaded-package-content.yml
-    with:
-      package-index: pypi
-      package-version: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
-
-  wait-before-check:
-    # Wait some time before installing the package, otherwise it might not install the freshly uploaded version
-    name: Wait before checking package installation
-    needs: [upload-pypi]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Sleep for 6 minutes
-        run: sleep 360
-
-  increment-package-version:
+  push-new-package-version:
     name: Increment package version
     needs: [generate-new-package-version, upload-pypi]
     runs-on: ubuntu-latest
@@ -124,7 +106,7 @@ jobs:
         run: |
           sed -i "s+version = \"$CURRENT_PACKAGE_VERSION\"+version = \"$NEW_PACKAGE_VERSION\"+g" pyproject.toml
 
-      - name: Push new version
+      - name: Push new package version
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -135,7 +117,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [generate-new-package-version, increment-package-version]
+    needs: [generate-new-package-version, push-new-package-version]
     runs-on: ubuntu-latest
 
     steps:
@@ -152,11 +134,20 @@ jobs:
               --title="Release $NEW_PACKAGE_VERSION" \
               --generate-notes
 
+  verify-uploaded-content-pypi:
+    name: Verify uploaded package content on PyPi
+    needs: [generate-new-package-version, upload-pypi]
+    uses: ./.github/workflows/verify-uploaded-package-content.yml
+    with:
+      package-index: pypi
+      package-version: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
+
   check-package-installation-and-usage-pypi:
     name: Install package from PyPi and test basic functionality
-    needs: [generate-new-package-version, wait-before-check]
+    needs: [generate-new-package-version, upload-pypi]
     uses: ./.github/workflows/check-package-installation-and-usage.yml
     with:
       package-index: pypi
       package-version: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
       install-default-version: true
+      delay-before-check: 6
