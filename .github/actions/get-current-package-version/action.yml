@@ -2,7 +2,7 @@ name: 'Get current package version'
 description: 'Get the current package version from pyproject.toml and set it as an output variable'
 outputs:
   CURRENT_PACKAGE_VERSION:
-    description: "The current package version extracted from pyproject.toml"
+    description: 'The current package version extracted from pyproject.toml'
     value: ${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}
 runs:
   using: "composite"

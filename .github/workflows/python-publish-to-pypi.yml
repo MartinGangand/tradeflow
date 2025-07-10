@@ -40,13 +40,12 @@ jobs:
           # Increment version
           if [ "${{ github.event.inputs.increment-type }}" = "major" ]; then
             major=$((major + 1))
-          fi
-
-          if [ "${{ github.event.inputs.increment-type }}" = "minor" ]; then
+            minor=0
+            patch=0          
+          elif [ "${{ github.event.inputs.increment-type }}" = "minor" ]; then
             minor=$((minor + 1))
-          fi
-
-          if [ "${{ github.event.inputs.increment-type }}" = "patch" ]; then
+            patch=0
+          elif [ "${{ github.event.inputs.increment-type }}" = "patch" ]; then
             patch=$((patch + 1))
           fi
           
@@ -132,8 +131,6 @@ jobs:
           git add pyproject.toml
           git commit -m "Increment package version to ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
           git push
-#          git checkout -b "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
-#          git push origin --set-upstream "increment-version-${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}"
 #          git push origin HEAD:main
 
   release:
