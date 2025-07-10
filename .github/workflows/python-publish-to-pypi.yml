@@ -89,7 +89,7 @@ jobs:
           repository-url: https://upload.pypi.org/legacy/
 
   push-new-package-version:
-    name: Increment package version
+    name: Push new package version
     needs: [generate-new-package-version, upload-pypi]
     runs-on: ubuntu-latest
     env:
@@ -112,8 +112,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add pyproject.toml
           git commit -m "Increment package version to ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
-          git push
-#          git push origin HEAD:main
+          git push origin HEAD:main
 
   release:
     name: Create Release

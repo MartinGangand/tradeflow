@@ -23,7 +23,7 @@ on:
 
 jobs:
   wait-before-check:
-    name: Wait before checking package installation
+    name: Wait before checking package installation and usage
     runs-on: ubuntu-latest
 
     steps:
