@@ -6,12 +6,12 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from scripts.pypi_verify_uploaded_content import verify_source_url, \
-    verify_wheel_url, expected_wheel_shared_libraries_extension, \
-    verify_source, verify_wheel, compare_expected_vs_actual_files, display_name, main
 from scripts.tests.test_utils import mock_response_with_source, mock_response_with_wheel, \
     prepare_directory_with_files, read_html_page_from_datasets, mock_chrome_with_html_page
 from scripts.utils import file_names_with_prefixes
+from scripts.verify_uploaded_package_content import verify_source_url, \
+    verify_wheel_url, expected_wheel_shared_libraries_extension, \
+    verify_source, verify_wheel, compare_expected_vs_actual_files, display_name, main
 
 PACKAGE_NAME = "package"
 VERSION = "0.0.1"

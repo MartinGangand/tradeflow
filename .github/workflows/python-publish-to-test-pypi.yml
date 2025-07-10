@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   generate-dev-package-version:
@@ -14,7 +13,7 @@ jobs:
 
     outputs:
       CURRENT_PACKAGE_VERSION: ${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}
-      DEV_PACKAGE_VERSION: ${{ steps.generate-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
+      DEV_PACKAGE_VERSION: ${{ steps.build-dev-package-version.outputs.DEV_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -24,8 +23,8 @@ jobs:
         id: get-current-package-version
         uses: ./.github/actions/get-current-package-version
 
-      - name: Generate development package version
-        id: generate-dev-package-version
+      - name: Build development package version
+        id: build-dev-package-version
         run: |
           CURRENT_DATE_TIME=$(date +"%Y.%-m.%-d.%-H.%-M.%-S")
           DEV_PACKAGE_VERSION="${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}.$CURRENT_DATE_TIME"
@@ -80,9 +79,10 @@ jobs:
     name: Wait before checking package installation
     needs: [upload-test-pypi]
     runs-on: ubuntu-latest
+
     steps:
-      - name: Sleep for 4 minutes
-        run: sleep 240
+      - name: Sleep for 6 minutes
+        run: sleep 360
 
   check-package-installation-and-usage-test-pypi:
     name: Install package from Test PyPi and test basic functionality

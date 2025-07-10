@@ -13,7 +13,6 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   generate-new-package-version:
@@ -103,8 +102,9 @@ jobs:
     name: Wait before checking package installation
     needs: [upload-pypi]
     runs-on: ubuntu-latest
+
     steps:
-      - name: Sleep for 4 minutes
+      - name: Sleep for 6 minutes
         run: sleep 360
 
   increment-package-version:
@@ -162,4 +162,4 @@ jobs:
     with:
       package-index: pypi
       package-version: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
-      install-default-version: false
+      install-default-version: true

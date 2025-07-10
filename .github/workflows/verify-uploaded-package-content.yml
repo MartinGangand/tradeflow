@@ -32,4 +32,4 @@ jobs:
           pip install -r scripts-requirements.txt
 
       - name: Run script
-        run: python -m scripts.pypi_verify_uploaded_content ${{ inputs.package-index }} ${{ inputs.package-version }}
+        run: python -m scripts.verify_uploaded_package_content ${{ inputs.package-index }} ${{ inputs.package-version }}
