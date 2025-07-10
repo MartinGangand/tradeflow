@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tradeflow"
-version = "0.3.33"
+version = "0.3.35"
 dependencies = [
     "matplotlib>=3.0.0",
     "numpy>=1.21.0",

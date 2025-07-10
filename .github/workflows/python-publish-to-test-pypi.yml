@@ -68,7 +68,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
 
   verify-uploaded-content-test-pypi:
-    name: Verify Uploaded Package Content on Test PyPi
+    name: Verify uploaded package content on Test PyPi
     needs: [generate-dev-package-version, upload-test-pypi]
     uses: ./.github/workflows/verify-uploaded-package-content.yml
     with:

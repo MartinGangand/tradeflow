@@ -5,7 +5,7 @@ on:
     inputs:
       increment-type:
         type: choice
-        description: Increment type
+        description: 'Increment type'
         options:
           - patch
           - minor
@@ -22,7 +22,7 @@ jobs:
 
     outputs:
       CURRENT_PACKAGE_VERSION: ${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}
-      NEW_PACKAGE_VERSION: ${{ steps.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
+      NEW_PACKAGE_VERSION: ${{ steps.build-new-package-version.outputs.NEW_PACKAGE_VERSION }}
 
     steps:
       - name: Checkout code
@@ -32,8 +32,8 @@ jobs:
         id: get-current-package-version
         uses: ./.github/actions/get-current-package-version
 
-      - name: Generate new package version
-        id: generate-new-package-version
+      - name: Build new package version
+        id: build-new-package-version
         run: |
           # Parse package version
           IFS='.' read -r major minor patch <<< "${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}"
@@ -91,7 +91,7 @@ jobs:
           repository-url: https://upload.pypi.org/legacy/
 
   verify-uploaded-content-pypi:
-    name: Verify Uploaded Package Content on PyPi
+    name: Verify uploaded package content on PyPi
     needs: [generate-new-package-version, upload-pypi]
     uses: ./.github/workflows/verify-uploaded-package-content.yml
     with:
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Sleep for 4 minutes
-        run: sleep 240
+        run: sleep 360
 
   increment-package-version:
     name: Increment package version
@@ -162,4 +162,4 @@ jobs:
     with:
       package-index: pypi
       package-version: ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }}
-      install-default-version: true
+      install-default-version: false

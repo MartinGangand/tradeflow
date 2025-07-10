@@ -33,15 +33,14 @@ jobs:
         with:
           name: pyproject-toml
           path: pyproject.toml
-#
+
 #  build-wheels:
 #    name: Build wheels on ${{ matrix.os }}
 #    needs: [update-pyproject-toml]
 #    runs-on: ${{ matrix.os }}
 #    strategy:
 #      matrix:
-#        os: [ubuntu-24.04]
-##        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-13, macos-14, windows-2022, windows-11-arm]
+#        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-13, macos-14, windows-2022, windows-11-arm]
 #
 #    steps:
 #      - name: Checkout code
