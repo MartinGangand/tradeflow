@@ -3,9 +3,7 @@ name: Documentation
 on:
   pull_request:
   workflow_dispatch:
-  release:
-    types:
-      - published
+  workflow_call:
 
 permissions:
   contents: write
@@ -29,12 +27,12 @@ jobs:
           pip install -r requirements.txt
           pip install sphinx sphinx_rtd_theme
 
-      - name: Sphinx build
+      - name: Sphinx build ${{ github.event_name}} ${{ github.event.action }}
         run: sphinx-build doc _build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}

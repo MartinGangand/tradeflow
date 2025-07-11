@@ -83,10 +83,10 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://upload.pypi.org/legacy/
+#      - name: Publish release distributions to PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          repository-url: https://upload.pypi.org/legacy/
 
   push-new-package-version:
     name: Push new package version
@@ -112,7 +112,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add pyproject.toml
           git commit -m "Increment package version to ${{ needs.generate-new-package-version.outputs.NEW_PACKAGE_VERSION }} [skip ci]"
-          git push origin HEAD:main
+#          git push origin HEAD:main
 
   release:
     name: Create Release
@@ -132,6 +132,11 @@ jobs:
               --repo="$GITHUB_REPOSITORY" \
               --title="Release $NEW_PACKAGE_VERSION" \
               --generate-notes
+
+  documentation:
+    name: Build and deploy documentation
+    needs: [release]
+    uses: ./.github/workflows/documentation.yml
 
   verify-uploaded-content-pypi:
     name: Verify uploaded package content on PyPi
