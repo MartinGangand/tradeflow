@@ -284,7 +284,7 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     """
     nb_errors = 0
     package_url = f"https://{index}.org/project/{package_name}/{version}/#files"
-    log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' and package version {version} (url: {package_url})\n")
+    log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' and package version '{version}' (url: {package_url})\n")
 
     pypi_html_page = html_page_as_string(url=package_url)
     source_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=FileExtension.SOURCE_EXTENSION)

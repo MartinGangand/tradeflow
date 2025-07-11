@@ -1,4 +1,4 @@
-Starting pypi_verify_uploaded_content.py script for index 'test.pypi' and package version 0.0.1 (url: https://test.pypi.org/project/package/0.0.1/#files)
+Starting verify_uploaded_package_content.py script for index 'test.pypi' and package version '0.0.1' (url: https://test.pypi.org/project/package/0.0.1/#files)
 
 Starting to verify source distribution
     Source url: OK

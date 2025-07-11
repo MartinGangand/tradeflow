@@ -1,0 +1,18 @@
+name: 'Get current package version'
+description: 'Get the current package version from pyproject.toml and set it as an output variable'
+outputs:
+  CURRENT_PACKAGE_VERSION:
+    description: 'The current package version extracted from pyproject.toml'
+    value: ${{ steps.get-current-package-version.outputs.CURRENT_PACKAGE_VERSION }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Get current package version from pyproject.toml
+      id: get-current-package-version
+      run: |
+        CURRENT_PACKAGE_VERSION=$(grep ^version pyproject.toml | cut -d '"' -f 2)
+        echo "Current package version: $CURRENT_PACKAGE_VERSION"
+
+        # Set current package version as output variable
+        echo "CURRENT_PACKAGE_VERSION=$CURRENT_PACKAGE_VERSION" >> $GITHUB_OUTPUT
+      shell: bash

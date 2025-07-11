@@ -1,0 +1,58 @@
+name: Check Package Installation and Usage
+
+on:
+  workflow_call:
+    inputs:
+      package-index:
+        description: 'Package index'
+        required: true
+        type: string
+      package-version:
+        description: 'Package version'
+        required: true
+        type: string
+      install-default-version:
+        description: 'If true, install the default version of the package, otherwise install the specified version'
+        required: true
+        type: boolean
+      delay-before-check:
+        description: 'Wait some time (in minutes) before installing the package, otherwise it might not install the freshly uploaded version'
+        required: false
+        type: number
+        default: 0
+
+jobs:
+  wait-before-check:
+    name: Wait before checking package installation and usage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sleep for ${{ inputs.delay-before-check }} minutes
+        run: sleep ${{ inputs.delay-before-check }}m
+
+  run-script:
+    name: Run script
+    needs: [wait-before-check]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-22.04-arm, ubuntu-24.04, ubuntu-24.04-arm, macos-13, macos-14, macos-15, windows-2022, windows-2025]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts-requirements.txt
+
+      - name: Run script
+        run: python -m scripts.check_package_installation_and_usage ${{ inputs.package-index }} ${{ inputs.package-version }} ${{ inputs.install-default-version && '--install_default_version' || '' }}
