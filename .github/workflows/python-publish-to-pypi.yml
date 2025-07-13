@@ -120,7 +120,7 @@ jobs:
           git push origin HEAD:main
 
   release:
-    name: Create Release
+    name: Create release
     needs: [generate-new-package-version, push-new-package-version]
     runs-on: ubuntu-latest
 
