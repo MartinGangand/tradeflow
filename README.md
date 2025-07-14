@@ -1,8 +1,9 @@
+# tradeflow
+
 [![Supported Versions](https://img.shields.io/pypi/pyversions/tradeflow.svg)](https://pypi.org/project/tradeflow/)
 [![PyPI Version](https://img.shields.io/pypi/v/tradeflow)](https://pypi.org/project/tradeflow/)
 [![CI](https://github.com/MartinGangand/tradeflow/actions/workflows/ci.yml/badge.svg)](https://github.com/MartinGangand/tradeflow/actions)
-[![Code Coverage](https://codecov.io/gh/MartinGangand/tradeflow/branch/main/graph/badge.svg)](https://codecov.io/gh/mwaskom/seaborn)
-# tradeflow
+[![codecov](https://codecov.io/github/MartinGangand/tradeflow/graph/badge.svg?token=T5Z95K8KRM)](https://codecov.io/github/MartinGangand/tradeflow)
 
 **tradeflow** is a library that lets you generate autocorrelated time series of signs.
 
