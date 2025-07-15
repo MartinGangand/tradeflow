@@ -60,6 +60,30 @@ ar_model.simulation_summary(percentiles=[50, 95, 99])
 Autocorrelated time series are sequences where each value is statistically dependent on previous values.
 `tradeflow` provides tools to fit autoregressive (AR) models to binary sign data, enabling realistic simulation and analysis of autocorrelated processes.
 
+1. Bouchaud J-P, Bonart J, Donier J, Gould M. Trades, Quotes and Prices: Financial Markets Under the Microscope. Cambridge University Press; 2018.
+Study the highly persistent nature of the sequence of binary variables $\epsilon_t$ εt that describe the direction of market orders.
+Buy orders tend to follow other buy orders and sell orders tend to follow other sell orders, both for very long periods of time.
+empirical studies show that market-order sign autocorrelation function decays extremely slowly with the number of lags.
+Market order signs are positively autocorrelated, it came as a surprise that these autocorrelations decay extremely slowly.
+This is a consequence of the persistence of order flow: although on average there are an equal number of buy and sell market orders, in any finite window there is likely to be an accumulation of one or the other.
+
+(p194) The conditional expectation of εt, given the past history of signs is. 
+$$\hat{\epsilon_t} = (2p - 1) \sum_{\ell=1}^{\infty}\mathbb{K}(\ell)\epsilon_{t-\ell}$$
+Therefore, the best predictor of the next sign in a DAR processes is a linear combination of the past signs
+
+Explain the possible causes?? NO but document it to know and in the readme say that reasons are in the book (herding and order splitting) (2 parts about it: p193 and p197)
+
+The signs of arriving market orders have long-range autocorrelations. This makes the signs of future market orders predictable, which seems to be at odds with the (nearly) uncorrelated nature of price returns.
+
+
+(p260)
+In a discrete autoregressive process, the best predictor $\hat{\epsilon_t}=\mathbb{E}_{t-1}[\epsilon_t]$ of the next trade sign, just before it happens, can be written as 
+$$\hat{\epsilon_t} = \sum_{k=1}^{p}\mathbb{K}(k)\epsilon_{t-k}$$.
+The backward-looking kernel $\mathbb{K}(k)$ can be inferred from the sign autocorrelation function using the Yule–Walker equation
+
+The probability that the next sign is $\epsilon_t$ is then given by
+$$\mathbb{P}_{t-1}(\epsilon_t) = \frac{1+\epsilon_t \hat{\epsilon_t}}{2}$$
+
 ## Features
 - Fit AR models to binary sign time series
 - Automatic order selection using PACF
@@ -82,6 +106,21 @@ Autocorrelated time series are sequences where each value is statistically depen
 <h1 align="center">
     <img src="doc/images/simulation_summary.png" width="300">
 </h1><br>
+
+## Test ref
+"...the **go to** statement should be abolished..." [[1]](#1).
+
+* [feature] Add an awesome feature ([#33])
+* [bug] Finally fixed this stupid bug ([#19])
+
+[#19]: https://github.com/user/repo/issues/19
+[#33]: https://github.com/user/repo/issues/33
+
+## References
+<a id="1">[1]</a> 
+Dijkstra, E. W. (1968). 
+Go to statement considered harmful. 
+Communications of the ACM, 11(3), 147-148.
 
 ## Documentation
 

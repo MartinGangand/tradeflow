@@ -131,9 +131,9 @@ class AR(TimeSeries):
             * 'yule_walker' - Use the Yule Walker equations to estimate model parameters.
             * 'burg' - Use Burg's method to estimate model parameters.
             * 'cmle_without_cst' - Use conditional maximum likelihood estimation without constant term to estimate model parameters.
-            It can be solved with an OLS.
+              It can be solved with an OLS.
             * 'cmle_with_cst' - Use conditional maximum likelihood estimation with a constant term to estimate model parameters.
-            It can be solved with an OLS.
+              It can be solved with an OLS.
             * 'mle_without_cst' - Use maximum likelihood estimation without constant term to estimate model parameters.
             * 'mle_with_cst' - Use maximum likelihood estimation with a constant term to estimate model parameters.
         significance_level : float, default 0.05
