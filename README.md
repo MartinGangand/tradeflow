@@ -2,6 +2,7 @@
 <img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="300">
 </h1><br>
 
+
 <picture align="center">
   <source media="(prefers-color-scheme: dark)" srcset="https://pandas.pydata.org/static/img/pandas_white.svg">
   <img alt="Pandas Logo" src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png">
