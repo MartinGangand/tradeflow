@@ -1,21 +1,21 @@
 <h1 align="center">
-<img src="doc/_static/tradeflow_logo.png" width="300">
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="300">
 </h1><br>
 
 <picture align="center">
   <source media="(prefers-color-scheme: dark)" srcset="https://pandas.pydata.org/static/img/pandas_white.svg">
-  <img alt="Pandas Logo" src="doc/_static/tradeflow_logo.png">
+  <img alt="Pandas Logo" src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png">
 </picture>
 
 <h1 align="center">
 
-![Simulation summary](doc/_static/tradeflow_logo.png)
+![Simulation summary](https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png)
 
 </h1>
 
-![Simulation summary](doc/_static/tradeflow_logo.png)
+![Simulation summary](https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png)
 
-<img src="doc/_static/tradeflow_logo.png"><br>
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png"><br>
 
 ![Simulation summary](doc/_static/file.svg)
 
@@ -156,4 +156,3 @@ to the book by Bouchaud et al. [11] f
 ## Documentation
 
 Read the full documentation [here](https://martingangand.github.io/tradeflow/).
-
