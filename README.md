@@ -156,3 +156,4 @@ to the book by Bouchaud et al. [11] f
 ## Documentation
 
 Read the full documentation [here](https://martingangand.github.io/tradeflow/).
+
