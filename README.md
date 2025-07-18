@@ -1,5 +1,5 @@
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="700" alt="Tradeflow Logo">
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="700" alt="Tradeflow Logo" />
 </h1><br>
 
 <p align="center">
@@ -9,6 +9,13 @@
 [![CI](https://github.com/MartinGangand/tradeflow/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MartinGangand/tradeflow/actions/workflows/ci.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/github/MartinGangand/tradeflow/graph/badge.svg?token=T5Z95K8KRM)](https://codecov.io/github/MartinGangand/tradeflow)
 
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/tradeflow/"><img alt="PyPI Latest Release" src="https://img.shields.io/pypi/v/tradeflow" /></a>
+  <a href="https://pypi.org/project/tradeflow/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/tradeflow.svg" /></a>
+  <a href="https://github.com/MartinGangand/tradeflow/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI" src="https://github.com/MartinGangand/tradeflow/actions/workflows/ci.yml/badge.svg?branch=main" /></a>
+  <a href="https://codecov.io/github/MartinGangand/tradeflow"><img alt="Coverage" src="https://codecov.io/github/MartinGangand/tradeflow/graph/badge.svg?token=T5Z95K8KRM" /></a>
 </p>
 
 tradeflow is a library that allows you to generate autocorrelated time series of signs.
