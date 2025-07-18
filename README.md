@@ -1,5 +1,5 @@
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="700" alt="Tradeflow Logo" />
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="650" alt="Tradeflow Logo" />
 </h1>
 
 <p align="center">
@@ -9,7 +9,7 @@
   <a href="https://codecov.io/github/MartinGangand/tradeflow"><img alt="Coverage" src="https://codecov.io/github/MartinGangand/tradeflow/graph/badge.svg?token=T5Z95K8KRM" /></a>
 </p>
 
-tradeflow is a library that allows you to generate autocorrelated time series of signs.
+tradeflow is a Python package that allows you to generate autocorrelated time series of signs.
 
 ## Usage
 Fit an autoregressive model with a time series of signs (e.g, [1, 1, -1, -1, 1, -1, 1, 1, 1, 1, ...]).
@@ -44,7 +44,7 @@ ar_model.simulation_summary(percentiles=[50, 95, 99])
 | Q95_nb_consecutive_values  |      34    |        34    |
 | Q99_nb_consecutive_values  |      95    |        99    |
 
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/simulation_summary.png" width="400" alt="Simulation summary">
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/simulation_summary.png" width="600" alt="Simulation summary" />
 
 ## Installation
 tradeflow is available on PyPI:
