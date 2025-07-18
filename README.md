@@ -1,17 +1,6 @@
-![Tradeflow Logo](https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/file.svg)
-<br>
-
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="800" alt="Tradeflow Logo">
-
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="800" alt="Tradeflow Logo">
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="700" alt="Tradeflow Logo">
 </h1><br>
-
-<div class="header">
-<h1>
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="800" alt="Tradeflow Logo">
-</h1>
-</div>
 
 [![PyPI Latest Release](https://img.shields.io/pypi/v/tradeflow)](https://pypi.org/project/tradeflow/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/tradeflow.svg)](https://pypi.org/project/tradeflow/)
