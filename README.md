@@ -1,5 +1,5 @@
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.png" width="650" alt="Tradeflow Logo" />
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.svg" width="650" alt="Tradeflow Logo" />
 </h1>
 
 <p align="center">
@@ -34,16 +34,6 @@ It also computes the mean and percentiles of the series counting the number of c
 ar_model.simulation_summary(percentiles=[50, 95, 99])
 ```
 
-|                            |   Training |   Simulation |
-|:---------------------------|-----------:|-------------:|
-| size                       |  995093    |     10000    |
-| pct_buy (%)                |      42.32 |        52.57 |
-| mean_nb_consecutive_values |       7.64 |         7.66 |
-| std_nb_consecutive_values  |      32.34 |        18.47 |
-| Q50_nb_consecutive_values  |       2    |         2    |
-| Q95_nb_consecutive_values  |      34    |        34    |
-| Q99_nb_consecutive_values  |      95    |        99    |
-
 <img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/simulation_summary.png" width="600" alt="Simulation summary" />
 
 ## Installation
@@ -70,49 +60,12 @@ where $\mathbb{K}(k)$ can be inferred from the sign autocorrelation function usi
 Thus, the probability that the next sign is $\epsilon_t$ is then given by
 $$\mathbb{P}_{t-1}(\epsilon_t) = \frac{1+\epsilon_t \hat{\epsilon_t}}{2}$$
 
-## Background base
-Study the highly persistent nature of the sequence of binary variables $\epsilon_t$ that describe the direction of market orders.
-Buy orders tend to follow other buy orders and sell orders tend to follow other sell orders, both for very long periods of time.
-empirical studies show that market-order sign autocorrelation function decays extremely slowly with the number of lags.
-Market order signs are positively autocorrelated, it came as a surprise that these autocorrelations decay extremely slowly.
-This is a consequence of the persistence of order flow: although on average there are an equal number of buy and sell market orders, in any finite window there is likely to be an accumulation of one or the other.
-
-(p194) The conditional expectation of εt, given the past history of signs is. 
-$$\hat{\epsilon_t} = (2p - 1) \sum_{\ell=1}^{\infty}\mathbb{K}(\ell)\epsilon_{t-\ell}$$
-Therefore, the best predictor of the next sign in a DAR processes is a linear combination of the past signs
-
-Explain the possible causes?? NO but document it to know and in the readme say that reasons are in the book (herding and order splitting) (2 parts about it: p193 and p197)
-
-The signs of arriving market orders have long-range autocorrelations. This makes the signs of future market orders predictable, which seems to be at odds with the (nearly) uncorrelated nature of price returns.
-
-
-(p260)
-In a discrete autoregressive process, the best predictor $\hat{\epsilon_t}=\mathbb{E}_{t-1}[\epsilon_t]$ of the next trade sign, just before it happens, can be written as 
-$$\hat{\epsilon_t} = \sum_{k=1}^{p} \mathbb{K}(k) \epsilon_{t-k}$$.
-The backward-looking kernel $\mathbb{K}(k)$ can be inferred from the sign autocorrelation function using the Yule–Walker equation.
-${p}>0$ is the order of the model (number of lags to include in the model), $\forall \ell > p, \mathbb{K}(\ell) = 0$
-
-The probability that the next sign is $\epsilon_t$ is then given by
-$$\mathbb{P}_{t-1}(\epsilon_t) = \frac{1+\epsilon_t \hat{\epsilon_t}}{2}$$
-
-## Features
+## Features (before background????)
 - Fit AR models to binary sign time series
 - Automatic order selection (number of lags to include in the model)
 - Simulation of autocorrelated sign sequences
 - Statistical summary and visualization tools
 - Stationarity and residual autocorrelation checks
-
-## Test image
-|    | animal_1   | animal_2   |
-|---:|:-----------|:-----------|
-|  0 | elk        | dog        |
-|  1 | pig        | quetzal    |
-<picture align="center">
-  <source media="(prefers-color-scheme: dark)" srcset="https://pandas.pydata.org/static/img/pandas_white.svg">
-  <img alt="Pandas Logo" src="doc/images/simulation_summary.png">
-</picture>
-
-![Simulation summary](doc/images/simulation_summary.png)
 
 ## Test ref
 "...the **go to** statement should be abolished..." [[1]](#1).
@@ -133,9 +86,6 @@ Jean-Philippe Bouchaud, Julius Bonart, Jonathan Donier, and Martin Gould. Trades
 J.-P. Bouchaud, J. Bonart, J. Donier, and M. Gould, Trades, Quotes and Prices: Financial Markets Under the Microscope. Cambridge University Press, 2018.
 Jean-Philippe Bouchaud, Julius Bonart, Jonathan Donier, and Martin Gould. Trades, quotes and prices: financial markets under the microscope. Cambridge University Press, 2018.
 Bouchaud, J. P., Bonart, J., Donier, J., & Gould, M. (2018). Trades, quotes and prices: financial markets under the microscope. Cambridge University Press.
-
-in Bouchaud et al. [20, Chapter 13]
-to the book by Bouchaud et al. [11] f
 
 ## Documentation
 
