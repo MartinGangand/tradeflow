@@ -18,15 +18,15 @@ As stated in the book _Trades, Quotes and Prices: Financial Markets Under the Mi
 ## Features
 * **Fit autoregressive (AR) models** to time series of signs:
   - Automatic model order selection using the Partial Autocorrelation Function (PACF)
-  - Parameter estimation methods include: Yule-Walker equations, Maximum Likelihood Estimation, and Burg's method
+  - Parameter estimation methods: Yule-Walker equations, Maximum Likelihood Estimation, and Burg's method
 * **Simulate autocorrelated sign sequences** from fitted models
 * **Summarize simulations** by comparing original and generated time series:
   - Plot ACF and PACF
   - Compute the proportion of buy signs ($+1$)
   - Compute descriptive statistics on consecutive sign runs (mean, standard deviation, percentiles)
 * **Perform statistical tests**:
-  - Test for stationarity using the Augmented Dickey-Fuller (ADF) test
-  - Test for residual autocorrelation using the Breusch-Godfrey test
+  - Augmented Dickey-Fuller (ADF) test for time stationarity
+  - Breusch-Godfrey test for residual autocorrelation
 * **Visualize autocorrelation** structures:
   - Autocorrelation Function (ACF)
   - Partial Autocorrelation Function (PACF)
@@ -46,7 +46,7 @@ Simulate an autocorrelated time series of signs from the fitted AR model:
 
 ```python
 ar_model.simulate(size=10_000)
-# [-1, -1, 1, 1, 1, 1, 1, -1, 1, 1, ...]
+# [1, -1, 1, 1, 1, 1, -1, -1, 1, 1, ...]
 ```
 <br>
 
@@ -59,7 +59,7 @@ ar_model.simulation_summary(plot=True)
 <img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/simulation_summary.png" width="950" alt="Simulation summary" />
 
 ## Installation
-**tradeflow** can be installed with pip:
+tradeflow can be installed with pip:
 
 ```bash
 pip install tradeflow
@@ -74,14 +74,14 @@ This package is inspired by the book _Trades, Quotes and Prices: Financial Marke
 The book discusses the highly persistent nature of the sequence of binary variables $\epsilon_t$ that describe the direction of market orders.
 That is, buy orders ($\epsilon_t = +1$) tend to follow other buy orders, and sell orders ($\epsilon_t = -1$) tend to follow other sell orders, often for very long periods.
 
-We assume that the time series of signs $\epsilon_t$ is well modelled by a **discrete autoregressive process**. In this framework, the best predictor of the next sign (just before it occurs), is a linear combination of the past signs:
+If we assume that the time series of signs $\epsilon_t$ is well modelled by a **discrete autoregressive process** of order $p > 0$. In this framework, the best predictor of the next market order sign (just before it occurs) is a linear combination of the past signs:
 
 ```math
 \hat{\epsilon}_t = \sum_{k=1}^{p} \mathbb{K}(k) \epsilon_{t-k}
 ```
 
-Here, $\mathbb{K}(k)$ can be inferred from the sign autocorrelation function using the Yule-Walker equation.
-The order $p > 0$ determines how many past signs are used, $\forall \ell > p, \mathbb{K}(\ell) = 0$.
+Here, $\mathbb{K}(k)$ can be inferred from the sign autocorrelation function using the Yule-Walker equations.
+$p > 0$ determines how many past signs are used ($\forall \ell > p, \mathbb{K}(\ell) = 0$).
 
 As a result, the probability that the next sign is $\epsilon_t$ is given by:
 
