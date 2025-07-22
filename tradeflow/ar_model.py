@@ -117,15 +117,15 @@ class AR(TimeSeries):
         """
         Estimate the model parameters.
 
-        If the chosen method estimates a constant term, the percentage of buy signs in the time series generated with
-        these parameters will be close to the one from the training time series ('ols_with_cst', 'mle_with_cst').
+        If the chosen method estimates a constant term, the proportion of buy signs in the time series generated with
+        these parameters will be close to the one from the training time series ('cmle_with_cst', 'mle_with_cst').
 
-        Otherwise, the percentage of buy signs in the time series generated with these parameters
-        will be close to 50% ('yule_walker', 'burg', 'mle_without_cst').
+        Otherwise, the proportion of buy signs in the time series generated with these parameters
+        will be close to 50% ('yule_walker', 'burg', 'cmle_without_cst', 'mle_without_cst').
 
         Parameters
         ----------
-        method : {'yule_walker', 'burg', 'ols_with_cst', 'mle_without_cst', 'mle_with_cst'}
+        method : {'yule_walker', 'burg', 'cmle_without_cst', 'cmle_with_cst', 'mle_without_cst', 'mle_with_cst'}
             The method to use for estimating parameters.
 
             * 'yule_walker' - Use the Yule-Walker equations to estimate model parameters.
