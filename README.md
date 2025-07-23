@@ -1,5 +1,5 @@
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/tradeflow_logo.svg" width="650" alt="Tradeflow Logo" />
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/main/doc/_static/tradeflow_logo.svg" width="650" alt="Tradeflow Logo" />
 </h1>
 
 <p align="center">
@@ -56,7 +56,7 @@ Compare the ACF and PACF of the original and simulated time series:
 ar_model.simulation_summary(plot=True)
 ```
 
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/improve-package-documentation/doc/_static/simulation_summary.png" width="950" alt="Simulation summary" />
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/main/doc/_static/simulation_summary.png" width="950" alt="Simulation summary" />
 
 ## Installation
 tradeflow can be installed with pip:
