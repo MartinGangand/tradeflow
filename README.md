@@ -21,15 +21,12 @@ As stated in the book _Trades, Quotes and Prices: Financial Markets Under the Mi
   - Parameter estimation methods: Yule-Walker equations, Maximum Likelihood Estimation, and Burg's method
 * **Simulate autocorrelated sign sequences** from fitted models
 * **Summarize simulations** by comparing original and simulated time series:
-  - Plot ACF and PACF
+  - Plot the Autocorrelation Function (ACF) and the Partial Autocorrelation Function (PACF)
   - Compute the proportion of buy signs ($+1$)
   - Compute descriptive statistics on consecutive sign runs (mean, standard deviation, percentiles)
 * **Perform statistical tests**:
   - Augmented Dickey-Fuller (ADF) test for time series stationarity
   - Breusch-Godfrey test for residual autocorrelation
-* **Visualize autocorrelation** structures:
-  - Autocorrelation Function (ACF)
-  - Partial Autocorrelation Function (PACF)
 
 ## Usage
 Fit an autoregressive model to a time series of signs (e.g., `[1, 1, -1, -1, 1, -1, 1, 1, 1, 1, ...]`):
@@ -81,7 +78,7 @@ We assume that the time series of signs $\epsilon_t$ is well modelled by a **dis
 ```
 
 Here, $\mathbb{K}(k)$ can be inferred from the sign autocorrelation function using the Yule-Walker equations.
-$p > 0$ determines how many past signs are used ($\forall \ell > p, \mathbb{K}(\ell) \approx 0$).
+$p$ determines how many past signs are used ($\forall \ell > p, \mathbb{K}(\ell) \approx 0$).
 
 As a result, the probability that the next sign is $\epsilon_t$ is:
 
