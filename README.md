@@ -20,12 +20,12 @@ As stated in the book _Trades, Quotes and Prices: Financial Markets Under the Mi
   - Automatic model order selection using the Partial Autocorrelation Function (PACF)
   - Parameter estimation methods: Yule-Walker equations, Maximum Likelihood Estimation, and Burg's method
 * **Simulate autocorrelated sign sequences** from fitted models
-* **Summarize simulations** by comparing original and generated time series:
+* **Summarize simulations** by comparing original and simulated time series:
   - Plot ACF and PACF
   - Compute the proportion of buy signs ($+1$)
   - Compute descriptive statistics on consecutive sign runs (mean, standard deviation, percentiles)
 * **Perform statistical tests**:
-  - Augmented Dickey-Fuller (ADF) test for time stationarity
+  - Augmented Dickey-Fuller (ADF) test for time series stationarity
   - Breusch-Godfrey test for residual autocorrelation
 * **Visualize autocorrelation** structures:
   - Autocorrelation Function (ACF)
@@ -50,7 +50,7 @@ ar_model.simulate(size=10_000)
 ```
 <br>
 
-Compare the ACF and PACF of the original and simulated series.
+Compare the ACF and PACF of the original and simulated time series:
 
 ```python
 ar_model.simulation_summary(plot=True)
@@ -74,16 +74,16 @@ This package is inspired by the book _Trades, Quotes and Prices: Financial Marke
 The book discusses the highly persistent nature of the sequence of binary variables $\epsilon_t$ that describe the direction of market orders.
 That is, buy orders ($\epsilon_t = +1$) tend to follow other buy orders, and sell orders ($\epsilon_t = -1$) tend to follow other sell orders, often for very long periods.
 
-If we assume that the time series of signs $\epsilon_t$ is well modelled by a **discrete autoregressive process** of order $p > 0$. In this framework, the best predictor of the next market order sign (just before it occurs) is a linear combination of the past signs:
+We assume that the time series of signs $\epsilon_t$ is well modelled by a **discrete autoregressive process** of order $p > 0$. In this framework, the best predictor of the next market order sign (just before it occurs) is a linear combination of the past signs:
 
 ```math
 \hat{\epsilon}_t = \sum_{k=1}^{p} \mathbb{K}(k) \epsilon_{t-k}
 ```
 
 Here, $\mathbb{K}(k)$ can be inferred from the sign autocorrelation function using the Yule-Walker equations.
-$p > 0$ determines how many past signs are used ($\forall \ell > p, \mathbb{K}(\ell) = 0$).
+$p > 0$ determines how many past signs are used ($\forall \ell > p, \mathbb{K}(\ell) \approx 0$).
 
-As a result, the probability that the next sign is $\epsilon_t$ is given by:
+As a result, the probability that the next sign is $\epsilon_t$ is:
 
 ```math
 \mathbb{P}_{t-1}(\epsilon_t) = \frac{1 + \epsilon_t \hat{\epsilon}_t}{2}
