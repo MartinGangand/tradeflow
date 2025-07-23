@@ -180,8 +180,8 @@ class TestSimulationSummary:
         ([-1., -1., -1., -1., -1.], 0.0),
         ([-1., -1., -1., -1., 1.], 100 * 1 / 5)
     ])
-    def test_percentage_buy(self, signs, expected_buy_pct):
-        assert TimeSeries.percentage_buy(signs=signs) == expected_buy_pct
+    def test_proportion_buy(self, signs, expected_buy_pct):
+        assert TimeSeries.proportion_buy(signs=signs) == expected_buy_pct
 
 
 class TestPlot:

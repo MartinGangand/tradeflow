@@ -40,4 +40,9 @@ jobs:
         run: cmake --build build --config Debug
 
       - name: Run tests
-        run: pytest tradeflow -v -s --doctest-modules --cov=tradeflow --log-level=WARNING --color=yes
+        run: pytest tradeflow -v -s --doctest-modules --cov=tradeflow --cov-branch --cov-report=xml --log-level=WARNING --color=yes
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
