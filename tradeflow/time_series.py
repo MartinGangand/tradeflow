@@ -237,7 +237,7 @@ class TimeSeries(ABC):
         series_nb_consecutive_signs = cls._compute_series_nb_consecutive_signs(signs=signs)
         names, values = [], []
         names.append("size"), values.append(len(signs))
-        names.append("pct_buy (%)"), values.append(cls.percentage_buy(signs=signs))
+        names.append("pct_buy (%)"), values.append(cls.proportion_buy(signs=signs))
         names.append("mean_nb_consecutive_values",), values.append(np.mean(series_nb_consecutive_signs))
         names.append("std_nb_consecutive_values"), values.append(np.std(series_nb_consecutive_signs))
         names.extend([f"Q{percentile}_nb_consecutive_values" for percentile in percentiles])
@@ -261,7 +261,7 @@ class TimeSeries(ABC):
         return np.array(series_nb_consecutive_signs)
 
     @staticmethod
-    def percentage_buy(signs: ArrayLike1D) -> float:
+    def proportion_buy(signs: ArrayLike1D) -> float:
         return round(100 * sum([1 for sign in signs if sign == 1]) / len(signs), 2)
 
     def _build_fig_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
