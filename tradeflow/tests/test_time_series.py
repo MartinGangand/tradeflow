@@ -174,14 +174,14 @@ class TestSimulationSummary:
         actual_series = TimeSeries._compute_series_nb_consecutive_signs(signs=signs)
         assert_equal(actual=actual_series, desired=expected_series)
 
-    @pytest.mark.parametrize("signs,expected_buy_pct", [
-        ([1., -1., 1., 1., -1.], 100 * 3 / 5),
-        ([1., 1., 1., 1., 1.], 100.0),
+    @pytest.mark.parametrize("signs,expected_buy_proportion", [
+        ([1., -1., 1., 1., -1.], 3 / 5),
+        ([1., 1., 1., 1., 1.], 1.0),
         ([-1., -1., -1., -1., -1.], 0.0),
-        ([-1., -1., -1., -1., 1.], 100 * 1 / 5)
+        ([-1., -1., -1., -1., 1.], 1 / 5)
     ])
-    def test_proportion_buy(self, signs, expected_buy_pct):
-        assert TimeSeries.proportion_buy(signs=signs) == expected_buy_pct
+    def test_proportion_buy(self, signs, expected_buy_proportion):
+        assert TimeSeries.proportion_buy(signs=signs) == expected_buy_proportion
 
 
 class TestPlot:

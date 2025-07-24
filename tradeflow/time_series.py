@@ -39,7 +39,7 @@ class TimeSeries(ABC):
 
         # Will be set in fit()
         self._order = None
-        
+
         self._x = None
         self._y = None
         self._first_order_signs = None
@@ -125,7 +125,7 @@ class TimeSeries(ABC):
                         exception=IllegalValueException(f"Alpha {alpha} is invalid, it must be in the interval [0, 1]"))
         return pacf(x=time_series, nlags=nb_lags, method="burg", alpha=alpha)
 
-    def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame:
+    def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
         """
         Return a statistical summary comparing the original signs and the simulated ones.
 
@@ -146,8 +146,11 @@ class TimeSeries(ABC):
 
         Returns
         -------
-        pd.DataFrame
+        statistics : pd.DataFrame
             A DataFrame containing the statistics for the original and simulated time series.
+        fig : Figure, optional
+            A matplotlib Figure containing the plots of the autocorrelation and partial autocorrelation functions.
+            Returned if `plot` is True.
         """
         plot = bool_like(value=plot, name="plot", optional=False, strict=True)
         log_scale = bool_like(value=log_scale, name="log_scale", optional=False, strict=True)
@@ -158,7 +161,8 @@ class TimeSeries(ABC):
         statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
 
         if plot:
-            self._build_fig_corr_training_vs_simulation(log_scale=log_scale)
+            fig = self._build_fig_corr_training_vs_simulation(log_scale=log_scale)
+            return statistics, fig
 
         return statistics
 
@@ -237,7 +241,7 @@ class TimeSeries(ABC):
         series_nb_consecutive_signs = cls._compute_series_nb_consecutive_signs(signs=signs)
         names, values = [], []
         names.append("size"), values.append(len(signs))
-        names.append("pct_buy (%)"), values.append(cls.proportion_buy(signs=signs))
+        names.append("pct_buy (%)"), values.append(100 * cls.proportion_buy(signs=signs))
         names.append("mean_nb_consecutive_values",), values.append(np.mean(series_nb_consecutive_signs))
         names.append("std_nb_consecutive_values"), values.append(np.std(series_nb_consecutive_signs))
         names.extend([f"Q{percentile}_nb_consecutive_values" for percentile in percentiles])
@@ -262,7 +266,20 @@ class TimeSeries(ABC):
 
     @staticmethod
     def proportion_buy(signs: ArrayLike1D) -> float:
-        return round(100 * sum([1 for sign in signs if sign == 1]) / len(signs), 2)
+        """
+        Calculate the proportion of buy signs (where sign == 1) in a time series of signs.
+
+        Parameters
+        ----------
+        signs : array_like
+            The time series to test for stationarity.
+
+        Returns
+        -------
+        float
+            The proportion of buy signs in the series (value in the range [0.0, 1.0]).
+        """
+        return sum([1 for sign in signs if sign == 1]) / len(signs)
 
     def _build_fig_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
         nb_lags = min(2 * self._order, len(self._signs) // 2 - 1)
@@ -299,7 +316,7 @@ class TimeSeries(ABC):
         axe.set_ylim(y_min, np.max(all_values) + 0.1)
 
         if order is not None:
-            axe.axvline(x=order, color="blue", label="Order of the model", linestyle="--")
+            axe.axvline(x=order, color="blue", label=f"Order of the model ({order})", linestyle="--")
 
         axe.grid()
         axe.legend()
