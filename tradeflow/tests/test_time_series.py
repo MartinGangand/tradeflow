@@ -139,11 +139,22 @@ class TestBreuschGodfreyTest:
 
 class TestSimulationSummary:
 
-    def test_simulation_summary(self, time_series_signs):
+    @pytest.mark.parametrize("plot_acf,plot_pacf", [
+        (False, False),
+        (True, False),
+        (False, True),
+        (True, True)
+    ])
+    def test_simulation_summary(self, time_series_signs, plot_acf, plot_pacf):
         time_series_signs._simulation = time_series_signs._signs
         time_series_signs._order = 6
 
-        actual_simulation_summary_df = time_series_signs.simulation_summary(plot=False, log_scale=False, percentiles=(50.0, 75.0, 95.0, 99.0, 99.9))
+        res = time_series_signs.simulation_summary(plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=False, percentiles=(50.0, 75.0, 95.0, 99.0, 99.9))
+        if plot_acf or plot_pacf:
+            actual_simulation_summary_df, fig = res
+            assert len(fig.get_axes()) == int(plot_acf) + int(plot_pacf)
+        else:
+            actual_simulation_summary_df = res
 
         expected_training_stats_df = ResultsTimeSeries.simulation_summary(column_name="Training").stats_df
         expected_simulation_stats_df = ResultsTimeSeries.simulation_summary(column_name="Simulation").stats_df
@@ -207,25 +218,40 @@ class TestPlot:
             idx_order = len(expected_functions)
             assert np.all([x == expected_order for x in axe.lines[idx_order].get_xydata()[:, 0]])
 
+    @pytest.mark.parametrize("plot_acf,plot_pacf", [
+        (True, False),
+        (False, True),
+        (True, True)
+    ])
     @pytest.mark.parametrize("log_scale", [True, False])
-    def test_build_fig_corr_training_vs_simulation(self, time_series_signs, log_scale):
+    def test_build_fig_autocorrelation_training_vs_simulation(self, time_series_signs, plot_acf, plot_pacf, log_scale):
         order = time_series_signs._order
         time_series_signs._simulation = time_series_signs._signs
         y_scale = "log" if log_scale else "linear"
 
-        fig = time_series_signs._build_fig_corr_training_vs_simulation(log_scale=log_scale)
+        fig = time_series_signs._build_fig_autocorrelation_training_vs_simulation(plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=log_scale)
+        assert len(fig.get_axes()) == int(plot_acf) + int(plot_pacf)
 
-        acf_axe = fig.get_axes()[0]
-        expected_acf = ResultsTimeSeries.correlation().acf[:2 * order + 1]
-        expected_acf_title = f"ACF function for training and simulated time series ({y_scale} scale)"
-        self.check_axe_values(axe=acf_axe, expected_functions=[expected_acf, expected_acf], expected_labels=["Training", "Simulation"],
-                              expected_title=expected_acf_title, expected_log_scale=log_scale, expected_x_lim=(-1.0, 2 * order), expected_y_lim=None, expected_order=order)
+        if plot_acf:
+            acf_axe = fig.get_axes()[0]
+            expected_acf = ResultsTimeSeries.correlation().acf[:2 * order + 1]
+            expected_acf_title = f"ACF of training and simulated time series ({y_scale} scale)"
+            self.check_axe_values(axe=acf_axe, expected_functions=[expected_acf, expected_acf], expected_labels=["Training", "Simulation"],
+                                  expected_title=expected_acf_title, expected_log_scale=log_scale, expected_x_lim=(-1.0, 2 * order), expected_y_lim=None, expected_order=order)
 
-        pacf_axe = fig.get_axes()[1]
-        expected_pacf = ResultsTimeSeries.correlation().pacf[:2 * order + 1]
-        expected_pacf_title = f"PACF function for training and simulated time series ({y_scale} scale)"
-        self.check_axe_values(axe=pacf_axe, expected_functions=[expected_pacf, expected_pacf], expected_labels=["Training", "Simulation"],
-                              expected_title=expected_pacf_title, expected_log_scale=log_scale, expected_x_lim=(-1.0, 2 * order), expected_y_lim=None, expected_order=order)
+        if plot_pacf:
+            pacf_axe = fig.get_axes()[1 if plot_acf else 0]
+            expected_pacf = ResultsTimeSeries.correlation().pacf[:2 * order + 1]
+            expected_pacf_title = f"PACF of training and simulated time series ({y_scale} scale)"
+            self.check_axe_values(axe=pacf_axe, expected_functions=[expected_pacf, expected_pacf], expected_labels=["Training", "Simulation"],
+                                  expected_title=expected_pacf_title, expected_log_scale=log_scale, expected_x_lim=(-1.0, 2 * order), expected_y_lim=None, expected_order=order)
+
+    def test_build_fig_autocorrelation_training_vs_simulation_should_raise_exception_when_plot_acf_and_plot_pacf_are_false(self, time_series_signs):
+        time_series_signs._simulation = time_series_signs._signs
+        with pytest.raises(ValueError) as ex:
+            time_series_signs._build_fig_autocorrelation_training_vs_simulation(plot_acf=False, plot_pacf=False, log_scale=True)
+
+        assert str(ex.value) == "At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."
 
     @pytest.mark.parametrize("log_scale", [True, False])
     def test_fill_axe(self, log_scale):
@@ -247,17 +273,34 @@ class TestPlot:
         self.check_axe_values(axe=axe, expected_functions=[training_values, simulation_values], expected_labels=["Training", "Simulation"],
                               expected_title=expected_title, expected_log_scale=log_scale, expected_x_lim=(-1.0, 4.0), expected_y_lim=(1.0, 3.1), expected_order=order)
 
+    @pytest.mark.parametrize("plot_acf,plot_pacf", [
+        (True, False),
+        (False, True),
+        (True, True)
+    ])
     @pytest.mark.parametrize("log_scale", [True, False])
-    def test_plot_acf_and_pacf(self, time_series_signs, log_scale):
+    def test_plot_autocorrelation(self, time_series_signs, plot_acf, plot_pacf, log_scale):
         nb_lags = 10
         y_scale = "log" if log_scale else "linear"
 
-        fig = time_series_signs.plot_acf_and_pacf(nb_lags=10, log_scale=log_scale)
+        fig = time_series_signs.plot_autocorrelation(plot_acf=plot_acf, plot_pacf=plot_pacf, nb_lags=10, log_scale=log_scale)
+        assert len(fig.get_axes()) == int(plot_acf) + int(plot_pacf)
 
-        expected_acf = ResultsTimeSeries.correlation().acf[:nb_lags + 1]
-        self.check_axe_values(axe=fig.get_axes()[0], expected_functions=[expected_acf], expected_labels=["Time series of size 1000"],
-                              expected_title=f"ACF function ({y_scale} scale)", expected_log_scale=log_scale, expected_x_lim=(-1.0, nb_lags), expected_y_lim=None, expected_order=None)
+        if plot_acf:
+            acf_axe = fig.get_axes()[0]
+            expected_acf = ResultsTimeSeries.correlation().acf[:nb_lags + 1]
+            self.check_axe_values(axe=acf_axe, expected_functions=[expected_acf], expected_labels=["Time series of size 1000"],
+                                  expected_title=f"ACF ({y_scale} scale)", expected_log_scale=log_scale, expected_x_lim=(-1.0, nb_lags), expected_y_lim=None, expected_order=None)
 
-        expected_pacf = ResultsTimeSeries.correlation().pacf[:nb_lags + 1]
-        self.check_axe_values(axe=fig.get_axes()[1], expected_functions=[expected_pacf], expected_labels=["Time series of size 1000"],
-                              expected_title=f"PACF function ({y_scale} scale)", expected_log_scale=log_scale, expected_x_lim=(-1.0, nb_lags), expected_y_lim=None, expected_order=None)
+        if plot_pacf:
+            pacf_axe = fig.get_axes()[1 if plot_acf else 0]
+            expected_pacf = ResultsTimeSeries.correlation().pacf[:nb_lags + 1]
+            self.check_axe_values(axe=pacf_axe, expected_functions=[expected_pacf], expected_labels=["Time series of size 1000"],
+                                  expected_title=f"PACF ({y_scale} scale)", expected_log_scale=log_scale, expected_x_lim=(-1.0, nb_lags), expected_y_lim=None, expected_order=None)
+
+    def test_bplot_autocorrelation_should_raise_exception_when_plot_acf_and_plot_pacf_are_false(self, time_series_signs):
+        time_series_signs._simulation = time_series_signs._signs
+        with pytest.raises(ValueError) as ex:
+            time_series_signs.plot_autocorrelation(plot_acf=False, plot_pacf=False, nb_lags=10, log_scale=True)
+
+        assert str(ex.value) == "At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."

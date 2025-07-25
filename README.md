@@ -35,7 +35,7 @@ Fit an autoregressive model to a time series of signs (e.g., `[1, 1, -1, -1, 1, 
 from tradeflow import AR
 
 ar_model = AR(signs=signs, max_order=50, order_selection_method='pacf')
-ar_model.fit(method="yule_walker", check_stationarity=True, check_residuals=True)
+ar_model.fit(method="yule_walker", check_stationarity=True, check_residuals_not_autocorrelated=True)
 ```
 <br>
 
@@ -50,10 +50,10 @@ ar_model.simulate(size=10_000)
 Compare the ACF and PACF of the original and simulated time series:
 
 ```python
-ar_model.simulation_summary(plot=True)
+ar_model.simulation_summary(plot_acf=True, plot_pacf=False)
 ```
 
-<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/main/doc/_static/simulation_summary.png" width="950" alt="Simulation summary" />
+<img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/main/doc/_static/simulation_summary_acf.png" width="950" alt="Simulation summary" />
 
 ## Installation
 tradeflow can be installed with pip:

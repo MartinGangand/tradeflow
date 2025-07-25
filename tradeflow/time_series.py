@@ -76,15 +76,15 @@ class TimeSeries(ABC):
         Parameters
         ----------
         nb_lags : int
-            Number of lags to return autocorrelation for.
+            The number of lags to return autocorrelation for.
         time_series : array_like, default None
             The time series for which to compute the acf. If None, the original time series of the model is used.
 
         Returns
         -------
         np.ndarray
-            The autocorrelation for lags 0, 1, ..., nlags.
-            It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nlags + 1,).
+            The autocorrelation for lags 0, 1, ..., nb_lags.
+            It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nb_lags + 1,).
         """
         if time_series is None:
             time_series = self._signs
@@ -100,7 +100,7 @@ class TimeSeries(ABC):
         Parameters
         ----------
         nb_lags : int
-            Number of lags to return autocorrelation for.
+            The number of lags to return autocorrelation for.
         alpha : float, optional
             If a number is given, the confidence intervals for the given level are returned.
             For example, if alpha=0.05, 95 % confidence intervals are returned.
@@ -111,10 +111,10 @@ class TimeSeries(ABC):
         -------
         pacf : np.ndarray
             The partial autocorrelation for lags 0, 1, ..., nb_lags.
-            It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nlags + 1,).
+            It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nb_lags + 1,).
         confint : ndarray, optional
             Confidence intervals for the pacf at lags 0, 1, ..., nb_lags.
-            The shape is (nlags + 1, 2). It is Returned if alpha is not None.
+            The shape is (nb_lags + 1, 2). It is Returned if alpha is not None.
         """
         if time_series is None:
             time_series = self._signs
@@ -125,7 +125,7 @@ class TimeSeries(ABC):
                         exception=IllegalValueException(f"Alpha {alpha} is invalid, it must be in the interval [0, 1]"))
         return pacf(x=time_series, nlags=nb_lags, method="burg", alpha=alpha)
 
-    def simulation_summary(self, plot: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
+    def simulation_summary(self, plot_acf: bool = True, plot_pacf: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
         """
         Return a statistical summary comparing the original signs and the simulated ones.
 
@@ -135,11 +135,12 @@ class TimeSeries(ABC):
 
         Parameters
         ----------
-        plot : bool
-            If True, plots two graphs. One comparing the autocorrelation function
-            of the original and simulated time series, and another comparing the partial autocorrelation.
+        plot_acf : bool
+            If True, plots a graph comparing the autocorrelation function of the original and simulated time series.
+        plot_pacf : bool
+            If True, plots a graph comparing the partial autocorrelation function of the original and simulated time series.
         log_scale : bool, default true
-            If True, use a log scale for plotting graphs, otherwise use a linear scale.
+            If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
             It has no effect if `plot` is False.
         percentiles : tuple of float
             The percentiles to use.
@@ -152,7 +153,8 @@ class TimeSeries(ABC):
             A matplotlib Figure containing the plots of the autocorrelation and partial autocorrelation functions.
             Returned if `plot` is True.
         """
-        plot = bool_like(value=plot, name="plot", optional=False, strict=True)
+        plot_acf = bool_like(value=plot_acf, name="plot_acf", optional=False, strict=True)
+        plot_pacf = bool_like(value=plot_pacf, name="plot_pacf", optional=False, strict=True)
         log_scale = bool_like(value=log_scale, name="log_scale", optional=False, strict=True)
         check_condition(self._simulation is not None, ModelNotSimulatedException("The model has not yet been simulated. Simulate the model first by calling 'simulate()'."))
 
@@ -160,8 +162,8 @@ class TimeSeries(ABC):
         statistics_simulation = self._compute_signs_statistics(signs=self._simulation, column_name="Simulation", percentiles=percentiles)
         statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
 
-        if plot:
-            fig = self._build_fig_corr_training_vs_simulation(log_scale=log_scale)
+        if plot_acf or plot_pacf:
+            fig = self._build_fig_autocorrelation_training_vs_simulation(plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=log_scale)
             return statistics, fig
 
         return statistics
@@ -236,6 +238,63 @@ class TimeSeries(ABC):
 
         return lagrange_multiplier, p_value
 
+    def plot_autocorrelation(self, plot_acf: bool, plot_pacf: bool, nb_lags: int, log_scale: bool = True, time_series: Optional[ArrayLike1D] = None) -> Figure:
+        """
+        Plot the autocorrelation function (ACF) and/or partial autocorrelation function (PACF) for a given time series.
+
+        Parameters
+        ----------
+        plot_acf : bool
+            If True, plot the autocorrelation function.
+        plot_pacf : bool
+            If True, plot the partial autocorrelation function.
+        nb_lags : int
+            The number of lags to compute and plot for the ACF and PACF.
+        log_scale : bool, default True
+            If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
+        time_series : array_like, default None
+            The time series for which to plot the ACF and/or PACF. If None, the original time series of the model is used.
+
+        Returns
+        -------
+        Figure
+            A matplotlib Figure containing the requested plots.
+        """
+        check_condition(condition=plot_acf or plot_pacf, exception=ValueError("At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."))
+
+        if time_series is None:
+            time_series = self._signs
+
+        nb_figs = (1 if plot_acf else 0) + (1 if plot_pacf else 0)
+        fig, axe = plt.subplots(1, nb_figs, squeeze=False, figsize=(nb_figs * 8, 4))
+
+        if plot_acf:
+            acf_function = self.calculate_acf(nb_lags=nb_lags, time_series=time_series)
+            self._fill_axe(axe=axe[0][0], functions=[acf_function], colors=["green"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="ACF", xlabel="Lag", log_scale=log_scale, order=None)
+
+        if plot_pacf:
+            pacf_function = self.calculate_pacf(nb_lags=nb_lags, alpha=None, time_series=time_series)
+            self._fill_axe(axe=axe[0][1 if plot_acf else 0], functions=[pacf_function], colors=["orange"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="PACF", xlabel="Lag", log_scale=log_scale, order=None)
+
+        return fig
+
+    @staticmethod
+    def proportion_buy(signs: ArrayLike1D) -> float:
+        """
+        Calculate the proportion of buy signs (where sign == 1) in a time series of signs.
+
+        Parameters
+        ----------
+        signs : array_like
+            The time series to test for stationarity.
+
+        Returns
+        -------
+        float
+            The proportion of buy signs in the series (value in the range [0.0, 1.0]).
+        """
+        return sum([1 for sign in signs if sign == 1]) / len(signs)
+
     @classmethod
     def _compute_signs_statistics(cls, signs: ArrayLike1D, column_name: str, percentiles: Tuple[float, ...]) -> pd.DataFrame:
         series_nb_consecutive_signs = cls._compute_series_nb_consecutive_signs(signs=signs)
@@ -264,37 +323,24 @@ class TimeSeries(ABC):
         assert np.sum(series_nb_consecutive_signs) == len(signs)
         return np.array(series_nb_consecutive_signs)
 
-    @staticmethod
-    def proportion_buy(signs: ArrayLike1D) -> float:
-        """
-        Calculate the proportion of buy signs (where sign == 1) in a time series of signs.
+    def _build_fig_autocorrelation_training_vs_simulation(self, plot_acf: bool, plot_pacf: bool, log_scale: bool = True) -> Figure:
+        check_condition(condition=plot_acf or plot_pacf, exception=ValueError("At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."))
 
-        Parameters
-        ----------
-        signs : array_like
-            The time series to test for stationarity.
+        nb_figs = (1 if plot_acf else 0) + (1 if plot_pacf else 0)
+        fig, axe = plt.subplots(1, nb_figs, squeeze=False, figsize=(nb_figs * 8, 4))
 
-        Returns
-        -------
-        float
-            The proportion of buy signs in the series (value in the range [0.0, 1.0]).
-        """
-        return sum([1 for sign in signs if sign == 1]) / len(signs)
-
-    def _build_fig_corr_training_vs_simulation(self, log_scale: bool = True) -> Figure:
         nb_lags = min(2 * self._order, len(self._signs) // 2 - 1)
-        acf_training = self.calculate_acf(nb_lags=nb_lags)
-        acf_simulation = self.calculate_acf(nb_lags=nb_lags, time_series=self._simulation)
-        pacf_training = self.calculate_pacf(nb_lags=nb_lags, alpha=None)
-        pacf_simulation = self.calculate_pacf(nb_lags=nb_lags, alpha=None, time_series=self._simulation)
+        if plot_acf:
+            acf_training = self.calculate_acf(nb_lags=nb_lags)
+            acf_simulation = self.calculate_acf(nb_lags=nb_lags, time_series=self._simulation)
+            acf_title = f"ACF of training and simulated time series"
+            self._fill_axe(axe=axe[0][0], functions=[acf_training, acf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=acf_title, xlabel="Lag", log_scale=log_scale, order=self._order)
 
-        fig, axe = plt.subplots(1, 2, figsize=(16, 4))
-
-        acf_title = f"ACF function for training and simulated time series"
-        self._fill_axe(axe=axe[0], functions=[acf_training, acf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=acf_title, xlabel="Lag", log_scale=log_scale, order=self._order)
-
-        pacf_title = f"PACF function for training and simulated time series"
-        self._fill_axe(axe=axe[1], functions=[pacf_training, pacf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=pacf_title, xlabel="Lag", log_scale=log_scale, order=self._order)
+        if plot_pacf:
+            pacf_training = self.calculate_pacf(nb_lags=nb_lags, alpha=None)
+            pacf_simulation = self.calculate_pacf(nb_lags=nb_lags, alpha=None, time_series=self._simulation)
+            pacf_title = f"PACF of training and simulated time series"
+            self._fill_axe(axe=axe[0][1 if plot_acf else 0], functions=[pacf_training, pacf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=pacf_title, xlabel="Lag", log_scale=log_scale, order=self._order)
 
         return fig
 
@@ -316,20 +362,7 @@ class TimeSeries(ABC):
         axe.set_ylim(y_min, np.max(all_values) + 0.1)
 
         if order is not None:
-            axe.axvline(x=order, color="blue", label=f"Order of the model ({order})", linestyle="--")
+            axe.axvline(x=order, color="blue", label=f"Model order ({order})", linestyle="--")
 
         axe.grid()
         axe.legend()
-
-    def plot_acf_and_pacf(self, nb_lags: int, log_scale: bool = True, time_series: Optional[ArrayLike1D] = None) -> Figure:
-        if time_series is None:
-            time_series = self._signs
-
-        acf_function = self.calculate_acf(nb_lags=nb_lags, time_series=time_series)
-        pacf_function = self.calculate_pacf(nb_lags=nb_lags, alpha=None, time_series=time_series)
-
-        fig, axe = plt.subplots(1, 2, figsize=(16, 4))
-        self._fill_axe(axe=axe[0], functions=[acf_function], colors=["green"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="ACF function", xlabel="Lag", log_scale=log_scale, order=None)
-        self._fill_axe(axe=axe[1], functions=[pacf_function], colors=["orange"], linestyles=["solid"], labels=[f"Time series of size {len(time_series)}"], title="PACF function", xlabel="Lag", log_scale=log_scale, order=None)
-
-        return fig
