@@ -127,18 +127,17 @@ class TimeSeries(ABC):
 
     def simulation_summary(self, plot_acf: bool = True, plot_pacf: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
         """
-        Return a statistical summary comparing the original signs and the simulated ones.
+        Return a statistical summary comparing the original and simulated sign series, optionally with ACF and/or PACF plots.
+        The statistics are computed over the time series counting the number of consecutive signs in a row (consecutive sign runs).
 
-        The statistics are computed over the series counting the number of consecutive signs in a row.
-
-        The function is to be called after a model has been fitted and simulated.
+        The function must be called after a model has been fitted and simulated.
 
         Parameters
         ----------
         plot_acf : bool
-            If True, plots a graph comparing the autocorrelation function of the original and simulated time series.
+            If True, it will plot a graph comparing the autocorrelation function of the original and simulated time series.
         plot_pacf : bool
-            If True, plots a graph comparing the partial autocorrelation function of the original and simulated time series.
+            If True, it will plot a graph comparing the partial autocorrelation function of the original and simulated time series.
         log_scale : bool, default true
             If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
             It has no effect if `plot` is False.
@@ -150,7 +149,7 @@ class TimeSeries(ABC):
         statistics : pd.DataFrame
             A DataFrame containing the statistics for the original and simulated time series.
         fig : Figure, optional
-            A matplotlib Figure containing the plots of the autocorrelation and partial autocorrelation functions.
+            A matplotlib Figure containing the plots of the ACF and/or PACF.
             Returned if `plot` is True.
         """
         plot_acf = bool_like(value=plot_acf, name="plot_acf", optional=False, strict=True)
@@ -245,11 +244,11 @@ class TimeSeries(ABC):
         Parameters
         ----------
         plot_acf : bool
-            If True, plot the autocorrelation function.
+            If True, it will plot the autocorrelation function.
         plot_pacf : bool
-            If True, plot the partial autocorrelation function.
+            If True, it will plot the partial autocorrelation function.
         nb_lags : int
-            The number of lags to compute and plot for the ACF and PACF.
+            The number of lags to compute and plot for the ACF and/or PACF.
         log_scale : bool, default True
             If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
         time_series : array_like, default None
@@ -258,7 +257,7 @@ class TimeSeries(ABC):
         Returns
         -------
         Figure
-            A matplotlib Figure containing the requested plots.
+            A matplotlib Figure containing the plots of the ACF and/or PACF.
         """
         check_condition(condition=plot_acf or plot_pacf, exception=ValueError("At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."))
 
@@ -300,7 +299,7 @@ class TimeSeries(ABC):
         series_nb_consecutive_signs = cls._compute_series_nb_consecutive_signs(signs=signs)
         names, values = [], []
         names.append("size"), values.append(len(signs))
-        names.append("pct_buy (%)"), values.append(100 * cls.proportion_buy(signs=signs))
+        names.append("pct_buy (%)"), values.append(round(100 * cls.proportion_buy(signs=signs), 2))
         names.append("mean_nb_consecutive_values",), values.append(np.mean(series_nb_consecutive_signs))
         names.append("std_nb_consecutive_values"), values.append(np.std(series_nb_consecutive_signs))
         names.extend([f"Q{percentile}_nb_consecutive_values" for percentile in percentiles])
@@ -326,7 +325,7 @@ class TimeSeries(ABC):
     def _build_fig_autocorrelation_training_vs_simulation(self, plot_acf: bool, plot_pacf: bool, log_scale: bool = True) -> Figure:
         check_condition(condition=plot_acf or plot_pacf, exception=ValueError("At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."))
 
-        nb_figs = (1 if plot_acf else 0) + (1 if plot_pacf else 0)
+        nb_figs = int(plot_acf) + int(plot_pacf)
         fig, axe = plt.subplots(1, nb_figs, squeeze=False, figsize=(nb_figs * 8, 4))
 
         nb_lags = min(2 * self._order, len(self._signs) // 2 - 1)
