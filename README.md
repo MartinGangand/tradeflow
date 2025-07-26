@@ -53,7 +53,7 @@ Compare the ACF and PACF of the original and simulated time series:
 ar_model.simulation_summary(plot_acf=True, plot_pacf=False)
 ```
 
-<p style="text-align:center;">
+<p align="center">
 <img src="https://raw.githubusercontent.com/MartinGangand/tradeflow/enhance_simmulation_summary/doc/_static/simulation_summary_acf.png" width="500" alt="Simulation summary" />
 </p>
 
