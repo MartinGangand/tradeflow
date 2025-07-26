@@ -149,7 +149,7 @@ class TimeSeries(ABC):
         statistics : pd.DataFrame
             A DataFrame containing the statistics for the original and simulated time series.
         fig : Figure, optional
-            A matplotlib Figure containing the plots of the ACF and/or PACF.
+            A matplotlib Figure containing the ACF and/or PACF plots.
             Returned if `plot` is True.
         """
         plot_acf = bool_like(value=plot_acf, name="plot_acf", optional=False, strict=True)
@@ -257,7 +257,7 @@ class TimeSeries(ABC):
         Returns
         -------
         Figure
-            A matplotlib Figure containing the plots of the ACF and/or PACF.
+            A matplotlib Figure containing the ACF and/or PACF plots.
         """
         check_condition(condition=plot_acf or plot_pacf, exception=ValueError("At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."))
 

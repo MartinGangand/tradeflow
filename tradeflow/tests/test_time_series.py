@@ -189,7 +189,7 @@ class TestSimulationSummary:
         ([1., -1., 1., 1., -1.], 3 / 5),
         ([1., 1., 1., 1., 1.], 1.0),
         ([-1., -1., -1., -1., -1.], 0.0),
-        ([-1., -1., -1., -1., 1.], 1 / 5)
+        ([-1., -1., -1., -1., 1., 1., -1.], 2 / 7)
     ])
     def test_proportion_buy(self, signs, expected_buy_proportion):
         assert TimeSeries.proportion_buy(signs=signs) == expected_buy_proportion
@@ -298,7 +298,7 @@ class TestPlot:
             self.check_axe_values(axe=pacf_axe, expected_functions=[expected_pacf], expected_labels=["Time series of size 1000"],
                                   expected_title=f"PACF ({y_scale} scale)", expected_log_scale=log_scale, expected_x_lim=(-1.0, nb_lags), expected_y_lim=None, expected_order=None)
 
-    def test_bplot_autocorrelation_should_raise_exception_when_plot_acf_and_plot_pacf_are_false(self, time_series_signs):
+    def test_plot_autocorrelation_should_raise_exception_when_plot_acf_and_plot_pacf_are_false(self, time_series_signs):
         time_series_signs._simulation = time_series_signs._signs
         with pytest.raises(ValueError) as ex:
             time_series_signs.plot_autocorrelation(plot_acf=False, plot_pacf=False, nb_lags=10, log_scale=True)
