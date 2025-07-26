@@ -127,7 +127,8 @@ class TimeSeries(ABC):
 
     def simulation_summary(self, plot_acf: bool = True, plot_pacf: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
         """
-        Return a statistical summary comparing the original and simulated sign series, optionally with ACF and/or PACF plots.
+        Return a statistical summary comparing the original and simulated time series of signs, optionally with ACF and/or PACF plots.
+
         The statistics are computed over the time series counting the number of consecutive signs in a row (consecutive sign runs).
 
         The function must be called after a model has been fitted and simulated.
@@ -135,9 +136,9 @@ class TimeSeries(ABC):
         Parameters
         ----------
         plot_acf : bool
-            If True, it will plot a graph comparing the autocorrelation function of the original and simulated time series.
+            If True, it will plot a graph comparing the autocorrelation function (ACF) of the original and simulated time series.
         plot_pacf : bool
-            If True, it will plot a graph comparing the partial autocorrelation function of the original and simulated time series.
+            If True, it will plot a graph comparing the partial autocorrelation function (PACF) of the original and simulated time series.
         log_scale : bool, default true
             If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
             It has no effect if `plot` is False.
@@ -147,9 +148,9 @@ class TimeSeries(ABC):
         Returns
         -------
         statistics : pd.DataFrame
-            A DataFrame containing the statistics for the original and simulated time series.
+            A DataFrame containing statistics on consecutive sign runs for the original and simulated time series.
         fig : Figure, optional
-            A matplotlib Figure containing the ACF and/or PACF plots.
+            A matplotlib Figure containing the ACF and/or PACF of the original and simulated time series of signs.
             Returned if `plot` is True.
         """
         plot_acf = bool_like(value=plot_acf, name="plot_acf", optional=False, strict=True)
@@ -248,7 +249,7 @@ class TimeSeries(ABC):
         plot_pacf : bool
             If True, it will plot the partial autocorrelation function.
         nb_lags : int
-            The number of lags to compute and plot for the ACF and/or PACF.
+            The number of lags for which to plot the ACF and/or PACF.
         log_scale : bool, default True
             If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
         time_series : array_like, default None
@@ -285,7 +286,7 @@ class TimeSeries(ABC):
         Parameters
         ----------
         signs : array_like
-            The time series to test for stationarity.
+            The time series to compute the proportion of buy signs from.
 
         Returns
         -------
