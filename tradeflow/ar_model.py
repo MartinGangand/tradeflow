@@ -113,7 +113,7 @@ class AR(TimeSeries):
         logger.info(f"The maximum order has been set to {max_order}.")
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_stationarity: bool = True, check_residuals: bool = True) -> AR:
+    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_stationarity: bool = True, check_residuals_not_autocorrelated: bool = True) -> AR:
         """
         Estimate the model parameters.
 
@@ -141,7 +141,7 @@ class AR(TimeSeries):
         check_stationarity : bool, default True
             If `True`, performs a stationarity check on the time series using the Augmented Dickey-Fuller unit root test.
             Raises an exception if the time series is not stationary according to the test.
-        check_residuals : bool, default True
+        check_residuals_not_autocorrelated : bool, default True
             If `True`, performs a residual autocorrelation check using the Breusch-Godfrey test.
             Raises an exception if residuals are autocorrelated.
 
@@ -189,7 +189,7 @@ class AR(TimeSeries):
 
         self._set_parameters(parameters=parameters, has_cst_parameter=method.has_cst_parameter)
 
-        if check_residuals:
+        if check_residuals_not_autocorrelated:
             _, p_value = self.breusch_godfrey_test(resid=self.resid(seed=1))
             # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
             logger.info(f"Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}.")

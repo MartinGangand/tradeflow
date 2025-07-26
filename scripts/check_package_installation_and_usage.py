@@ -22,9 +22,9 @@ def basic_tradeflow_usage() -> None:
         signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
 
         ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
-        ar_model = ar_model.fit(method=fit_method.value, significance_level=0.05, check_stationarity=True, check_residuals=True)
+        ar_model = ar_model.fit(method=fit_method.value, significance_level=0.05, check_stationarity=True, check_residuals_not_autocorrelated=True)
         ar_model.simulate(size=1_000_000, seed=1)
-        ar_model.simulation_summary(plot=True, log_scale=True)
+        ar_model.simulation_summary(plot_acf=True, plot_pacf=True, log_scale=True)
 
 
 def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version: str, install_default_version: bool, local_package_directory: Path, func_list: List[Callable]) -> None:
