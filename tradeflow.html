@@ -1,0 +1,633 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tradeflow package &mdash; tradeflow 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=bbaf98b3"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tradeflow.common package" href="tradeflow.common.html" />
+    <link rel="prev" title="tradeflow" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            tradeflow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">tradeflow</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">tradeflow package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html">tradeflow.common package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-tradeflow.ar_model">tradeflow.ar_model module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.ar_model.AR"><code class="docutils literal notranslate"><span class="pre">AR</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-tradeflow.config">tradeflow.config module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-tradeflow.enums">tradeflow.enums module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.enums.FitMethodAR"><code class="docutils literal notranslate"><span class="pre">FitMethodAR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.enums.OrderSelectionMethodAR"><code class="docutils literal notranslate"><span class="pre">OrderSelectionMethodAR</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-tradeflow.exceptions">tradeflow.exceptions module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.exceptions.AutocorrelatedResidualsException"><code class="docutils literal notranslate"><span class="pre">AutocorrelatedResidualsException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.exceptions.IllegalNbLagsException"><code class="docutils literal notranslate"><span class="pre">IllegalNbLagsException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.exceptions.IllegalValueException"><code class="docutils literal notranslate"><span class="pre">IllegalValueException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.exceptions.ModelNotFittedException"><code class="docutils literal notranslate"><span class="pre">ModelNotFittedException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.exceptions.ModelNotSimulatedException"><code class="docutils literal notranslate"><span class="pre">ModelNotSimulatedException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.exceptions.NoConvergenceException"><code class="docutils literal notranslate"><span class="pre">NoConvergenceException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.exceptions.NonStationaryTimeSeriesException"><code class="docutils literal notranslate"><span class="pre">NonStationaryTimeSeriesException</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-tradeflow.time_series">tradeflow.time_series module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#tradeflow.time_series.TimeSeries"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-tradeflow">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">tradeflow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">tradeflow</a></li>
+      <li class="breadcrumb-item active">tradeflow package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tradeflow.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tradeflow-package">
+<h1>tradeflow package<a class="headerlink" href="#tradeflow-package" title="Link to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tradeflow.common.html">tradeflow.common package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common.config">tradeflow.common.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common.ctypes_utils">tradeflow.common.ctypes_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.ctypes_utils.CArray"><code class="docutils literal notranslate"><span class="pre">CArray</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.ctypes_utils.CArray.of"><code class="docutils literal notranslate"><span class="pre">CArray.of()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.ctypes_utils.CArrayEmpty"><code class="docutils literal notranslate"><span class="pre">CArrayEmpty</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.ctypes_utils.CArrayEmpty.of"><code class="docutils literal notranslate"><span class="pre">CArrayEmpty.of()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.ctypes_utils.get_c_type_from_string"><code class="docutils literal notranslate"><span class="pre">get_c_type_from_string()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common.exceptions">tradeflow.common.exceptions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.exceptions.EnumValueException"><code class="docutils literal notranslate"><span class="pre">EnumValueException</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.exceptions.SharedLibraryNotFoundException"><code class="docutils literal notranslate"><span class="pre">SharedLibraryNotFoundException</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.exceptions.UnsupportedOsException"><code class="docutils literal notranslate"><span class="pre">UnsupportedOsException</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common.general_utils">tradeflow.common.general_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.general_utils.check_condition"><code class="docutils literal notranslate"><span class="pre">check_condition()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.general_utils.check_enum_value_is_valid"><code class="docutils literal notranslate"><span class="pre">check_enum_value_is_valid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.general_utils.get_enum_values"><code class="docutils literal notranslate"><span class="pre">get_enum_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.general_utils.is_value_within_interval_exclusive"><code class="docutils literal notranslate"><span class="pre">is_value_within_interval_exclusive()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common.logger_utils">tradeflow.common.logger_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.logger_utils.get_logger"><code class="docutils literal notranslate"><span class="pre">get_logger()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common.shared_libraries_registry">tradeflow.common.shared_libraries_registry module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.Function"><code class="docutils literal notranslate"><span class="pre">Function</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.Function.argtypes"><code class="docutils literal notranslate"><span class="pre">Function.argtypes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.Function.name"><code class="docutils literal notranslate"><span class="pre">Function.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.Function.restype"><code class="docutils literal notranslate"><span class="pre">Function.restype</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrariesRegistry"><code class="docutils literal notranslate"><span class="pre">SharedLibrariesRegistry</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrariesRegistry.find_shared_library"><code class="docutils literal notranslate"><span class="pre">SharedLibrariesRegistry.find_shared_library()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary"><code class="docutils literal notranslate"><span class="pre">SharedLibrary</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.ARGUMENT_TYPES"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.ARGUMENT_TYPES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.DARWIN"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.DARWIN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.DLL"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.DLL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.DYLIB"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.DYLIB</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.LINUX"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.LINUX</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.RESULT_TYPE"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.RESULT_TYPE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.SO"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.SO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.WINDOWS"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.WINDOWS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.get_shared_library_extension"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.get_shared_library_extension()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.load"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.name"><code class="docutils literal notranslate"><span class="pre">SharedLibrary.name</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common.singleton">tradeflow.common.singleton module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tradeflow.common.html#tradeflow.common.singleton.Singleton"><code class="docutils literal notranslate"><span class="pre">Singleton</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tradeflow.common.html#module-tradeflow.common">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-tradeflow.ar_model">
+<span id="tradeflow-ar-model-module"></span><h2>tradeflow.ar_model module<a class="headerlink" href="#module-tradeflow.ar_model" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tradeflow.ar_model.AR">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.ar_model.</span></span><span class="sig-name descname"><span class="pre">AR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_selection_method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'pacf'</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tradeflow/ar_model.html#AR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.ar_model.AR" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tradeflow.time_series.TimeSeries" title="tradeflow.time_series.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+<p>Autoregressive model for trade/order signs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signs</strong> (<em>array_like</em>) – An array of signs where each element is either 1 (representing a buy) or -1 (representing a sell).</p></li>
+<li><p><strong>max_order</strong> (<em>int</em><em>, </em><em>default None</em>) – The maximum order of the autoregressive model.
+If None, the maximum order is set to 12*(nobs/100)^{1/4} as outlined in Schwert (1989).</p></li>
+<li><p><strong>order_selection_method</strong> (<em>{'pacf'}</em><em>, </em><em>default None</em>) – <p>The method for selecting the order of the model. If None, the order of the model will be <cite>max_order</cite>.</p>
+<ul>
+<li><p>’pacf’ - Choose the model using the number of significant lags in the partial autocorrelation function of the time series of signs.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.ar_model.AR.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'yule_walker'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'burg'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'cmle_without_cst'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'cmle_with_cst'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'mle_without_cst'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'mle_with_cst'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">significance_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_stationarity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_residuals_not_autocorrelated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#tradeflow.ar_model.AR" title="tradeflow.ar_model.AR"><span class="pre">AR</span></a></span></span><a class="reference internal" href="_modules/tradeflow/ar_model.html#AR.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.ar_model.AR.fit" title="Link to this definition"></a></dt>
+<dd><p>Estimate the model parameters.</p>
+<p>If the chosen method estimates a constant term, the proportion of buy signs in the time series generated with
+these parameters will be close to the one from the training time series (‘cmle_with_cst’, ‘mle_with_cst’).</p>
+<p>Otherwise, the proportion of buy signs in the time series generated with these parameters
+will be close to 50% (‘yule_walker’, ‘burg’, ‘cmle_without_cst’, ‘mle_without_cst’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>{'yule_walker'</em><em>, </em><em>'burg'</em><em>, </em><em>'cmle_without_cst'</em><em>, </em><em>'cmle_with_cst'</em><em>, </em><em>'mle_without_cst'</em><em>, </em><em>'mle_with_cst'}</em>) – <p>The method to use for estimating parameters.</p>
+<ul>
+<li><p>’yule_walker’ - Use the Yule-Walker equations to estimate model parameters.</p></li>
+<li><p>’burg’ - Use Burg’s method to estimate model parameters.</p></li>
+<li><p>’cmle_without_cst’ - Use conditional maximum likelihood estimation without constant term to estimate model parameters.
+It can be solved with an OLS.</p></li>
+<li><p>’cmle_with_cst’ - Use conditional maximum likelihood estimation with a constant term to estimate model parameters.
+It can be solved with an OLS.</p></li>
+<li><p>’mle_without_cst’ - Use maximum likelihood estimation without constant term to estimate model parameters.</p></li>
+<li><p>’mle_with_cst’ - Use maximum likelihood estimation with a constant term to estimate model parameters.</p></li>
+</ul>
+</p></li>
+<li><p><strong>significance_level</strong> (<em>float</em><em>, </em><em>default 0.05</em>) – The significance level for stationarity (if <cite>check_stationarity</cite> is <cite>True</cite>) and residual autocorrelation (if <cite>check_residuals</cite> is <cite>True</cite>) tests.</p></li>
+<li><p><strong>check_stationarity</strong> (<em>bool</em><em>, </em><em>default True</em>) – If <cite>True</cite>, performs a stationarity check on the time series using the Augmented Dickey-Fuller unit root test.
+Raises an exception if the time series is not stationary according to the test.</p></li>
+<li><p><strong>check_residuals_not_autocorrelated</strong> (<em>bool</em><em>, </em><em>default True</em>) – If <cite>True</cite>, performs a residual autocorrelation check using the Breusch-Godfrey test.
+Raises an exception if residuals are autocorrelated.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The AR instance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#tradeflow.ar_model.AR" title="tradeflow.ar_model.AR">AR</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.ar_model.AR.resid">
+<span class="sig-name descname"><span class="pre">resid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/tradeflow/ar_model.html#AR.resid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.ar_model.AR.resid" title="Link to this definition"></a></dt>
+<dd><p>Estimate and return the residuals of the model.</p>
+<p>Residuals are calculated as the difference between the observed values and the
+values predicted by the model using the fitted parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seed</strong> (<em>int</em><em>, </em><em>default None</em>) – Seed used to initialize the pseudo-random number generator.
+If <cite>seed</cite> is <cite>None</cite>, then a random seed between 0 and 2^32 - 1 is used.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The residuals of the AR model.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#tradeflow.exceptions.ModelNotFittedException" title="tradeflow.exceptions.ModelNotFittedException"><strong>ModelNotFittedException</strong></a> – If the model’s parameters are not set. This occurs if the model
+    has not been fitted by calling <cite>fit()</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.ar_model.AR.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/tradeflow/ar_model.html#AR.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.ar_model.AR.simulate" title="Link to this definition"></a></dt>
+<dd><p>Simulate a time series of signs after the model has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<em>int</em>) – The number of signs to simulate.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em>, </em><em>default None</em>) – Seed used to initialize the pseudo-random number generator.
+If <cite>seed</cite> is <cite>None</cite>, then a random seed between 0 and 2^32 - 1 is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The simulated signs (+1 for buy, -1 for sell).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tradeflow.config">
+<span id="tradeflow-config-module"></span><h2>tradeflow.config module<a class="headerlink" href="#module-tradeflow.config" title="Link to this heading"></a></h2>
+</section>
+<section id="module-tradeflow.enums">
+<span id="tradeflow-enums-module"></span><h2>tradeflow.enums module<a class="headerlink" href="#module-tradeflow.enums" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tradeflow.enums.FitMethodAR">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.enums.</span></span><span class="sig-name descname"><span class="pre">FitMethodAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tradeflow/enums.html#FitMethodAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.enums.FitMethodAR" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tradeflow.enums.FitMethodAR.BURG">
+<span class="sig-name descname"><span class="pre">BURG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'burg'</span></em><a class="headerlink" href="#tradeflow.enums.FitMethodAR.BURG" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tradeflow.enums.FitMethodAR.CMLE_WITHOUT_CST">
+<span class="sig-name descname"><span class="pre">CMLE_WITHOUT_CST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cmle_without_cst'</span></em><a class="headerlink" href="#tradeflow.enums.FitMethodAR.CMLE_WITHOUT_CST" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tradeflow.enums.FitMethodAR.CMLE_WITH_CST">
+<span class="sig-name descname"><span class="pre">CMLE_WITH_CST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cmle_with_cst'</span></em><a class="headerlink" href="#tradeflow.enums.FitMethodAR.CMLE_WITH_CST" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tradeflow.enums.FitMethodAR.MLE_WITHOUT_CST">
+<span class="sig-name descname"><span class="pre">MLE_WITHOUT_CST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'mle_without_cst'</span></em><a class="headerlink" href="#tradeflow.enums.FitMethodAR.MLE_WITHOUT_CST" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tradeflow.enums.FitMethodAR.MLE_WITH_CST">
+<span class="sig-name descname"><span class="pre">MLE_WITH_CST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'mle_with_cst'</span></em><a class="headerlink" href="#tradeflow.enums.FitMethodAR.MLE_WITH_CST" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tradeflow.enums.FitMethodAR.YULE_WALKER">
+<span class="sig-name descname"><span class="pre">YULE_WALKER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'yule_walker'</span></em><a class="headerlink" href="#tradeflow.enums.FitMethodAR.YULE_WALKER" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tradeflow.enums.OrderSelectionMethodAR">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.enums.</span></span><span class="sig-name descname"><span class="pre">OrderSelectionMethodAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tradeflow/enums.html#OrderSelectionMethodAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.enums.OrderSelectionMethodAR" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tradeflow.enums.OrderSelectionMethodAR.PACF">
+<span class="sig-name descname"><span class="pre">PACF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'pacf'</span></em><a class="headerlink" href="#tradeflow.enums.OrderSelectionMethodAR.PACF" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tradeflow.exceptions">
+<span id="tradeflow-exceptions-module"></span><h2>tradeflow.exceptions module<a class="headerlink" href="#module-tradeflow.exceptions" title="Link to this heading"></a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="tradeflow.exceptions.AutocorrelatedResidualsException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.exceptions.</span></span><span class="sig-name descname"><span class="pre">AutocorrelatedResidualsException</span></span><a class="reference internal" href="_modules/tradeflow/exceptions.html#AutocorrelatedResidualsException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.exceptions.AutocorrelatedResidualsException" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the residuals are autocorrelated, based on the result of a hypothesis test</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="tradeflow.exceptions.IllegalNbLagsException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.exceptions.</span></span><span class="sig-name descname"><span class="pre">IllegalNbLagsException</span></span><a class="reference internal" href="_modules/tradeflow/exceptions.html#IllegalNbLagsException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.exceptions.IllegalNbLagsException" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the number of lags for a given time series is not valid</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="tradeflow.exceptions.IllegalValueException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.exceptions.</span></span><span class="sig-name descname"><span class="pre">IllegalValueException</span></span><a class="reference internal" href="_modules/tradeflow/exceptions.html#IllegalValueException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.exceptions.IllegalValueException" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when a value is not in a valid state</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="tradeflow.exceptions.ModelNotFittedException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.exceptions.</span></span><span class="sig-name descname"><span class="pre">ModelNotFittedException</span></span><a class="reference internal" href="_modules/tradeflow/exceptions.html#ModelNotFittedException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.exceptions.ModelNotFittedException" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the model need the parameters, but it has not been fitted</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="tradeflow.exceptions.ModelNotSimulatedException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.exceptions.</span></span><span class="sig-name descname"><span class="pre">ModelNotSimulatedException</span></span><a class="reference internal" href="_modules/tradeflow/exceptions.html#ModelNotSimulatedException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.exceptions.ModelNotSimulatedException" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the model need the simulated time series, but it has not been simulated</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="tradeflow.exceptions.NoConvergenceException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.exceptions.</span></span><span class="sig-name descname"><span class="pre">NoConvergenceException</span></span><a class="reference internal" href="_modules/tradeflow/exceptions.html#NoConvergenceException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.exceptions.NoConvergenceException" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the method used to estimate model parameters failed to converge</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="tradeflow.exceptions.NonStationaryTimeSeriesException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.exceptions.</span></span><span class="sig-name descname"><span class="pre">NonStationaryTimeSeriesException</span></span><a class="reference internal" href="_modules/tradeflow/exceptions.html#NonStationaryTimeSeriesException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.exceptions.NonStationaryTimeSeriesException" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when the time series is not stationary</p>
+</dd></dl>
+
+</section>
+<section id="module-tradeflow.time_series">
+<span id="tradeflow-time-series-module"></span><h2>tradeflow.time_series module<a class="headerlink" href="#module-tradeflow.time_series" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tradeflow.time_series.</span></span><span class="sig-name descname"><span class="pre">TimeSeries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Time series model for trade/order signs. Intended to be subclassed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>signs</strong> (<em>array_like</em>) – A 1-d endogenous response variable. The dependent variable.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.breusch_godfrey_test">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">breusch_godfrey_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_lags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.breusch_godfrey_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.breusch_godfrey_test" title="Link to this definition"></a></dt>
+<dd><p>Perform the Breusch-Godfrey test for residual autocorrelation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resid</strong> (<em>np.ndarray</em>) – The residuals from a regression model. Must be a 1-dimensional array.</p></li>
+<li><p><strong>nb_lags</strong> (<em>int</em><em>, </em><em>default None</em>) – The number of lags to include in the test. If None, defaults to min(10, len(resid) // 5).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>lagrange_multiplier</strong> (<em>float</em>) – The value of the Lagrange Multiplier test statistic.</p></li>
+<li><p><strong>p_value</strong> (<em>float</em>) – The p-value for the test statistic.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.calculate_acf">
+<span class="sig-name descname"><span class="pre">calculate_acf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nb_lags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.calculate_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.calculate_acf" title="Link to this definition"></a></dt>
+<dd><p>Calculate the autocorrelation function of a time series of signs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nb_lags</strong> (<em>int</em>) – The number of lags to return autocorrelation for.</p></li>
+<li><p><strong>time_series</strong> (<em>array_like</em><em>, </em><em>default None</em>) – The time series for which to compute the acf. If None, the original time series of the model is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The autocorrelation for lags 0, 1, …, nb_lags.
+It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nb_lags + 1,).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.calculate_pacf">
+<span class="sig-name descname"><span class="pre">calculate_pacf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nb_lags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.calculate_pacf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.calculate_pacf" title="Link to this definition"></a></dt>
+<dd><p>Calculate the partial autocorrelation function of a time series of signs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nb_lags</strong> (<em>int</em>) – The number of lags to return autocorrelation for.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – If a number is given, the confidence intervals for the given level are returned.
+For example, if alpha=0.05, 95 % confidence intervals are returned.</p></li>
+<li><p><strong>time_series</strong> (<em>array_like</em><em>, </em><em>default None</em>) – The time series for which to compute the pacf. If None, the original time series of the model is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>pacf</strong> (<em>np.ndarray</em>) – The partial autocorrelation for lags 0, 1, …, nb_lags.
+It includes the lag 0 autocorrelation (i.e., 1), thus the size is (nb_lags + 1,).</p></li>
+<li><p><strong>confint</strong> (<em>ndarray, optional</em>) – Confidence intervals for the pacf at lags 0, 1, …, nb_lags.
+The shape is (nb_lags + 1, 2). It is Returned if alpha is not None.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.fit">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#tradeflow.time_series.TimeSeries" title="tradeflow.time_series.TimeSeries"><span class="pre">TimeSeries</span></a></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.fit" title="Link to this definition"></a></dt>
+<dd><p>Estimate the model parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.is_time_series_stationary">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_time_series_stationary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_lags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">significance_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'c'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'ct'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'ctt'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'n'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'c'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.is_time_series_stationary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.is_time_series_stationary" title="Link to this definition"></a></dt>
+<dd><p>Test whether a time series is stationary at a given significance level using the Augmented Dickey-Fuller test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time_series</strong> (<em>array_like</em>) – The time series to test for stationarity.</p></li>
+<li><p><strong>nb_lags</strong> (<em>int</em><em>, </em><em>default None</em>) – The number of lags to include in the test. If None, the default used by the test is applied.</p></li>
+<li><p><strong>significance_level</strong> (<em>float</em><em>, </em><em>default 0.05</em>) – The significance level for the test. If the p-value is less than or equal to this value, the time series is considered stationary.</p></li>
+<li><p><strong>regression</strong> (<em>{'c'</em><em>, </em><em>'ct'</em><em>, </em><em>'ctt'</em><em>, </em><em>'n'}</em><em>, </em><em>default 'c'</em>) – <p>Constant and trend order to include in regression.</p>
+<ul>
+<li><p>”c” : constant only (default).</p></li>
+<li><p>”ct” : constant and trend.</p></li>
+<li><p>”ctt” : constant, and linear and quadratic trend.</p></li>
+<li><p>”n” : no constant, no trend.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the time series is stationary at the given significance level, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.plot_autocorrelation">
+<span class="sig-name descname"><span class="pre">plot_autocorrelation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot_acf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_pacf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_lags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.plot_autocorrelation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.plot_autocorrelation" title="Link to this definition"></a></dt>
+<dd><p>Plot the autocorrelation function (ACF) and/or partial autocorrelation function (PACF) for a given time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot_acf</strong> (<em>bool</em>) – If True, it will plot the autocorrelation function.</p></li>
+<li><p><strong>plot_pacf</strong> (<em>bool</em>) – If True, it will plot the partial autocorrelation function.</p></li>
+<li><p><strong>nb_lags</strong> (<em>int</em>) – The number of lags for which to plot the ACF and/or PACF.</p></li>
+<li><p><strong>log_scale</strong> (<em>bool</em><em>, </em><em>default True</em>) – If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.</p></li>
+<li><p><strong>time_series</strong> (<em>array_like</em><em>, </em><em>default None</em>) – The time series for which to plot the ACF and/or PACF. If None, the original time series of the model is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A matplotlib Figure containing the ACF and/or PACF plots.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Figure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.proportion_buy">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">proportion_buy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.proportion_buy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.proportion_buy" title="Link to this definition"></a></dt>
+<dd><p>Calculate the proportion of buy signs (where sign == 1) in a time series of signs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>signs</strong> (<em>array_like</em>) – The time series to compute the proportion of buy signs from.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The proportion of buy signs in the series (value in the range [0.0, 1.0]).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.resid">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">resid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.resid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.resid" title="Link to this definition"></a></dt>
+<dd><p>Estimate and return the residuals of the model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.simulate">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.simulate" title="Link to this definition"></a></dt>
+<dd><p>Simulate a time series of signs after the model has been fitted.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tradeflow.time_series.TimeSeries.simulation_summary">
+<span class="sig-name descname"><span class="pre">simulation_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot_acf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_pacf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(50.0,</span> <span class="pre">75.0,</span> <span class="pre">95.0,</span> <span class="pre">99.0,</span> <span class="pre">99.9)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Figure</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/tradeflow/time_series.html#TimeSeries.simulation_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tradeflow.time_series.TimeSeries.simulation_summary" title="Link to this definition"></a></dt>
+<dd><p>Return a statistical summary comparing the original and simulated time series of signs, optionally with ACF and/or PACF plots.</p>
+<p>The statistics are computed over the time series counting the number of consecutive signs in a row (consecutive sign runs).</p>
+<p>The function must be called after a model has been fitted and simulated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot_acf</strong> (<em>bool</em>) – If True, it will plot a graph comparing the autocorrelation function (ACF) of the original and simulated time series.</p></li>
+<li><p><strong>plot_pacf</strong> (<em>bool</em>) – If True, it will plot a graph comparing the partial autocorrelation function (PACF) of the original and simulated time series.</p></li>
+<li><p><strong>log_scale</strong> (<em>bool</em><em>, </em><em>default true</em>) – If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
+It has no effect if <cite>plot</cite> is False.</p></li>
+<li><p><strong>percentiles</strong> (<em>tuple</em><em> of </em><em>float</em>) – The percentiles to use.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>statistics</strong> (<em>pd.DataFrame</em>) – A DataFrame containing statistics on consecutive sign runs for the original and simulated time series.</p></li>
+<li><p><strong>fig</strong> (<em>Figure, optional</em>) – A matplotlib Figure containing the ACF and/or PACF of the original and simulated time series of signs.
+Returned if <cite>plot</cite> is True.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tradeflow">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tradeflow" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="tradeflow" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tradeflow.common.html" class="btn btn-neutral float-right" title="tradeflow.common package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Martin Gangand.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,257 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tradeflow.common.shared_libraries_registry &mdash; tradeflow 0.0.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=bbaf98b3"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            tradeflow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">tradeflow</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">tradeflow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">tradeflow.common.shared_libraries_registry</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for tradeflow.common.shared_libraries_registry</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ct</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradeflow.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger_utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradeflow.common.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradeflow.common.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedOsException</span><span class="p">,</span> <span class="n">SharedLibraryNotFoundException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradeflow.common.general_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_condition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradeflow.common.singleton</span><span class="w"> </span><span class="kn">import</span> <span class="n">Singleton</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logger_utils</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SharedLibrariesRegistry">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrariesRegistry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SharedLibrariesRegistry</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_shared_library</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SharedLibrary</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_shared_libraries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_shared_libraries</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_shared_libraries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shared_libraries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">SharedLibrary</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">shared_library</span> <span class="ow">in</span> <span class="n">shared_libraries</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_shared_library</span><span class="p">(</span><span class="n">shared_library</span><span class="o">=</span><span class="n">shared_library</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_shared_libraries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SharedLibrary</span><span class="p">]:</span>
+        <span class="c1"># simulate: size (int), inverted_params (double*), constant_parameter (double), nb_params (int), last_signs (int*), seed (int), res (int*)</span>
+        <span class="n">simulate</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;simulate&quot;</span><span class="p">,</span> <span class="n">argtypes</span><span class="o">=</span><span class="p">[</span><span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ct</span><span class="o">.</span><span class="n">c_double</span><span class="p">),</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">)],</span> <span class="n">restype</span><span class="o">=</span><span class="n">ct</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">)</span>
+        <span class="n">libtradeflow</span> <span class="o">=</span> <span class="n">SharedLibrary</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;libtradeflow&quot;</span><span class="p">,</span> <span class="n">directory</span><span class="o">=</span><span class="n">LIBTRADEFLOW_SHARED_LIBRARY_DIRECTORY</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="p">[</span><span class="n">simulate</span><span class="p">])</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">libtradeflow</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_shared_library</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shared_library</span><span class="p">:</span> <span class="n">SharedLibrary</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SharedLibrariesRegistry</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">shared_library</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_shared_library</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_shared_library</span><span class="p">[</span><span class="n">shared_library</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">shared_library</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Added shared library &#39;</span><span class="si">{</span><span class="n">shared_library</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; to the registry&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+<div class="viewcode-block" id="SharedLibrariesRegistry.find_shared_library">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrariesRegistry.find_shared_library">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_shared_library</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SharedLibrary</span><span class="p">:</span>
+        <span class="n">check_condition</span><span class="p">(</span><span class="n">condition</span><span class="o">=</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_shared_library</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="n">SharedLibraryNotFoundException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shared library &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found in the registry.&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_shared_library</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SharedLibrary">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SharedLibrary</span><span class="p">:</span>
+
+    <span class="n">LINUX</span> <span class="o">=</span> <span class="s2">&quot;linux&quot;</span>
+    <span class="n">DARWIN</span> <span class="o">=</span> <span class="s2">&quot;darwin&quot;</span>
+    <span class="n">WINDOWS</span> <span class="o">=</span> <span class="s2">&quot;windows&quot;</span>
+
+    <span class="n">SO</span> <span class="o">=</span> <span class="s2">&quot;so&quot;</span>
+    <span class="n">DYLIB</span> <span class="o">=</span> <span class="s2">&quot;dylib&quot;</span>
+    <span class="n">DLL</span> <span class="o">=</span> <span class="s2">&quot;dll&quot;</span>
+
+    <span class="n">ARGUMENT_TYPES</span> <span class="o">=</span> <span class="s2">&quot;argtypes&quot;</span>
+    <span class="n">RESULT_TYPE</span> <span class="o">=</span> <span class="s2">&quot;restype&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">functions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Function</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_directory</span> <span class="o">=</span> <span class="n">directory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_functions</span> <span class="o">=</span> <span class="n">functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cdll</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Loaded shared library is cached after the first call to load()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+<div class="viewcode-block" id="SharedLibrary.load">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.load">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ct</span><span class="o">.</span><span class="n">CDLL</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the shared library of the project.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ct.CDLL</span>
+<span class="sd">            The loaded shared library.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cdll</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cdll</span>
+
+        <span class="n">shared_library_extension</span> <span class="o">=</span> <span class="n">SharedLibrary</span><span class="o">.</span><span class="n">get_shared_library_extension</span><span class="p">()</span>
+        <span class="n">shared_library_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_directory</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">shared_library_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">check_condition</span><span class="p">(</span><span class="n">condition</span><span class="o">=</span><span class="n">shared_library_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">shared_library_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">(),</span>
+                        <span class="n">exception</span><span class="o">=</span><span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shared library &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">shared_library_extension</span><span class="si">}</span><span class="s2">&#39; not found in directory &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_directory</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">))</span>
+
+        <span class="n">cdll</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">shared_library_path</span><span class="p">),</span> <span class="n">winmode</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">function</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_functions</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">cdll</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ARGUMENT_TYPES</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">argtypes</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">cdll</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">RESULT_TYPE</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">restype</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded shared library &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cdll</span> <span class="o">=</span> <span class="n">cdll</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cdll</span></div>
+
+
+<div class="viewcode-block" id="SharedLibrary.get_shared_library_extension">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.shared_libraries_registry.SharedLibrary.get_shared_library_extension">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_shared_library_extension</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the shared library file extension based on the operating system.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            The file extension for shared libraries, specific to the current operating system.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        UnsupportedOsException</span>
+<span class="sd">            If the operating system is not Linux, Darwin (macOS), or Windows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os_name_to_shared_library_extension</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">SharedLibrary</span><span class="o">.</span><span class="n">LINUX</span><span class="p">:</span> <span class="n">SharedLibrary</span><span class="o">.</span><span class="n">SO</span><span class="p">,</span>
+            <span class="n">SharedLibrary</span><span class="o">.</span><span class="n">DARWIN</span><span class="p">:</span> <span class="n">SharedLibrary</span><span class="o">.</span><span class="n">DYLIB</span><span class="p">,</span>
+            <span class="n">SharedLibrary</span><span class="o">.</span><span class="n">WINDOWS</span><span class="p">:</span> <span class="n">SharedLibrary</span><span class="o">.</span><span class="n">DLL</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">os_name</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">os_name_to_shared_library_extension</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">os_name</span><span class="p">)</span>
+
+        <span class="n">check_condition</span><span class="p">(</span><span class="n">condition</span><span class="o">=</span><span class="n">extension</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="n">UnsupportedOsException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported OS &#39;</span><span class="si">{</span><span class="n">os_name</span><span class="si">}</span><span class="s2">&#39;. Supported OS values are Linux, Darwin, and Windows.&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">extension</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Function">
+<a class="viewcode-back" href="../../../tradeflow.common.html#tradeflow.common.shared_libraries_registry.Function">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Function</span><span class="p">:</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">argtypes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">)]],</span> <span class="n">restype</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argtypes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">argtypes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_restype</span> <span class="o">=</span> <span class="n">restype</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">argtypes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">)],</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argtypes</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">restype</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">,</span> <span class="n">ct</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ct</span><span class="o">.</span><span class="n">_CData</span><span class="p">)]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_restype</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Martin Gangand.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
