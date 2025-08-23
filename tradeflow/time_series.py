@@ -18,7 +18,7 @@ from statsmodels.tsa.tsatools import lagmat
 from tradeflow.common import logger_utils
 from tradeflow.common.general_utils import check_condition
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, \
-    ModelNotSimulatedException
+    ModelNotSimulatedException, ModelNotFittedException
 
 logger = logger_utils.get_logger(__name__)
 
@@ -47,6 +47,15 @@ class TimeSeries(ABC):
 
         # Will be set in simulate()
         self._simulation = None
+
+    @property
+    def order(self) -> int:
+        """
+        The order of the model, i.e., the number of lags used in the model. This is set while fitting the model.
+        """
+        if self._order is None:
+            raise ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'.")
+        return self._order
 
     @abstractmethod
     def resid(self) -> np.ndarray:
