@@ -51,7 +51,8 @@ class TimeSeries(ABC):
     @property
     def order(self) -> int:
         """
-        The order of the model, i.e., the number of lags used in the model. This is set while fitting the model.
+        The order of the model (i.e., the number of lags used in the model).
+        This is set while fitting the model.
         """
         if self._order is None:
             raise ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'.")

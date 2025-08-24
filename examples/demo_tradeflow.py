@@ -14,7 +14,6 @@ DATA_FILE = DATA_FOLDER.joinpath("trade_signs_ethusdt_20250817.txt")
 
 
 def main():
-    # Load sample data and run a basic usage verification for the `tradeflow` package
     signs = np.loadtxt(DATA_FILE, dtype="int8")
 
     # Construct and fit AR model with method "yule_walker" (can also be "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst")
@@ -24,12 +23,10 @@ def main():
     print(f"Model order: {ar_model.order}")
     print(f"Fitted parameters: {ar_model.parameters}")
 
-    # Simulate an autocorrelated sign sequence from the fitted AR model
-    # OR
-    # Simulate new sign sequence
+    # Simulate a new autocorrelated sign sequence from the fitted AR model
     simulated_signs = ar_model.simulate(size=1_000_000, seed=1)
 
-    # Generate summary and ACF/PACF plots comparing the original and simulated time series of signs.
+    # Generate summary and ACF/PACF plots comparing the original and simulated time series of signs
     summary_df, fig = ar_model.simulation_summary(plot_acf=True, plot_pacf=True, log_scale=True)
     print(f"Simulation summary:\n{summary_df}")
 
