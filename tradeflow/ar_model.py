@@ -57,6 +57,15 @@ class AR(TimeSeries):
         self._constant_parameter = 0.0
         self._parameters = None
 
+    @property
+    def parameters(self) -> np.ndarray:
+        """
+        The parameters of the fitted AR model.
+        """
+        if self._parameters is None:
+            raise ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'.")
+        return self._parameters
+
     def resid(self, seed: Optional[int] = None) -> np.ndarray:
         """
         Estimate and return the residuals of the model.
