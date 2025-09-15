@@ -53,6 +53,11 @@ class AR(TimeSeries):
                                                                  parameter_name="order_selection_method",
                                                                  is_none_valid=True)
 
+        self._x = None
+        self._y = None
+        self._first_order_signs = None
+        self._start_idx_parameters = None
+
         # Will be set during fit()
         self._constant_parameter = 0.0
         self._parameters = None
