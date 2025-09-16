@@ -235,7 +235,6 @@ class TestPlot:
         TimeSeries.__abstractmethods__ = set()
         time_series = TimeSeries(signs=training_values)
         time_series._simulation = simulation_values
-        time_series._order = order
 
         title = "Test plot training vs simulation"
 

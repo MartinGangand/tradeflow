@@ -58,20 +58,19 @@ class AR(TimeSeries):
                                                                  is_none_valid=True)
         # Will be set in fit()
         self._order = None
+        self._constant_parameter = 0.0
+        self._parameters = None
 
         self._x = None
         self._y = None
         self._first_order_signs = None
         self._start_idx_parameters = None
 
-        # Will be set during fit()
-        self._constant_parameter = 0.0
-        self._parameters = None
-
     @property
     def order(self) -> int:
         """
         The order of the model (i.e., the number of lags used in the model).
+
         This is set while fitting the model.
         """
         if self._order is None:
