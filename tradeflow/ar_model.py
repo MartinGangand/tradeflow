@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 import scipy.optimize as optimize
+from matplotlib.figure import Figure
 from numpy.linalg import slogdet
 from statsmodels.regression import yule_walker
 from statsmodels.regression.linear_model import burg, OLS
 from statsmodels.tools import add_constant
 from statsmodels.tools.typing import ArrayLike1D
+from statsmodels.tools.validation import bool_like
 from statsmodels.tsa.ar_model import sumofsq
 from statsmodels.tsa.tsatools import lagmat
 
@@ -20,7 +23,8 @@ from tradeflow.common.shared_libraries_registry import SharedLibrariesRegistry
 from tradeflow.config import LIB_TRADEFLOW
 from tradeflow.enums import OrderSelectionMethodAR, FitMethodAR
 from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
-    NonStationaryTimeSeriesException, AutocorrelatedResidualsException, NoConvergenceException
+    NonStationaryTimeSeriesException, AutocorrelatedResidualsException, NoConvergenceException, \
+    ModelNotSimulatedException
 from tradeflow.time_series import TimeSeries
 
 logger = logger_utils.get_logger(__name__)
@@ -52,6 +56,8 @@ class AR(TimeSeries):
                                                                  value=order_selection_method,
                                                                  parameter_name="order_selection_method",
                                                                  is_none_valid=True)
+        # Will be set in fit()
+        self._order = None
 
         self._x = None
         self._y = None
@@ -61,6 +67,16 @@ class AR(TimeSeries):
         # Will be set during fit()
         self._constant_parameter = 0.0
         self._parameters = None
+
+    @property
+    def order(self) -> int:
+        """
+        The order of the model (i.e., the number of lags used in the model).
+        This is set while fitting the model.
+        """
+        if self._order is None:
+            raise ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'.")
+        return self._order
 
     @property
     def parameters(self) -> np.ndarray:
@@ -329,3 +345,46 @@ class AR(TimeSeries):
         cpp_lib = SharedLibrariesRegistry().find_shared_library(name=LIB_TRADEFLOW).load()
         cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
         return self._simulation[:]
+
+    def simulation_summary(self, plot_acf: bool = True, plot_pacf: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
+        """
+        Return a statistical summary comparing the original and simulated time series of signs, optionally with ACF and/or PACF plots.
+
+        The statistics are computed over the time series counting the number of consecutive signs in a row (consecutive sign runs).
+
+        The function must be called after a model has been fitted and simulated.
+
+        Parameters
+        ----------
+        plot_acf : bool
+            If True, it will plot a graph comparing the autocorrelation function (ACF) of the original and simulated time series.
+        plot_pacf : bool
+            If True, it will plot a graph comparing the partial autocorrelation function (PACF) of the original and simulated time series.
+        log_scale : bool, default true
+            If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
+            It has no effect if `plot` is False.
+        percentiles : tuple of float
+            The percentiles to use.
+
+        Returns
+        -------
+        statistics : pd.DataFrame
+            A DataFrame containing statistics on consecutive sign runs for the original and simulated time series.
+        fig : Figure, optional
+            A matplotlib Figure containing the ACF and/or PACF of the original and simulated time series of signs.
+            Returned if `plot` is True.
+        """
+        plot_acf = bool_like(value=plot_acf, name="plot_acf", optional=False, strict=True)
+        plot_pacf = bool_like(value=plot_pacf, name="plot_pacf", optional=False, strict=True)
+        log_scale = bool_like(value=log_scale, name="log_scale", optional=False, strict=True)
+        check_condition(self._simulation is not None, ModelNotSimulatedException("The model has not yet been simulated. Simulate the model first by calling 'simulate()'."))
+
+        statistics_training = self._compute_signs_statistics(signs=self._signs, column_name="Training", percentiles=percentiles)
+        statistics_simulation = self._compute_signs_statistics(signs=self._simulation, column_name="Simulation", percentiles=percentiles)
+        statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
+
+        if plot_acf or plot_pacf:
+            fig = self._build_fig_autocorrelation_training_vs_simulation(order=self._order, plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=log_scale)
+            return statistics, fig
+
+        return statistics

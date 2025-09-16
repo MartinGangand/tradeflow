@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 import pytest
 from numpy.testing import assert_almost_equal, assert_allclose, assert_array_almost_equal, \
     assert_array_equal
+from pandas.testing import assert_frame_equal
 from pytest_regressions.num_regression import NumericRegressionFixture
 
 from tradeflow.ar_model import AR
@@ -12,6 +14,7 @@ from tradeflow.datasets import trade_signs_sample, trade_signs_btcusdt_20240720
 from tradeflow.enums import FitMethodAR
 from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, ModelNotFittedException, \
     NonStationaryTimeSeriesException, AutocorrelatedResidualsException, NoConvergenceException
+from tradeflow.tests.results.results_time_series import ResultsTimeSeries
 from tradeflow.tests.test_time_series import generate_autoregressive, generate_white_noise
 
 SIGNIFICANCE_LEVEL = 0.05
@@ -394,8 +397,34 @@ class TestSimulationSummary:
         yield
         Singleton._instances.clear()
 
+    @pytest.mark.parametrize("plot_acf,plot_pacf", [
+        (False, False),
+        (True, False),
+        (False, True),
+        (True, True)
+    ])
+    def test_simulation_summary(self, signs_sample, plot_acf, plot_pacf):
+        ar_model = AR(signs=signs_sample, max_order=6, order_selection_method=None)
+        ar_model._order = 6
+        ar_model._simulation = signs_sample
+
+        res = ar_model.simulation_summary(plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=False, percentiles=(50.0, 75.0, 95.0, 99.0, 99.9))
+        if plot_acf or plot_pacf:
+            actual_simulation_summary_df, fig = res
+            assert len(fig.get_axes()) == int(plot_acf) + int(plot_pacf)
+        else:
+            actual_simulation_summary_df = res
+
+        expected_training_stats_df = ResultsTimeSeries.simulation_summary(column_name="Training").stats_df
+        expected_simulation_stats_df = ResultsTimeSeries.simulation_summary(column_name="Simulation").stats_df
+        expected_simulation_summary_df = pd.concat([expected_training_stats_df, expected_simulation_stats_df],
+                                                   axis=1).round(decimals=2)
+
+        assert_frame_equal(left=actual_simulation_summary_df, right=expected_simulation_summary_df, check_dtype=True,
+                           check_index_type=True, check_names=True, check_exact=True, obj="stats")
+
     @pytest.mark.parametrize("fit_method", [FitMethodAR.YULE_WALKER, FitMethodAR.BURG, FitMethodAR.CMLE_WITHOUT_CST, FitMethodAR.CMLE_WITH_CST, FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST])
-    def test_simulation_summary(self, signs_btcusdt, fit_method):
+    def test_simulation_summary_regression(self, signs_btcusdt, fit_method):
         simulation_size = 2_000_000
         ar_model = AR(signs=signs_btcusdt, max_order=None, order_selection_method="pacf")
         ar_model = ar_model.fit(method=fit_method.value, significance_level=SIGNIFICANCE_LEVEL, check_stationarity=True, check_residuals_not_autocorrelated=True)

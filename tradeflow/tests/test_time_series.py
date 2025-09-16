@@ -2,7 +2,6 @@ from typing import Tuple, Optional, List
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import pytest
 from matplotlib.axes import Axes
 from numpy.testing import assert_equal, assert_almost_equal
@@ -23,7 +22,6 @@ def signs():
 def time_series_signs(signs):
     TimeSeries.__abstractmethods__ = set()
     time_series = TimeSeries(signs=signs)
-    time_series._order = 6
     return time_series
 
 
@@ -137,32 +135,7 @@ class TestBreuschGodfreyTest:
         assert str(ex.value) == "Residuals must be a 1d array."
 
 
-class TestSimulationSummary:
-
-    @pytest.mark.parametrize("plot_acf,plot_pacf", [
-        (False, False),
-        (True, False),
-        (False, True),
-        (True, True)
-    ])
-    def test_simulation_summary(self, time_series_signs, plot_acf, plot_pacf):
-        time_series_signs._simulation = time_series_signs._signs
-        time_series_signs._order = 6
-
-        res = time_series_signs.simulation_summary(plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=False, percentiles=(50.0, 75.0, 95.0, 99.0, 99.9))
-        if plot_acf or plot_pacf:
-            actual_simulation_summary_df, fig = res
-            assert len(fig.get_axes()) == int(plot_acf) + int(plot_pacf)
-        else:
-            actual_simulation_summary_df = res
-
-        expected_training_stats_df = ResultsTimeSeries.simulation_summary(column_name="Training").stats_df
-        expected_simulation_stats_df = ResultsTimeSeries.simulation_summary(column_name="Simulation").stats_df
-        expected_simulation_summary_df = pd.concat([expected_training_stats_df, expected_simulation_stats_df],
-                                                   axis=1).round(decimals=2)
-
-        assert_frame_equal(left=actual_simulation_summary_df, right=expected_simulation_summary_df, check_dtype=True,
-                           check_index_type=True, check_names=True, check_exact=True, obj="stats")
+class TestSignsStatistics:
 
     def test_compute_signs_statistics(self):
         results_signs_stats = ResultsTimeSeries.simulation_summary(column_name="Test signs")
@@ -225,11 +198,11 @@ class TestPlot:
     ])
     @pytest.mark.parametrize("log_scale", [True, False])
     def test_build_fig_autocorrelation_training_vs_simulation(self, time_series_signs, plot_acf, plot_pacf, log_scale):
-        order = time_series_signs._order
+        order = 6
         time_series_signs._simulation = time_series_signs._signs
         y_scale = "log" if log_scale else "linear"
 
-        fig = time_series_signs._build_fig_autocorrelation_training_vs_simulation(plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=log_scale)
+        fig = time_series_signs._build_fig_autocorrelation_training_vs_simulation(order=order, plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=log_scale)
         assert len(fig.get_axes()) == int(plot_acf) + int(plot_pacf)
 
         if plot_acf:
@@ -249,7 +222,7 @@ class TestPlot:
     def test_build_fig_autocorrelation_training_vs_simulation_should_raise_exception_when_plot_acf_and_plot_pacf_are_false(self, time_series_signs):
         time_series_signs._simulation = time_series_signs._signs
         with pytest.raises(ValueError) as ex:
-            time_series_signs._build_fig_autocorrelation_training_vs_simulation(plot_acf=False, plot_pacf=False, log_scale=True)
+            time_series_signs._build_fig_autocorrelation_training_vs_simulation(order=6, plot_acf=False, plot_pacf=False, log_scale=True)
 
         assert str(ex.value) == "At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."
 
