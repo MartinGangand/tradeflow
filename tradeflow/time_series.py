@@ -11,14 +11,12 @@ from matplotlib.figure import Figure
 from scipy import stats
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tools.typing import ArrayLike1D
-from statsmodels.tools.validation import bool_like
 from statsmodels.tsa.stattools import acf, pacf
 from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
 from tradeflow.common.general_utils import check_condition
-from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException, \
-    ModelNotSimulatedException, ModelNotFittedException
+from tradeflow.exceptions import IllegalNbLagsException, IllegalValueException
 
 logger = logger_utils.get_logger(__name__)
 
@@ -37,26 +35,8 @@ class TimeSeries(ABC):
         self._signs = signs
         self._nb_signs = len(signs)
 
-        # Will be set in fit()
-        self._order = None
-
-        self._x = None
-        self._y = None
-        self._first_order_signs = None
-        self._start_idx_parameters = None
-
         # Will be set in simulate()
         self._simulation = None
-
-    @property
-    def order(self) -> int:
-        """
-        The order of the model (i.e., the number of lags used in the model).
-        This is set while fitting the model.
-        """
-        if self._order is None:
-            raise ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'.")
-        return self._order
 
     @abstractmethod
     def resid(self) -> np.ndarray:
@@ -76,6 +56,15 @@ class TimeSeries(ABC):
     def simulate(self, size: int) -> np.ndarray:
         """
         Simulate a time series of signs after the model has been fitted.
+        """
+        pass
+
+    @abstractmethod
+    def simulation_summary(self):
+        """
+        Return a statistical summary comparing the original and simulated time series of signs.
+
+        The function must be called after a model has been fitted and simulated.
         """
         pass
 
@@ -134,49 +123,6 @@ class TimeSeries(ABC):
         check_condition(condition=alpha is None or 0 < alpha <= 1,
                         exception=IllegalValueException(f"Alpha {alpha} is invalid, it must be in the interval [0, 1]"))
         return pacf(x=time_series, nlags=nb_lags, method="burg", alpha=alpha)
-
-    def simulation_summary(self, plot_acf: bool = True, plot_pacf: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
-        """
-        Return a statistical summary comparing the original and simulated time series of signs, optionally with ACF and/or PACF plots.
-
-        The statistics are computed over the time series counting the number of consecutive signs in a row (consecutive sign runs).
-
-        The function must be called after a model has been fitted and simulated.
-
-        Parameters
-        ----------
-        plot_acf : bool
-            If True, it will plot a graph comparing the autocorrelation function (ACF) of the original and simulated time series.
-        plot_pacf : bool
-            If True, it will plot a graph comparing the partial autocorrelation function (PACF) of the original and simulated time series.
-        log_scale : bool, default true
-            If True, graphs will use a logarithmic scale for the y-axis, otherwise a linear scale is used.
-            It has no effect if `plot` is False.
-        percentiles : tuple of float
-            The percentiles to use.
-
-        Returns
-        -------
-        statistics : pd.DataFrame
-            A DataFrame containing statistics on consecutive sign runs for the original and simulated time series.
-        fig : Figure, optional
-            A matplotlib Figure containing the ACF and/or PACF of the original and simulated time series of signs.
-            Returned if `plot` is True.
-        """
-        plot_acf = bool_like(value=plot_acf, name="plot_acf", optional=False, strict=True)
-        plot_pacf = bool_like(value=plot_pacf, name="plot_pacf", optional=False, strict=True)
-        log_scale = bool_like(value=log_scale, name="log_scale", optional=False, strict=True)
-        check_condition(self._simulation is not None, ModelNotSimulatedException("The model has not yet been simulated. Simulate the model first by calling 'simulate()'."))
-
-        statistics_training = self._compute_signs_statistics(signs=self._signs, column_name="Training", percentiles=percentiles)
-        statistics_simulation = self._compute_signs_statistics(signs=self._simulation, column_name="Simulation", percentiles=percentiles)
-        statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
-
-        if plot_acf or plot_pacf:
-            fig = self._build_fig_autocorrelation_training_vs_simulation(plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=log_scale)
-            return statistics, fig
-
-        return statistics
 
     @staticmethod
     def is_time_series_stationary(time_series: ArrayLike1D, nb_lags: Optional[int] = None, significance_level: float = 0.05, regression: Literal["c", "ct", "ctt", "n"] = "c") -> bool:
@@ -333,24 +279,24 @@ class TimeSeries(ABC):
         assert np.sum(series_nb_consecutive_signs) == len(signs)
         return np.array(series_nb_consecutive_signs)
 
-    def _build_fig_autocorrelation_training_vs_simulation(self, plot_acf: bool, plot_pacf: bool, log_scale: bool = True) -> Figure:
+    def _build_fig_autocorrelation_training_vs_simulation(self, order: int, plot_acf: bool, plot_pacf: bool, log_scale: bool = True) -> Figure:
         check_condition(condition=plot_acf or plot_pacf, exception=ValueError("At least one of the parameters 'plot_acf' or 'plot_pacf' must be True to build the figure."))
 
         nb_figs = int(plot_acf) + int(plot_pacf)
         fig, axe = plt.subplots(1, nb_figs, squeeze=False, figsize=(nb_figs * 8, 4))
 
-        nb_lags = min(2 * self._order, len(self._signs) // 2 - 1)
+        nb_lags = min(2 * order, len(self._signs) // 2 - 1)
         if plot_acf:
             acf_training = self.calculate_acf(nb_lags=nb_lags)
             acf_simulation = self.calculate_acf(nb_lags=nb_lags, time_series=self._simulation)
             acf_title = f"ACF of training and simulated time series"
-            self._fill_axe(axe=axe[0][0], functions=[acf_training, acf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=acf_title, xlabel="Lag", log_scale=log_scale, order=self._order)
+            self._fill_axe(axe=axe[0][0], functions=[acf_training, acf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=acf_title, xlabel="Lag", log_scale=log_scale, order=order)
 
         if plot_pacf:
             pacf_training = self.calculate_pacf(nb_lags=nb_lags, alpha=None)
             pacf_simulation = self.calculate_pacf(nb_lags=nb_lags, alpha=None, time_series=self._simulation)
             pacf_title = f"PACF of training and simulated time series"
-            self._fill_axe(axe=axe[0][1 if plot_acf else 0], functions=[pacf_training, pacf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=pacf_title, xlabel="Lag", log_scale=log_scale, order=self._order)
+            self._fill_axe(axe=axe[0][1 if plot_acf else 0], functions=[pacf_training, pacf_simulation], colors=["green", "purple"], linestyles=["dashed", "solid"], labels=["Training", "Simulation"], title=pacf_title, xlabel="Lag", log_scale=log_scale, order=order)
 
         return fig
 
