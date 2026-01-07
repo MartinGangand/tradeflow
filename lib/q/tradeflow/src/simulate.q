@@ -11,20 +11,20 @@
 // .simulate.autoRegSimulate[10;0.5345669501134418 0.18274445939791428 0.11719456844674148 0.12819588425574271;0;-1 1 1 1;42]
 // /=> 1 1 1 -1 1 -1 -1 -1 -1 -1h
 autoRegSimulate:{[size;params;cst;lastSigns;seed]
-    p:count params;                                                            / Number of autoregressive parameters
-    if[p>count lastSigns;'"Size of 'lastSigns' must be >= size of 'params'"];  / Ensure initial window is large enough
-    f:simulateNext[reverse params;cst;;];                                      / Projection with fixed parameters to simulate next sign
-    lastSigns:`short$neg[p]#lastSigns;                                         / Keep only 'count params' last signs
+    p:count params;                                                              / Number of autoregressive parameters
+    if[p>count lastSigns;'"Size of 'lastSigns' must be >= size of 'params'"];    / Ensure initial window is large enough
+    f:simulateNext[reverse params;cst;;];                                        / Projection with fixed parameters to simulate next sign
+    lastSigns:`short$neg[p]#lastSigns;                                           / Keep only 'count params' last signs
     last each {[f;l;u](1_l),f[l;u]}[f;;]\[lastSigns;generateUniforms[size;seed]] / Scan iterator to evolve the rolling state and collect the simulated signs
  }
 
 / Generate a reproducible sequence of uniform random values with seed restoration
 generateUniforms:{[size;seed]
-    originalSeed:system "S";          / Save current seed
-    system "S ",string seed;          / Set new seed for reproducibility
-    unifs:size?1f;                    / Generate 'size' uniform random numbers
-    system "S ", string originalSeed; / Restore original seed to avoid side effects
-    unifs
+    originalSeed:system "S";         / Save current seed
+    system "S ",string seed;         / Set new seed for reproducibility
+    res:@[{x?1f};size;{x}];          / Generate 'size' uniform random numbers (capture result or error message)
+    system "S ",string originalSeed; / Restore original seed to avoid side effects
+    $[10h=type res;'res;res]         / If 'res' is an error message, throw it, otherwise return the generated uniforms
  }
 
 / Single autoregressive step (simulates the next sign given history)
