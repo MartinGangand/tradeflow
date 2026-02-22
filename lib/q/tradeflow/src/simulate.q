@@ -2,7 +2,7 @@
 
 // Simulate an autocorrelated sign sequence using an autoregressive model
 // @param size {number} Number of signs to generate
-// @param params {float[]} Autoregressive model parameters (ordered from the parameter associated with the most recent sign to oldest sign)
+// @param params {float[]} Autoregressive model parameters (ordered from the parameter associated with the most recent sign to the oldest sign)
 // @param cst {number} Constant parameter of the model
 // @param lastSigns {vector[number]} Last observed signs (vector size must be >= size of 'params')
 // @param seed {long} Non-zero long value used to re-initialize the seed of the random generator for reproducibility
