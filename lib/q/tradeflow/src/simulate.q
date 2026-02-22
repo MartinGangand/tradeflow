@@ -31,6 +31,6 @@ generateUniforms:{[size;seed]
 / reversedParams is the vector of autoregressive model parameters aligned with lastSigns, from oldest to most recent sign
 simulateNext:{[reversedParams;cst;lastSigns;unif]
     ev:cst+sum reversedParams*lastSigns; / Next sign expected value (linear combination of past signs)
-    buyProba:.5*1+ev;                    / Map expected value to buy probability in [0;1]
-    (-1 1h)unif<buyProba                 / Return +1 (buy) with probability buyProba, -1 (sell) otherwise
+    buyProba:.5*1+ev;                    / Map expected value to buy probability in [0, 1]
+    (-1 1h)unif<buyProba                 / Return +1 (buy) with probability buyProba, -1 (sell) with probability 1 - buyProba
  }

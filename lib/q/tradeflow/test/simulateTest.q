@@ -26,11 +26,11 @@ testShouldThrowIfLastSignsTooShort:{
     n:100;
     params:0.5 0.3 0.2;
     cst:0;
-    lastSigns:1 -1f; / Only 2 last signs provided, but 3 parameters
+    lastSigns:1 -1f; / AR model has 3 parameters, but only the last 2 signs are provided
 
     .qunit.assertThrows[
         .simulate.autoRegSimulate[n;params;cst;;1];
         lastSigns;
         "Size of 'lastSigns' must be >= size of 'params'";
-        "Throw if there is not enough last signs provided compared to the number of parameters"];
+        "Throw if there are not enough last signs provided compared to the number of parameters in the autoregressive model"];
  };
