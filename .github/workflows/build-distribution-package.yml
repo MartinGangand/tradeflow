@@ -52,7 +52,7 @@ jobs:
           name: pyproject-toml
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
+        uses: pypa/cibuildwheel@v3.4.0
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
