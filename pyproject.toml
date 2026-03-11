@@ -32,5 +32,5 @@ classifiers = [
 [project.urls]
 Homepage = "https://martingangand.github.io/tradeflow/"
 
-[tool.cibuildwheel]
-archs = ["auto64", "auto32"]
+[tool.cibuildwheel.linux]
+archs = ["auto"]
