@@ -34,3 +34,4 @@ Homepage = "https://martingangand.github.io/tradeflow/"
 
 [tool.cibuildwheel]
 enable = ["pypy"]
+archs = ["x86_64", "i686"]
