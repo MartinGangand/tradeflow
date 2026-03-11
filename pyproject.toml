@@ -31,3 +31,6 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://martingangand.github.io/tradeflow/"
+
+[tool.cibuildwheel]
+enable = ["pypy"]
