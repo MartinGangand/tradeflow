@@ -36,4 +36,4 @@ Homepage = "https://martingangand.github.io/tradeflow/"
 enable = ["pypy", "pypy-eol"]
 
 [tool.cibuildwheel.linux]
-archs = ["auto32"]
+archs = ["auto", "auto32"]
