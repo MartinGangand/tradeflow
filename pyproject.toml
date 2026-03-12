@@ -32,9 +32,8 @@ classifiers = [
 [project.urls]
 Homepage = "https://martingangand.github.io/tradeflow/"
 
-#[tool.cibuildwheel]
-#archs = ["auto", "i686"]
-#enable = ["pypy", "pypy-eol"]
+[tool.cibuildwheel]
+enable = ["pypy", "pypy-eol"]
 
 [tool.cibuildwheel.linux]
-archs = ["auto", "auto32"]
+archs = ["auto32"]
