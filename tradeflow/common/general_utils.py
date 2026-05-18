@@ -1,5 +1,5 @@
 import enum
-from typing import List, Any, Optional, Union
+from typing import Any
 
 from tradeflow.common.exceptions import EnumValueException
 
@@ -24,7 +24,7 @@ def check_condition(condition: bool, exception: Exception) -> None:
         raise exception
 
 
-def get_enum_values(enum_obj: enum) -> List[Any]:
+def get_enum_values(enum_obj: enum) -> list[Any]:
     """
     Return a list containing the values of an enum.
 
@@ -41,7 +41,7 @@ def get_enum_values(enum_obj: enum) -> List[Any]:
     return [enum_object.value for enum_object in enum_obj]
 
 
-def check_enum_value_is_valid(enum_obj: enum, value: Optional[object], is_none_valid: bool, parameter_name: str) -> Optional[enum.Enum]:
+def check_enum_value_is_valid(enum_obj: enum, value: object | None, is_none_valid: bool, parameter_name: str) -> enum.Enum | None:
     """
     Raise an EnumValueException if a value is not within an enum.
 
@@ -81,7 +81,11 @@ def check_enum_value_is_valid(enum_obj: enum, value: Optional[object], is_none_v
         return enum_obj
 
 
-def is_value_within_interval_exclusive(value: Union[int, float], lower_bound: Union[int, float], upper_bound: Union[int, float]) -> bool:
+def is_value_within_interval_exclusive(
+    value: int | float,
+    lower_bound: int | float,
+    upper_bound: int | float,
+) -> bool:
     """
     Return whether a value is strictly within an interval or not.
 

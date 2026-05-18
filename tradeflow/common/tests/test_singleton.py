@@ -9,7 +9,6 @@ class SingletonClass(metaclass=Singleton):
 
 
 class TestSingleton:
-
     @pytest.fixture(scope="function", autouse=True)
     def reset_singleton(self):
         yield

@@ -5,6 +5,7 @@ It includes loading trade sign data, fitting an AR model, simulating new trade s
 """
 
 from pathlib import Path
+
 import numpy as np
 
 import tradeflow
@@ -18,13 +19,19 @@ def main():
 
     # Construct and fit AR model with method "yule_walker" (can also be "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst")
     ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
-    ar_model = ar_model.fit(method="yule_walker", significance_level=0.05, check_stationarity=True, check_residuals_not_autocorrelated=True)
+    ar_model = ar_model.fit(
+        method="yule_walker",
+        significance_level=0.05,
+        check_stationarity=True,
+        check_residuals_not_autocorrelated=True,
+    )
 
     print(f"Model order: {ar_model.order}")
     print(f"Fitted parameters: {ar_model.parameters}")
 
     # Simulate a new autocorrelated sign sequence from the fitted AR model
     simulated_signs = ar_model.simulate(size=1_000_000, seed=1)
+    print(f"Simulated signs (first 10 signs) {simulated_signs[:10]}")
 
     # Generate summary and ACF/PACF plots comparing the original and simulated time series of signs
     summary_df, fig = ar_model.simulation_summary(plot_acf=True, plot_pacf=True, log_scale=True)
@@ -32,7 +39,7 @@ def main():
 
     """
     Example of statistical summary over the time series counting the number of consecutive signs in a row:
-    
+
     |                             |      Training |   Simulation |
     |-----------------------------|---------------|--------------|
     | size                        |       2844829 |      1000000 |

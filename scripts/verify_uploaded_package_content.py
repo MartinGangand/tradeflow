@@ -1,16 +1,22 @@
 import argparse
 import os
 import re
+import sys
 from pathlib import Path
 from typing import List, Literal
 
-import sys
-
 from scripts import config
 from scripts.file_extensions import FileExtension
-from scripts.utils import fetch_file_names_from_tar_gz, find_file_names_with_given_extensions, html_page_as_string, \
-    find_urls_in_html_page, find_files_in_directories, fetch_file_names_from_zip, \
-    ANY_VALID_STRING, paths_relative_to
+from scripts.utils import (
+    ANY_VALID_STRING,
+    fetch_file_names_from_tar_gz,
+    fetch_file_names_from_zip,
+    find_file_names_with_given_extensions,
+    find_files_in_directories,
+    find_urls_in_html_page,
+    html_page_as_string,
+    paths_relative_to,
+)
 
 LINUX = "linux"
 MACOS = "macosx"
@@ -19,7 +25,13 @@ WINDOWS = "win"
 PASSED = "PASSED"
 
 
-def verify_source(source_url: str, package_name: str, version: str, expected_python_files: List[str], expected_cpp_files: List[str]) -> None:
+def verify_source(
+    source_url: str,
+    package_name: str,
+    version: str,
+    expected_python_files: List[str],
+    expected_cpp_files: List[str],
+) -> None:
     """
     Verify a source file containing a PyPi package from an url.
 
@@ -53,11 +65,27 @@ def verify_source(source_url: str, package_name: str, version: str, expected_pyt
     actual_python_files.remove(os.path.join(f"{package_name}-{version}", "setup.py"))
     actual_python_files = paths_relative_to(paths=actual_python_files, relative_to=package_and_version)
 
-    compare_expected_vs_actual_files(expected_files=expected_python_files, actual_files=actual_python_files, object_name="source", file_type="python")
+    compare_expected_vs_actual_files(
+        expected_files=expected_python_files,
+        actual_files=actual_python_files,
+        object_name="source",
+        file_type="python",
+    )
 
-    actual_cpp_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION])
+    actual_cpp_files = find_file_names_with_given_extensions(
+        file_names=file_names,
+        potential_extensions=[
+            FileExtension.CPP_EXTENSION,
+            FileExtension.HEADER_EXTENSION,
+        ],
+    )
     actual_cpp_files = paths_relative_to(paths=actual_cpp_files, relative_to=package_and_version)
-    compare_expected_vs_actual_files(expected_files=expected_cpp_files, actual_files=actual_cpp_files, object_name="source", file_type="cpp or header")
+    compare_expected_vs_actual_files(
+        expected_files=expected_cpp_files,
+        actual_files=actual_cpp_files,
+        object_name="source",
+        file_type="cpp or header",
+    )
 
 
 def verify_source_url(source_url: str, package_name: str, version: str) -> None:
@@ -83,10 +111,16 @@ def verify_source_url(source_url: str, package_name: str, version: str) -> None:
     if actual_source_name != expected_source_name:
         raise Exception(f"expected source distribution url to end with '{expected_source_name}', but was '{source_url}'")
 
-    log_indented_message(message=f"Source url: OK")
+    log_indented_message(message="Source url: OK")
 
 
-def verify_wheel(wheel_url: str, package_name: str, version: str, expected_shared_libraries: List[str], expected_python_files: List[str]) -> None:
+def verify_wheel(
+    wheel_url: str,
+    package_name: str,
+    version: str,
+    expected_shared_libraries: tuple[str],
+    expected_python_files: List[str],
+) -> None:
     """
     Verify a wheel file containing a PyPi package from an url.
 
@@ -116,11 +150,28 @@ def verify_wheel(wheel_url: str, package_name: str, version: str, expected_share
     log_indented_message(f"Fetched {len(file_names)} file names from the wheel")
 
     expected_shared_libraries_with_extension = [f"{expected_shared_library}.{expected_shared_library_extension}" for expected_shared_library in expected_shared_libraries]
-    actual_shared_libraries = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.SO_EXTENSION, FileExtension.DLL_EXTENSION, FileExtension.DYLIB_EXTENSION])
-    compare_expected_vs_actual_files(expected_files=expected_shared_libraries_with_extension, actual_files=actual_shared_libraries, object_name="wheel", file_type="shared library")
+    actual_shared_libraries = find_file_names_with_given_extensions(
+        file_names=file_names,
+        potential_extensions=[
+            FileExtension.SO_EXTENSION,
+            FileExtension.DLL_EXTENSION,
+            FileExtension.DYLIB_EXTENSION,
+        ],
+    )
+    compare_expected_vs_actual_files(
+        expected_files=expected_shared_libraries_with_extension,
+        actual_files=actual_shared_libraries,
+        object_name="wheel",
+        file_type="shared library",
+    )
 
     actual_python_files = find_file_names_with_given_extensions(file_names=file_names, potential_extensions=[FileExtension.PYTHON_EXTENSION])
-    compare_expected_vs_actual_files(expected_files=expected_python_files, actual_files=actual_python_files, object_name="wheel", file_type="python")
+    compare_expected_vs_actual_files(
+        expected_files=expected_python_files,
+        actual_files=actual_python_files,
+        object_name="wheel",
+        file_type="python",
+    )
 
 
 def verify_wheel_url(wheel_url: str, package_name: str, version: str) -> None:
@@ -225,7 +276,7 @@ def display_name(url: str, package_name: str, version: str) -> str:
     -------
     str
         The inferred display name or the initial url if unable to do so.
-"""
+    """
     name = re.findall(pattern=rf"{package_name}-{version}{ANY_VALID_STRING}", string=url)
     if len(name) != 1:
         return url
@@ -249,7 +300,16 @@ def log_indented_message(message: str) -> None:
     log_message(f"    {message}")
 
 
-def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, expected_nb_wheels: int, expected_shared_libraries: List[str], root_repository: Path, main_package_directory: Path, subpackage_directories: List[Path]) -> int:
+def main(
+    index: Literal["pypi", "test.pypi"],
+    package_name: str,
+    version: str,
+    expected_nb_wheels: int,
+    expected_shared_libraries: tuple[str],
+    root_repository: Path,
+    main_package_directory: Path,
+    subpackage_directories: tuple[Path, ...],
+) -> int:
     """
     Main function to validate uploaded package files against expected specifications on a given index.
 
@@ -263,13 +323,13 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
         The version of the package to validate.
     expected_nb_wheels : int
         The expected number of wheel files for this package version on the index.
-    expected_shared_libraries : list of str
+    expected_shared_libraries : tuple of str
         A list of shared library file names expected within the wheel.
     root_repository : Path
         The root directory of the repository containing the package and libraries.
     main_package_directory : str
         The directory of the main package.
-    subpackage_directories : str
+    subpackage_directories : tuple of Path
         The directories of subpackages contained in `main_package_directory` (if any).
 
     Returns
@@ -287,8 +347,14 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     log_message(f"Starting {os.path.basename(__file__)} script for index '{index}' and package version '{version}' (url: {package_url})\n")
 
     pypi_html_page = html_page_as_string(url=package_url)
-    source_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=FileExtension.SOURCE_EXTENSION)
-    wheel_urls = find_urls_in_html_page(html_page_content=pypi_html_page, target_url_extension=FileExtension.WHEEL_EXTENSION)
+    source_urls = find_urls_in_html_page(
+        html_page_content=pypi_html_page,
+        target_url_extension=FileExtension.SOURCE_EXTENSION,
+    )
+    wheel_urls = find_urls_in_html_page(
+        html_page_content=pypi_html_page,
+        target_url_extension=FileExtension.WHEEL_EXTENSION,
+    )
 
     if len(source_urls) != 1:
         raise Exception(f"Expected 1 source url in the html page, but found {len(source_urls)} instead")
@@ -296,16 +362,32 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     if len(wheel_urls) != expected_nb_wheels:
         raise Exception(f"Expected {expected_nb_wheels} wheel url{'s' if expected_nb_wheels > 1 else ''} in the html page, but found {len(wheel_urls)} instead")
 
-    expected_python_files = find_files_in_directories(directories=[main_package_directory] + subpackage_directories, extensions=[FileExtension.PYTHON_EXTENSION], recursive=False, absolute_path=True)
+    expected_python_files = find_files_in_directories(
+        directories=(main_package_directory,) + subpackage_directories,
+        extensions=[FileExtension.PYTHON_EXTENSION],
+        recursive=False,
+        absolute_path=True,
+    )
     expected_python_files = paths_relative_to(paths=expected_python_files, relative_to=root_repository)
 
-    expected_source_cpp_files = find_files_in_directories(directories=[root_repository], extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION], recursive=True, absolute_path=True)
+    expected_source_cpp_files = find_files_in_directories(
+        directories=[root_repository],
+        extensions=[FileExtension.CPP_EXTENSION, FileExtension.HEADER_EXTENSION],
+        recursive=True,
+        absolute_path=True,
+    )
     expected_source_cpp_files = paths_relative_to(paths=expected_source_cpp_files, relative_to=root_repository)
 
     source_url = source_urls[0]
     source_name = display_name(url=source_url, package_name=package_name, version=version)
     try:
-        verify_source(source_url=source_url, package_name=package_name, version=version, expected_python_files=expected_python_files, expected_cpp_files=expected_source_cpp_files)
+        verify_source(
+            source_url=source_url,
+            package_name=package_name,
+            version=version,
+            expected_python_files=expected_python_files,
+            expected_cpp_files=expected_source_cpp_files,
+        )
     except Exception as source_exception:
         nb_errors += 1
         log_error(name=source_name, exception=source_exception)
@@ -315,7 +397,13 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
     for wheel_url in wheel_urls:
         wheel_name = display_name(url=wheel_url, package_name=package_name, version=version)
         try:
-            verify_wheel(wheel_url=wheel_url, package_name=package_name, version=version, expected_shared_libraries=expected_shared_libraries, expected_python_files=expected_python_files)
+            verify_wheel(
+                wheel_url=wheel_url,
+                package_name=package_name,
+                version=version,
+                expected_shared_libraries=expected_shared_libraries,
+                expected_python_files=expected_python_files,
+            )
         except Exception as wheel_exception:
             nb_errors += 1
             log_error(name=wheel_name, exception=wheel_exception)
@@ -327,19 +415,26 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, version: str, e
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Verify the content of the uploaded package to PyPi or Test PyPi")
-    parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index on which to validate the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.")
+    parser.add_argument(
+        "index",
+        type=str,
+        choices=["pypi", "test.pypi"],
+        help="Specify the package index on which to validate the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.",
+    )
     parser.add_argument("package_version", type=str, help="Specify the package version.")
     args = parser.parse_args()
 
     try:
-        exit_status = main(index=args.index,
-                           package_name=config.PACKAGE_NAME,
-                           version=args.package_version,
-                           expected_nb_wheels=config.EXPECTED_NB_WHEELS,
-                           expected_shared_libraries=config.EXPECTED_SHARED_LIBRARIES,
-                           root_repository=config.ROOT_REPOSITORY,
-                           main_package_directory=config.MAIN_PACKAGE_DIRECTORY,
-                           subpackage_directories=config.SUBPACKAGES_DIRECTORIES)
+        exit_status = main(
+            index=args.index,
+            package_name=config.PACKAGE_NAME,
+            version=args.package_version,
+            expected_nb_wheels=config.EXPECTED_NB_WHEELS,
+            expected_shared_libraries=config.EXPECTED_SHARED_LIBRARIES,
+            root_repository=config.ROOT_REPOSITORY,
+            main_package_directory=config.MAIN_PACKAGE_DIRECTORY,
+            subpackage_directories=config.SUBPACKAGES_DIRECTORIES,
+        )
         sys.exit(exit_status)
     except Exception as e:
         sys.exit(f"\nAn error occurred while verifying the content of the uploaded package (package: '{config.PACKAGE_NAME}', version: '{args.package_version}'):\nException: {e}")

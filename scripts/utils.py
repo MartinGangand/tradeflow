@@ -3,14 +3,14 @@ import io
 import os
 import re
 import subprocess
+import sys
 import tarfile
+import time
 import zipfile
 from pathlib import Path
-from typing import List, Optional, Literal, Union
+from typing import List, Literal, Optional, Union
 
 import requests
-import sys
-import time
 from requests import Response
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -147,17 +147,20 @@ def find_urls_in_html_page(html_page_content: str, target_url_extension: str) ->
     list of str
         Urls with the given `target_url_extension` extension contained in the html page.
     """
-    urls = re.findall(pattern=rf"https:{ANY_VALID_STRING}\.{target_url_extension}\b", string=html_page_content)
-    return sorted(list(set(urls)))
+    urls = re.findall(
+        pattern=rf"https:{ANY_VALID_STRING}\.{target_url_extension}\b",
+        string=html_page_content,
+    )
+    return sorted(set(urls))
 
 
-def find_files_in_directories(directories: List[Path], extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
+def find_files_in_directories(directories: tuple[Path, ...], extensions: List[str], recursive: bool, absolute_path: bool) -> List[str]:
     """
     Find files within specified directories that match given file extensions.
 
     Parameters
     ----------
-    directories : list of Path
+    directories : tuple of Path
         The directories to search for files.
     extensions : list of str
         A list of file extensions to filter files by (without dots). Files with
@@ -210,7 +213,13 @@ def find_file_names_with_given_extensions(file_names: List[str], potential_exten
     joined_extensions = "|".join(potential_extensions)
     matched_file_names = []
     for file_name in file_names:
-        if re.search(pattern=rf"{ANY_VALID_STRING}\.(?:{joined_extensions})$", string=file_name) is not None:
+        if (
+            re.search(
+                pattern=rf"{ANY_VALID_STRING}\.(?:{joined_extensions})$",
+                string=file_name,
+            )
+            is not None
+        ):
             matched_file_names.append(file_name)
     return matched_file_names
 
@@ -288,7 +297,11 @@ def uninstall_package_with_pip(package_name: str) -> None:
     subprocess.check_call(parse_command_line(f"{sys.executable} -m pip uninstall -y {package_name}"))
 
 
-def install_package_with_pip(index: Literal["pypi", "test.pypi"], package_name: str, package_version: Optional[str]) -> None:
+def install_package_with_pip(
+    index: Literal["pypi", "test.pypi"],
+    package_name: str,
+    package_version: Optional[str],
+) -> None:
     """
     Install a package using pip from the specified index.
 

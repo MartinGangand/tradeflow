@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional, Tuple
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ import scipy.optimize as optimize
 from matplotlib.figure import Figure
 from numpy.linalg import slogdet
 from statsmodels.regression import yule_walker
-from statsmodels.regression.linear_model import burg, OLS
+from statsmodels.regression.linear_model import OLS, burg
 from statsmodels.tools import add_constant
 from statsmodels.tools.typing import ArrayLike1D
 from statsmodels.tools.validation import bool_like
@@ -17,14 +17,24 @@ from statsmodels.tsa.tsatools import lagmat
 
 from tradeflow.common import logger_utils
 from tradeflow.common.ctypes_utils import CArray, CArrayEmpty
-from tradeflow.common.general_utils import check_condition, check_enum_value_is_valid, get_enum_values, \
-    is_value_within_interval_exclusive
+from tradeflow.common.general_utils import (
+    check_condition,
+    check_enum_value_is_valid,
+    get_enum_values,
+    is_value_within_interval_exclusive,
+)
 from tradeflow.common.shared_libraries_registry import SharedLibrariesRegistry
 from tradeflow.config import LIB_TRADEFLOW
-from tradeflow.enums import OrderSelectionMethodAR, FitMethodAR
-from tradeflow.exceptions import IllegalValueException, ModelNotFittedException, IllegalNbLagsException, \
-    NonStationaryTimeSeriesException, AutocorrelatedResidualsException, NoConvergenceException, \
-    ModelNotSimulatedException
+from tradeflow.enums import FitMethodAR, OrderSelectionMethodAR
+from tradeflow.exceptions import (
+    AutocorrelatedResidualsException,
+    IllegalNbLagsException,
+    IllegalValueException,
+    ModelNotFittedException,
+    ModelNotSimulatedException,
+    NoConvergenceException,
+    NonStationaryTimeSeriesException,
+)
 from tradeflow.time_series import TimeSeries
 
 logger = logger_utils.get_logger(__name__)
@@ -48,14 +58,20 @@ class AR(TimeSeries):
         * 'pacf' - Choose the model using the number of significant lags in the partial autocorrelation function of the time series of signs.
     """
 
-    def __init__(self, signs: ArrayLike1D, max_order: Optional[int] = None,
-                 order_selection_method: Optional[Literal["pacf"]] = None) -> None:
+    def __init__(
+        self,
+        signs: ArrayLike1D,
+        max_order: int | None = None,
+        order_selection_method: Literal["pacf"] | None = None,
+    ) -> None:
         super().__init__(signs=signs)
         self._max_order = self._init_max_order(max_order=max_order)
-        self._order_selection_method = check_enum_value_is_valid(enum_obj=OrderSelectionMethodAR,
-                                                                 value=order_selection_method,
-                                                                 parameter_name="order_selection_method",
-                                                                 is_none_valid=True)
+        self._order_selection_method = check_enum_value_is_valid(
+            enum_obj=OrderSelectionMethodAR,
+            value=order_selection_method,
+            parameter_name="order_selection_method",
+            is_none_valid=True,
+        )
         # Will be set in fit()
         self._order = None
         self._constant_parameter = 0.0
@@ -86,7 +102,7 @@ class AR(TimeSeries):
             raise ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'.")
         return self._parameters
 
-    def resid(self, seed: Optional[int] = None) -> np.ndarray:
+    def resid(self, seed: int | None = None) -> np.ndarray:
         """
         Estimate and return the residuals of the model.
 
@@ -111,7 +127,10 @@ class AR(TimeSeries):
             has not been fitted by calling `fit()`.
 
         """
-        check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'."))
+        check_condition(
+            condition=self._parameters is not None,
+            exception=ModelNotFittedException("The model does not have its parameters set. Fit the model first by calling 'fit()'."),
+        )
 
         if seed is None:
             seed = np.random.randint(0, np.iinfo(np.int32).max)
@@ -122,7 +141,13 @@ class AR(TimeSeries):
             next_sign = 1 if uniform <= buy_proba else -1
             return next_sign
 
-        x, y = lagmat(x=self._signs, maxlag=len(self._parameters), trim="both", original="sep", use_pandas=False)
+        x, y = lagmat(
+            x=self._signs,
+            maxlag=len(self._parameters),
+            trim="both",
+            original="sep",
+            use_pandas=False,
+        )
         x_with_cst = np.c_[np.ones(shape=x.shape[0]), x]
 
         expected_values_pred = x_with_cst @ np.append(self._constant_parameter, self._parameters)
@@ -132,17 +157,32 @@ class AR(TimeSeries):
         resid = y.squeeze() - signs_pred
         return resid
 
-    def _init_max_order(self, max_order: Optional[int]) -> int:
+    def _init_max_order(self, max_order: int | None) -> int:
         if max_order is None:
             # Schwert (1989)
             max_order = int(np.ceil(12.0 * np.power(self._nb_signs / 100.0, 1 / 4.0)))
 
-        check_condition(condition=1 <= max_order < self._nb_signs // 2,
-                        exception=IllegalNbLagsException(f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< {self._nb_signs // 2})."))
-        logger.info(f"The maximum order has been set to {max_order}.")
+        check_condition(
+            condition=1 <= max_order < self._nb_signs // 2,
+            exception=IllegalNbLagsException(f"{max_order} is not valid for 'max_order', it must be positive and lower than 50% of the time series length (< {self._nb_signs // 2})."),
+        )
+        logger.info("The maximum order has been set to %s.", max_order)
         return max_order
 
-    def fit(self, method: Literal["yule_walker", "burg", "cmle_without_cst", "cmle_with_cst", "mle_without_cst", "mle_with_cst"], significance_level: float = 0.05, check_stationarity: bool = True, check_residuals_not_autocorrelated: bool = True) -> AR:
+    def fit(
+        self,
+        method: Literal[
+            "yule_walker",
+            "burg",
+            "cmle_without_cst",
+            "cmle_with_cst",
+            "mle_without_cst",
+            "mle_with_cst",
+        ],
+        significance_level: float = 0.05,
+        check_stationarity: bool = True,
+        check_residuals_not_autocorrelated: bool = True,
+    ) -> AR:
         """
         Estimate the model parameters.
 
@@ -179,28 +219,50 @@ class AR(TimeSeries):
         AR
             The AR instance.
         """
-        method: FitMethodAR = check_enum_value_is_valid(enum_obj=FitMethodAR, value=method, parameter_name="method", is_none_valid=False)
+        method: FitMethodAR = check_enum_value_is_valid(
+            enum_obj=FitMethodAR,
+            value=method,
+            parameter_name="method",
+            is_none_valid=False,
+        )
         self._select_order()
 
         if check_stationarity:
             check_condition(
-                condition=self.is_time_series_stationary(time_series=self._signs, nb_lags=self._order, significance_level=significance_level, regression="n"),
-                exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted. You can set 'check_stationarity' to False to disable this check.")
+                condition=self.is_time_series_stationary(
+                    time_series=self._signs,
+                    nb_lags=self._order,
+                    significance_level=significance_level,
+                    regression="n",
+                ),
+                exception=NonStationaryTimeSeriesException("The time series must be stationary in order to be fitted. You can set 'check_stationarity' to False to disable this cdffffckajifnafcianfianfianfiafnfianfainfaifnianafianiifannfiafniainfnafnaiffnifanafifanfheck."),
             )
 
         parameters = None
         if method == FitMethodAR.YULE_WALKER:
-            parameters = yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
+            parameters = yule_walker(
+                x=self._signs,
+                order=self._order,
+                method="mle",
+                df=None,
+                inv=False,
+                demean=True,
+            )[0]
         elif method == FitMethodAR.BURG:
             parameters, _ = burg(endog=self._signs, order=self._order, demean=True)
         elif method in (FitMethodAR.CMLE_WITHOUT_CST, FitMethodAR.CMLE_WITH_CST):
             self._x, self._y = self._get_model_x_y(has_cst_parameter=method.has_cst_parameter)
-            ols = OLS(endog=self._y, exog=self._x, missing="raise", hasconst=method.has_cst_parameter).fit()
+            ols = OLS(
+                endog=self._y,
+                exog=self._x,
+                missing="raise",
+                hasconst=method.has_cst_parameter,
+            ).fit()
             parameters = ols.params
         elif method in (FitMethodAR.MLE_WITHOUT_CST, FitMethodAR.MLE_WITH_CST):
             self._x, self._y = self._get_model_x_y(has_cst_parameter=method.has_cst_parameter)
             self._start_idx_parameters = 1 if method.has_cst_parameter else 0
-            self._first_order_signs = self._signs[:self._order].reshape((self._order, 1))
+            self._first_order_signs = self._signs[: self._order].reshape((self._order, 1))
 
             def f(params: np.ndarray) -> float:
                 return -self._log_likelihood(parameters=params) / self._nb_signs
@@ -211,26 +273,32 @@ class AR(TimeSeries):
             if res["warnflag"] != 0:
                 raise NoConvergenceException("lbfgs method failed to find optimal parameters, you may try to use another method.")
 
-            logger.info(f"Found optimal parameters for MLE using lbfgs in {res['nit']} iterations.")
+            logger.info("Found optimal parameters for MLE using lbfgs in %s iterations.", res["nit"])
         else:
-            raise IllegalValueException(
-                f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
+            raise IllegalValueException(f"The method '{method}' for the parameters estimation is not valid, it must be among {get_enum_values(enum_obj=FitMethodAR)}.")
 
         self._set_parameters(parameters=parameters, has_cst_parameter=method.has_cst_parameter)
 
         if check_residuals_not_autocorrelated:
             _, p_value = self.breusch_godfrey_test(resid=self.resid(seed=1))
             # If the p value is below the significance level, we can reject the null hypothesis of no autocorrelation
-            logger.info(f"Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}.")
-            check_condition(condition=p_value > significance_level,
-                            exception=AutocorrelatedResidualsException(f"The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is {round(p_value, 4)}), "
-                                                                       f"you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."))
+            logger.info("Breusch-Godfrey test: p value for the null hypothesis of no autocorrelation is {round(p_value, 4)}.")
+            check_condition(
+                condition=p_value > significance_level,
+                exception=AutocorrelatedResidualsException(f"The residuals of the model seems to be autocorrelated (p value of the null hypothesis of no autocorrelation is {round(p_value, 4)}), you may try to increase the number of lags, or you can set 'check_residuals' to False to disable this check."),
+            )
 
-        logger.info(f"The AR({self._order}) model has been fitted with method '{method}'.")
+        logger.info("The AR(%s) model has been fitted with method '%s'.", self._order, method)
         return self
 
     def _get_model_x_y(self, has_cst_parameter: bool) -> tuple[np.ndarray, np.ndarray]:
-        x, y = lagmat(x=self._signs, maxlag=self._order, trim="both", original="sep", use_pandas=False)
+        x, y = lagmat(
+            x=self._signs,
+            maxlag=self._order,
+            trim="both",
+            original="sep",
+            use_pandas=False,
+        )
         if has_cst_parameter:
             x = add_constant(data=x, prepend=True, has_constant="raise")
         return x, y
@@ -240,7 +308,14 @@ class AR(TimeSeries):
             ols = OLS(endog=self._y, exog=self._x, missing="raise", hasconst=has_cst_parameter).fit()
             return ols.params
         else:
-            return yule_walker(x=self._signs, order=self._order, method="mle", df=None, inv=False, demean=True)[0]
+            return yule_walker(
+                x=self._signs,
+                order=self._order,
+                method="mle",
+                df=None,
+                inv=False,
+                demean=True,
+            )[0]
 
     def _select_order(self) -> None:
         if self._order_selection_method is None:
@@ -256,15 +331,18 @@ class AR(TimeSeries):
 
             order = 0
             for acf_coeff, value_lower_band, value_upper_band in zip(pacf_coeffs, lower_band, upper_band):
-                if is_value_within_interval_exclusive(value=acf_coeff, lower_bound=value_lower_band, upper_bound=value_upper_band):
+                if is_value_within_interval_exclusive(
+                    value=acf_coeff,
+                    lower_bound=value_lower_band,
+                    upper_bound=value_upper_band,
+                ):
                     break
                 order += 1
             self._order = order
         else:
-            raise IllegalValueException(
-                f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
+            raise IllegalValueException(f"The method '{self._order_selection_method}' for the order selection is not valid, it must be among {get_enum_values(enum_obj=OrderSelectionMethodAR)}")
 
-        logger.info(f"AR order selection: {self._order} lags (method: {self._order_selection_method}, time series length: {self._nb_signs}).")
+        logger.info("AR order selection: %s lags (method: %s, time series length: %s).", self._order, self._order_selection_method, self._nb_signs)
 
     def _log_likelihood(self, parameters: np.ndarray) -> float:
         # Time Series Analysis - Hamilton, J.D, (5.3.6, p. 124).
@@ -273,7 +351,7 @@ class AR(TimeSeries):
             constant_parameter = parameters[0]
 
         # Vector filled with the mean value
-        mu = constant_parameter / (1 - np.sum(parameters[self._start_idx_parameters:]))
+        mu = constant_parameter / (1 - np.sum(parameters[self._start_idx_parameters :]))
         mu_p = np.full(shape=(self._order, 1), fill_value=mu, dtype=float)
 
         # Difference between first order observations and mu
@@ -292,11 +370,11 @@ class AR(TimeSeries):
 
     def _calculate_vp_inv(self, parameters: np.ndarray) -> np.ndarray:
         # Time Series Analysis - Hamilton, J.D, (5.3.7, p. 125).
-        parameters = np.r_[-1, parameters[self._start_idx_parameters:]]
+        parameters = np.r_[-1, parameters[self._start_idx_parameters :]]
         vp_inv = np.zeros(shape=(self._order, self._order), dtype=float)
 
         for i in range(1, self._order + 1):
-            vp_inv[i - 1, i - 1:] = np.correlate(a=parameters, v=parameters[:i])[:-1] - np.correlate(a=parameters[-i:], v=parameters)[:-1]
+            vp_inv[i - 1, i - 1 :] = np.correlate(a=parameters, v=parameters[:i])[:-1] - np.correlate(a=parameters[-i:], v=parameters)[:-1]
 
         vp_inv = vp_inv + vp_inv.T - np.diag(vp_inv.diagonal())
         return vp_inv
@@ -314,7 +392,7 @@ class AR(TimeSeries):
                 raise Exception(f"Expected {self._order} parameters, but got {len(parameters)}.")
             self._parameters = parameters
 
-    def simulate(self, size: int, seed: Optional[int] = None) -> np.ndarray:
+    def simulate(self, size: int, seed: int | None = None) -> np.ndarray:
         """
         Simulate a time series of signs after the model has been fitted.
 
@@ -331,21 +409,41 @@ class AR(TimeSeries):
         np.ndarray
             The simulated signs (+1 for buy, -1 for sell).
         """
-        check_condition(condition=size > 0, exception=IllegalValueException(f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."))
-        check_condition(condition=self._parameters is not None, exception=ModelNotFittedException("The model has not yet been fitted. Fit the model first by calling 'fit()'."))
+        check_condition(
+            condition=size > 0,
+            exception=IllegalValueException(f"The size '{size}' for the time series to be simulated is not valid, it must be greater than 0."),
+        )
+        check_condition(
+            condition=self._parameters is not None,
+            exception=ModelNotFittedException("The model has not yet been fitted. Fit the model first by calling 'fit()'."),
+        )
 
         if seed is None:
             seed = np.random.randint(0, np.iinfo(np.int32).max)
 
         inverted_parameters = CArray.of(c_type_str="double", arr=self._parameters[::-1])
-        last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order:]).astype(int))
+        last_signs = CArray.of(c_type_str="int", arr=np.asarray(self._signs[-self._order :]).astype(int))
         self._simulation = CArrayEmpty.of(c_type_str="int", size=size)
 
         cpp_lib = SharedLibrariesRegistry().find_shared_library(name=LIB_TRADEFLOW).load()
-        cpp_lib.simulate(size, inverted_parameters, self._constant_parameter, len(inverted_parameters), last_signs, seed, self._simulation)
+        cpp_lib.simulate(
+            size,
+            inverted_parameters,
+            self._constant_parameter,
+            len(inverted_parameters),
+            last_signs,
+            seed,
+            self._simulation,
+        )
         return self._simulation[:]
 
-    def simulation_summary(self, plot_acf: bool = True, plot_pacf: bool = True, log_scale: bool = True, percentiles: Tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9)) -> pd.DataFrame | Tuple[pd.DataFrame, Figure]:
+    def simulation_summary(
+        self,
+        plot_acf: bool = True,
+        plot_pacf: bool = True,
+        log_scale: bool = True,
+        percentiles: tuple[float, ...] = (50.0, 75.0, 95.0, 99.0, 99.9),
+    ) -> pd.DataFrame | tuple[pd.DataFrame, Figure]:
         """
         Return a statistical summary comparing the original and simulated time series of signs, optionally with ACF and/or PACF plots.
 
@@ -376,14 +474,22 @@ class AR(TimeSeries):
         plot_acf = bool_like(value=plot_acf, name="plot_acf", optional=False, strict=True)
         plot_pacf = bool_like(value=plot_pacf, name="plot_pacf", optional=False, strict=True)
         log_scale = bool_like(value=log_scale, name="log_scale", optional=False, strict=True)
-        check_condition(self._simulation is not None, ModelNotSimulatedException("The model has not yet been simulated. Simulate the model first by calling 'simulate()'."))
+        check_condition(
+            self._simulation is not None,
+            ModelNotSimulatedException("The model has not yet been simulated. Simulate the model first by calling 'simulate()'."),
+        )
 
         statistics_training = self._compute_signs_statistics(signs=self._signs, column_name="Training", percentiles=percentiles)
         statistics_simulation = self._compute_signs_statistics(signs=self._simulation, column_name="Simulation", percentiles=percentiles)
         statistics = pd.concat([statistics_training, statistics_simulation], axis=1).round(decimals=2)
 
         if plot_acf or plot_pacf:
-            fig = self._build_fig_autocorrelation_training_vs_simulation(order=self._order, plot_acf=plot_acf, plot_pacf=plot_pacf, log_scale=log_scale)
+            fig = self._build_fig_autocorrelation_training_vs_simulation(
+                order=self._order,
+                plot_acf=plot_acf,
+                plot_pacf=plot_pacf,
+                log_scale=log_scale,
+            )
             return statistics, fig
 
         return statistics

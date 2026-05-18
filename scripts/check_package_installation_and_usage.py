@@ -1,9 +1,9 @@
 import argparse
+import sys
 from pathlib import Path
-from typing import List, Callable, Literal
+from typing import Callable, List, Literal
 
 import numpy as np
-import sys
 
 from scripts import config, utils
 
@@ -22,12 +22,24 @@ def basic_tradeflow_usage() -> None:
         signs = np.loadtxt(DATA_FOLDER.joinpath("signs-20240720.txt"), dtype="int8", delimiter=",")
 
         ar_model = tradeflow.AR(signs=signs, max_order=100, order_selection_method="pacf")
-        ar_model = ar_model.fit(method=fit_method.value, significance_level=0.05, check_stationarity=True, check_residuals_not_autocorrelated=True)
+        ar_model = ar_model.fit(
+            method=fit_method.value,
+            significance_level=0.05,
+            check_stationarity=True,
+            check_residuals_not_autocorrelated=True,
+        )
         ar_model.simulate(size=1_000_000, seed=1)
         ar_model.simulation_summary(plot_acf=True, plot_pacf=True, log_scale=True)
 
 
-def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version: str, install_default_version: bool, local_package_directory: Path, func_list: List[Callable]) -> None:
+def main(
+    index: Literal["pypi", "test.pypi"],
+    package_name: str,
+    package_version: str,
+    install_default_version: bool,
+    local_package_directory: Path,
+    func_list: List[Callable],
+) -> None:
     """
     Main function to install a package from PyPI or Test PyPI, verify its installation, and run a list of validation functions.
 
@@ -70,18 +82,29 @@ def main(index: Literal["pypi", "test.pypi"], package_name: str, package_version
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Install the specified or default version of the package from PyPi or Test PyPi and check that the package can be used correctly.")
-    parser.add_argument("index", type=str, choices=["pypi", "test.pypi"], help="Specify the package index from which to install the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.")
+    parser.add_argument(
+        "index",
+        type=str,
+        choices=["pypi", "test.pypi"],
+        help="Specify the package index from which to install the package. Use 'pypi' for the main Python Package Index or 'test.pypi' for the testing instance.",
+    )
     parser.add_argument("package_version", type=str, help="Specify the package version.")
-    parser.add_argument("--install_default_version", action="store_true", help="If True, don't specify any version to install (use default) and checks that the installed version is 'package_version'. If False, the specified version is installed.")
+    parser.add_argument(
+        "--install_default_version",
+        action="store_true",
+        help="If True, don't specify any version to install (use default) and checks that the installed version is 'package_version'. If False, the specified version is installed.",
+    )
     args = parser.parse_args()
 
     try:
-        main(index=args.index,
-             package_name=config.PACKAGE_NAME,
-             package_version=args.package_version,
-             install_default_version=args.install_default_version,
-             local_package_directory=config.MAIN_PACKAGE_DIRECTORY,
-             func_list=[basic_tradeflow_usage])
+        main(
+            index=args.index,
+            package_name=config.PACKAGE_NAME,
+            package_version=args.package_version,
+            install_default_version=args.install_default_version,
+            local_package_directory=config.MAIN_PACKAGE_DIRECTORY,
+            func_list=[basic_tradeflow_usage],
+        )
         print(f"Package '{config.PACKAGE_NAME}' version '{args.package_version}' installed successfully and basic usage test passed.")
         sys.exit(0)
     except Exception as e:

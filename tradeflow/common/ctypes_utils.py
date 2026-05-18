@@ -1,5 +1,5 @@
 import ctypes as ct
-from typing import Literal, Any
+from typing import Any, Literal
 
 from statsmodels.tools.typing import ArrayLike1D
 
@@ -9,7 +9,6 @@ logger = logger_utils.get_logger(__name__)
 
 
 class CArray:
-
     @staticmethod
     def of(c_type_str: Literal["int", "double"], arr: ArrayLike1D) -> ct.Array:
         """
@@ -32,7 +31,6 @@ class CArray:
 
 
 class CArrayEmpty:
-
     @staticmethod
     def of(c_type_str: Literal["int", "double"], size: int) -> ct.Array:
         """
@@ -68,10 +66,7 @@ def get_c_type_from_string(c_type_str: Literal["int", "double"]) -> Any:
     ct._SimpleCData
         The corresponding ctypes type.
     """
-    c_type_str_to_c_type = {
-        "int": ct.c_int,
-        "double": ct.c_double
-    }
+    c_type_str_to_c_type = {"int": ct.c_int, "double": ct.c_double}
 
     if c_type_str not in c_type_str_to_c_type:
         raise Exception(f"Unknown type {c_type_str}")

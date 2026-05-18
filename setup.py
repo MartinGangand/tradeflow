@@ -5,20 +5,18 @@ import sys
 from pathlib import Path
 
 import toml
-from setuptools import Extension, setup, find_packages
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 PACKAGE_NAME = toml.load(Path(__file__).parent.joinpath("pyproject.toml"))["project"]["name"]
 
 
 class CMakeExtension(Extension):
-
     def __init__(self, name: str):
         super().__init__(name, sources=[])
 
 
 class CMakeBuild(build_ext):
-
     def build_extension(self, ext: CMakeExtension) -> None:
         cwd = Path().cwd()
         extdir = cwd.joinpath(self.get_ext_fullpath(ext.name)).parent.resolve()
@@ -28,7 +26,7 @@ class CMakeBuild(build_ext):
 
         cmake_args = [
             f"-DMY_PROJECT_SOURCE_DIR={extdir}",
-            f"-DCMAKE_BUILD_TYPE={build_type}"
+            f"-DCMAKE_BUILD_TYPE={build_type}",
         ]
         build_args = ["--config", build_type]
 
@@ -41,16 +39,12 @@ class CMakeBuild(build_ext):
         build_temp = Path(self.build_temp).joinpath(ext.name)
         build_temp.mkdir(parents=True, exist_ok=True)
 
-        subprocess.run(
-            ["cmake", cwd, *cmake_args], cwd=build_temp, check=True
-        )
-        subprocess.run(
-            ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
-        )
+        subprocess.run(["cmake", cwd, *cmake_args], cwd=build_temp, check=True)
+        subprocess.run(["cmake", "--build", ".", *build_args], cwd=build_temp, check=True)
 
 
 setup(
     packages=find_packages(exclude=["scripts"]),
     ext_modules=[CMakeExtension(name=PACKAGE_NAME)],
-    cmdclass={'build_ext': CMakeBuild}
+    cmdclass={"build_ext": CMakeBuild},
 )

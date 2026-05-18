@@ -1,10 +1,10 @@
 from threading import Lock
+from typing import ClassVar
 
 
 class Singleton(type):
-
-    _instances = {}
-    _lock = Lock()
+    _instances: ClassVar[dict[type, object]] = {}
+    _lock: ClassVar[Lock] = Lock()
 
     def __call__(cls, *args, **kwargs):
         with cls._lock:
